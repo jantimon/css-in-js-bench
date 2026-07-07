@@ -29,17 +29,25 @@ const out = (cmd, cwd) => {
   }
 };
 
-// Clone (or fast-forward an existing clone) to the pinned ref. A shallow fetch of the
-// exact SHA keeps this cheap; GitHub serves unadvertised-but-reachable SHAs.
+// next-yak.ref holds either a full commit SHA (pinned — reproducible, the mode the
+// committed result/ numbers use) or a branch/tag name (for performance experiments,
+// e.g. `perf-styled-jsx-folding`). A SHA is immutable, so an up-to-date clone is left
+// alone; a branch re-fetches its tip on EVERY run — that's the "update" story, there
+// is no separate `git pull`. Fetches go into the existing clone so the cargo build
+// cache survives switching refs.
+const isSha = /^[0-9a-f]{40}$/.test(REF);
 const current = existsSync(join(VENDOR, ".git")) ? out("git rev-parse HEAD", VENDOR) : null;
-if (current === REF) {
+if (isSha && current === REF) {
   console.log(`vendor/next-yak already at ${REF.slice(0, 10)}`);
 } else {
-  if (current) rmSync(VENDOR, { recursive: true, force: true });
-  run(`git init -q "${VENDOR}"`);
-  run(`git fetch -q --depth 1 ${REPO} ${REF}`, VENDOR);
-  run(`git -c advice.detachedHead=false checkout -q FETCH_HEAD`, VENDOR);
-  console.log(`vendor/next-yak checked out at ${REF.slice(0, 10)}`);
+  if (!current) {
+    rmSync(VENDOR, { recursive: true, force: true }); // clear a half-finished clone
+    run(`git init -q "${VENDOR}"`);
+  }
+  run(`git fetch -q --depth 1 "${REPO}" "${REF}"`, VENDOR);
+  run(`git -c advice.detachedHead=false checkout -q --force FETCH_HEAD`, VENDOR);
+  const head = out("git rev-parse HEAD", VENDOR);
+  console.log(`vendor/next-yak checked out at ${isSha ? REF.slice(0, 10) : `${REF} (${head?.slice(0, 10)})`}`);
 }
 
 if (skipBuild) {
@@ -48,7 +56,9 @@ if (skipBuild) {
 }
 
 // Build the library fresh: JS (tsdown) + the SWC plugin (cargo → wasm32-wasip1).
+// build:yak only — the repo's full build:swc also compiles the playground wasm,
+// which the bench never loads.
 run("pnpm install", VENDOR);
 run("pnpm build", VENDOR);
-run("pnpm build:swc", VENDOR);
+run("pnpm run --filter=yak-swc build:yak", VENDOR);
 console.log("✓ vendor/next-yak built (js + swc wasm)");

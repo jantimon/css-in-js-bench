@@ -2,6 +2,7 @@
   "name": "css-in-js-bench",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "setup:yak": "node scripts/setup-next-yak.mjs",
     "gen": "node --import tsx ./gen.ts",

@@ -120,10 +120,15 @@ Building needs the Rust toolchain (rust-lang.org) with the wasm target:
 rustup target add wasm32-wasip1
 ```
 
-To bench a different next-yak commit, put its SHA in `next-yak.ref` and re-run
-`pnpm setup:yak`. If you only want to work on the report (`pnpm report` reads committed
-samples from `result/`), `node scripts/setup-next-yak.mjs --skip-build` is enough — no
-Rust required.
+`next-yak.ref` holds either a **commit SHA** (pinned and reproducible — the mode the
+committed numbers in `result/` correspond to) or a **branch name** for performance
+experiments, e.g. `perf-styled-jsx-folding`. There is no `git pull`: a pinned SHA is
+never updated; a branch ref re-fetches its tip on every `pnpm setup:yak` run. To bench a
+different next-yak, edit `next-yak.ref` and re-run `pnpm setup:yak` — the clone is reused,
+so the Rust build cache survives switching refs.
+
+If you only want to work on the report (`pnpm report` reads committed samples from
+`result/`), `node scripts/setup-next-yak.mjs --skip-build` is enough — no Rust required.
 
 `gen` runs `verify` automatically at the end (skip with `SKIP_VERIFY=1`). verify proves the
 core invariant — for each case, every tech renders an identical DOM (same element count + tag
