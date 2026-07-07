@@ -1,0 +1,17 @@
+{
+  "name": "goober",
+  "description": "Goober",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#14b8a6",
+    "buildPlugin": null,
+    "appStylesheet": null,
+    "cssKind": "runtime"
+  },
+  "dependencies": {
+    "goober": "2.1.19",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "vanilla",
+  "description": "vanilla (hand-written ceiling)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#f59e0b",
+    "buildPlugin": null,
+    "appStylesheet": null,
+    "cssKind": "none"
+  },
+  "dependencies": {
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

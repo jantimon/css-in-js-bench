@@ -1,0 +1,17 @@
+{
+  "name": "panda",
+  "description": "Panda (css fn)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#f472b6",
+    "buildPlugin": null,
+    "appStylesheet": "panda",
+    "cssKind": "atomic"
+  },
+  "dependencies": {
+    "@pandacss/dev": "catalog:dev",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

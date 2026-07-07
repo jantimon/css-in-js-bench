@@ -1,0 +1,26 @@
+{
+  "name": "css-in-js-bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup:yak": "node scripts/setup-next-yak.mjs",
+    "gen": "node --import tsx ./gen.ts",
+    "report": "node --import tsx ./report.tsx",
+    "verify": "node --import tsx ./verify.ts",
+    "dev": "vite",
+    "lint": "node --import tsx ./report/lint.ts"
+  },
+  "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
+  "devDependencies": {
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "@playwright/test": "^1.61.1",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autocannon": "^8.0.0",
+    "prettier": "^3.6.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "shiki": "^3.23.0",
+    "tsx": "^4.21.0",
+    "vite": "^8.0.10"
+  }
+}

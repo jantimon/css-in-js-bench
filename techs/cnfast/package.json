@@ -1,0 +1,17 @@
+{
+  "name": "cnfast",
+  "description": "cnfast",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#22c55e",
+    "buildPlugin": null,
+    "appStylesheet": "tailwind",
+    "cssKind": "utility"
+  },
+  "dependencies": {
+    "cnfast": "0.0.8",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

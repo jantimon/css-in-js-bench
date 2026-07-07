@@ -1,0 +1,18 @@
+{
+  "name": "tailwind-merge",
+  "description": "tailwind-merge",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#38bdf8",
+    "buildPlugin": null,
+    "appStylesheet": "tailwind",
+    "cssKind": "utility"
+  },
+  "dependencies": {
+    "tailwind-merge": "3.6.0",
+    "clsx": "2.1.1",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

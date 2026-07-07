@@ -1,0 +1,17 @@
+{
+  "name": "styled-components",
+  "description": "styled-components",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#ef4444",
+    "buildPlugin": null,
+    "appStylesheet": null,
+    "cssKind": "runtime"
+  },
+  "dependencies": {
+    "styled-components": "catalog:dev",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "emotion",
+  "description": "Emotion",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#06b6d4",
+    "buildPlugin": null,
+    "appStylesheet": null,
+    "cssKind": "runtime"
+  },
+  "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@emotion/cache": "11.14.0",
+    "@emotion/server": "11.11.0",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

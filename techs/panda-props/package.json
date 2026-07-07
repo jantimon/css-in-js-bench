@@ -1,0 +1,17 @@
+{
+  "name": "panda-props",
+  "description": "Panda (style props)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#ec4899",
+    "buildPlugin": null,
+    "appStylesheet": "panda",
+    "cssKind": "atomic"
+  },
+  "dependencies": {
+    "@pandacss/dev": "catalog:dev",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

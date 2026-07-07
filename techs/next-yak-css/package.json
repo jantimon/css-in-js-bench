@@ -1,0 +1,17 @@
+{
+  "name": "next-yak-css",
+  "description": "next-yak (css prop)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#8b5cf6",
+    "buildPlugin": "yak",
+    "appStylesheet": null,
+    "cssKind": "extracted"
+  },
+  "dependencies": {
+    "next-yak": "link:../../vendor/next-yak/packages/next-yak",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}
