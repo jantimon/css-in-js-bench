@@ -207,7 +207,20 @@ async function main() {
           <div className="head-inner">
             <div className="brand">
               <h1>
-                <span className="brand-dot" /> Styling benchmarks
+                <span className="brand-dot" /> CSS-in-JS benchmarks
+                <a
+                  className="gh-link"
+                  href="https://github.com/jantimon/css-in-js-bench"
+                  aria-label="View on GitHub"
+                  title="View on GitHub"
+                >
+                  <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+                    />
+                  </svg>
+                </a>
               </h1>
               <p className="sub">
                 One set of React components, built {usedTechs.length} different ways and measured head-to-head on identical
@@ -440,6 +453,8 @@ body{margin:0;background:#080a0d;color:#e6edf3;font:15px/1.5 system-ui,sans-seri
 .head-inner{max-width:1000px;margin:0 auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
 h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
+.gh-link{display:inline-flex;align-items:center;color:#8b949e;margin-left:2px}
+.gh-link:hover{color:#e6edf3}
 .sub{margin:0;color:#adbac7;font:13px/1.55 system-ui,sans-serif;max-width:60ch}
 .head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:#8b949e}
 .head-stats b{color:#e6edf3;font-weight:600}
@@ -591,6 +606,14 @@ function drawSweep() {
     }
   }
 }
+// Mirror the lane selection into ?lanes=a,b so a filtered view is a shareable URL.
+// No param = all lanes (the default view keeps a clean URL). replaceState can throw
+// on file:// — the filter must keep working there, so it's best-effort.
+function syncLanesQuery() {
+  const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
+  const qs = on.length === techPills.length ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
+  try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
+}
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
   for (const ed of document.querySelectorAll('[data-ed]')) {
@@ -599,10 +622,18 @@ function afterTech() {
   }
   rescaleBars();
   drawSweep();
+  syncLanesQuery();
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
+// Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
+// pre-filtered (and syncLanesQuery then just re-serializes the same selection).
+const lanesParam = new URLSearchParams(location.search).get('lanes');
+if (lanesParam !== null) {
+  const want = new Set(lanesParam.split(',').filter(Boolean));
+  for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
+}
 afterTech();
 // measure pills — toggle which measurement sections are visible.
 for (const b of document.querySelectorAll('[data-measure-filter]')) b.onclick = () => {
