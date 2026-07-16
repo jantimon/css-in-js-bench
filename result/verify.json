@@ -1,1 +1,54 @@
-{"ok": true, "generatedAt": "2026-07-06T22:03:21.640Z", "reports": [{"caseId": "btn-variant", "ok": true, "notes": ["\u2713 14 techs \u00b7 2 elements \u00b7 attrs clean", "\u2713 pixels: 14 techs match styled-components"]}, {"caseId": "compose-3", "ok": true, "notes": ["\u2713 11 techs \u00b7 2 elements \u00b7 attrs clean", "\u2713 pixels: 11 techs match styled-components"]}, {"caseId": "dyn-translate", "ok": true, "notes": ["\u2713 13 techs \u00b7 2 elements \u00b7 attrs clean", "\u2713 pixels: 13 techs match styled-components"]}, {"caseId": "product-grid", "ok": true, "notes": ["\u2713 13 techs \u00b7 27 elements \u00b7 attrs clean", "\u2713 pixels: 13 techs match styled-components"]}, {"caseId": "realistic-button", "ok": true, "notes": ["\u2713 13 techs \u00b7 5 elements \u00b7 attrs clean", "\u2713 pixels: 13 techs match styled-components"]}, {"caseId": "tabs", "ok": true, "notes": ["\u2713 13 techs \u00b7 16 elements \u00b7 attrs clean", "\u2713 pixels: 13 techs match styled-components"]}]}
+{
+  "ok": true,
+  "generatedAt": "2026-07-15T21:14:09.505Z",
+  "reports": [
+    {
+      "caseId": "btn-variant",
+      "ok": true,
+      "notes": [
+        "✓ 18 techs · 2 elements · attrs clean",
+        "✓ pixels: 18 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "compose-3",
+      "ok": true,
+      "notes": [
+        "✓ 12 techs · 2 elements · attrs clean",
+        "✓ pixels: 12 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "dyn-translate",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 2 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "product-grid",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 27 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "realistic-button",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 5 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "tabs",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 16 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    }
+  ]
+}

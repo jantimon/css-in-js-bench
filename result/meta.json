@@ -1,15 +1,14 @@
 {
   "host": "DG-BYOH-6084.local",
   "node": "v24.13.0",
-  "timestamp": "2026-07-06T22:03:06.123Z",
-  "gitSha": "cc029fd",
+  "timestamp": "2026-07-15T21:13:53.440Z",
+  "gitSha": "8532c2c",
   "techs": [
     "cnfast",
     "emotion",
     "goober",
     "next-yak",
     "next-yak-css",
-    "next-yak-released",
     "panda",
     "panda-props",
     "panda-recipe",

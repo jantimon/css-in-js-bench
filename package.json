@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "setup:yak": "node scripts/setup-next-yak.mjs",
+    "setup:yak-main": "node scripts/setup-next-yak-main.mjs",
     "gen": "node --import tsx ./gen.ts",
     "report": "node --import tsx ./report.tsx",
     "verify": "node --import tsx ./verify.ts",
@@ -17,10 +18,12 @@
     "@playwright/test": "^1.61.1",
     "@vitejs/plugin-react": "^6.0.1",
     "autocannon": "^8.0.0",
+    "postcss": "^8.5.19",
     "prettier": "^3.6.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "shiki": "^3.23.0",
+    "tailwindcss": "^3.4.19",
     "tsx": "^4.21.0",
     "vite": "^8.0.10"
   }

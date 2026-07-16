@@ -135,7 +135,8 @@ async function buildTech(tech: string, measurement: Measurement): Promise<SsrMod
 // Times the production SSR render ONLY (renderHtml) — never the snapshot/payload CSS
 // collection (a tailwind JIT or panda slice is build-time work, not per-request).
 function microbench(renderHtml: RenderHtmlFn, caseId: string, n: number): number[] {
-  const { warmup, sampleCount } = benchConfig;
+  const { warmup } = benchConfig;
+  const sampleCount = samplesFor("microbench");
   for (let w = 0; w < warmup; w++) renderHtml(caseId, 1); // warm V8 / JIT, discarded
   const samples: number[] = [];
   for (let s = 0; s < sampleCount; s++) {
@@ -216,7 +217,7 @@ const htmlOf = (mod: SsrModule): RenderHtmlFn => mod.renderHtml ?? ((c, n) => mo
 // cost), runs autocannon `rounds` times, returns the per-round mean req/sec. Heavy +
 // machine-dependent → run on an idle box via `gen --measure=autocannon`.
 async function autocannonSample(mod: SsrModule, caseId: string, n: number): Promise<number[]> {
-  const { rounds, durationSec, connections } = benchConfig.autocannon;
+  const { rounds, durationSec, connections, warmupRounds = 0 } = benchConfig.autocannon;
   const render = htmlOf(mod);
   const server = createServer((_req, res) => {
     res.setHeader("content-type", "text/html");
@@ -224,10 +225,12 @@ async function autocannonSample(mod: SsrModule, caseId: string, n: number): Prom
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as { port: number }).port;
+  const url = `http://127.0.0.1:${port}`;
   const samples: number[] = [];
   try {
+    for (let i = 0; i < warmupRounds; i++) await autocannon({ url, duration: durationSec, connections }); // discarded: warm the server's JIT
     for (let i = 0; i < rounds; i++) {
-      const result = await autocannon({ url: `http://127.0.0.1:${port}`, duration: durationSec, connections });
+      const result = await autocannon({ url, duration: durationSec, connections });
       samples.push(Math.round(result.requests.average));
     }
   } finally {

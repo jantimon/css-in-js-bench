@@ -1,6 +1,6 @@
 {
   "name": "next-yak",
-  "description": "next-yak",
+  "description": "next-yak 9.6.0",
   "private": true,
   "type": "module",
   "bench": {
@@ -10,7 +10,7 @@
     "cssKind": "extracted"
   },
   "dependencies": {
-    "next-yak": "link:../../vendor/next-yak/packages/next-yak",
+    "next-yak": "^9.6.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }

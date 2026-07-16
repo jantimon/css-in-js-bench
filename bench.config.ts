@@ -13,6 +13,9 @@ export default {
   // inp-attribution load the page once and sample cheaply in place (already stable), so
   // they only get a small bump, no round-robin.
   samples: {
+    // microbench is a cheap in-process SSR render (renderToString in node), so a high
+    // sample count is nearly free and tightens the median well below single-digit-sample noise.
+    microbench: 51,
     hydrate: 21,
     mount: 15,
     "hydrate-attribution": 13,
@@ -22,7 +25,9 @@ export default {
   } as Record<string, number>,
 
   // Heavy measurements (run via `gen --measure=…` on an idle machine).
-  autocannon: { rounds: 3, durationSec: 5, connections: 10 }, // SSR req/s under load
+  // autocannon: warmupRounds discarded (cold server JIT), then `rounds` measured rounds →
+  // the report takes the median across measured rounds; longer duration stabilises each round.
+  autocannon: { warmupRounds: 1, rounds: 5, durationSec: 8, connections: 10 }, // SSR req/s under load
   attribution: { loop: 8, iters: 25, warmup: 5 }, // SSR CPU self-time split
   nsweep: { ns: [100, 500, 1000, 2000, 4000], iters: 21 }, // render time vs instance count (median of iters)
 
