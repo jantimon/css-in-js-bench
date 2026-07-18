@@ -43,7 +43,7 @@ export default {
   // Traced instrumentation is expensive, so a FIXED small `n` (not the case's own n) keeps runs
   // tractable AND the counts comparable across cases (style-recalc count scales with instances).
   // Only `mount` has real render work — an idempotent inp re-render / SSR-inline hydrate do ~0.
-  // wpd 0.5 measures a real DOM interaction more than once in one browser boot: `warmup` untimed
+  // wpd 0.6 measures a real DOM interaction more than once in one browser boot: `warmup` untimed
   // mounts drop the cold-JIT first sample, then `iterations` timed mounts give a median wall (counts
   // are pinned to the first timed iteration by wpd, so they do NOT scale with iterations).
   renderTiming: { browsers: ["chrome", "firefox"], n: 50, settleMs: 250, protocolTimeoutMs: 600_000, iterations: 7, warmup: 2 },

@@ -666,12 +666,13 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
 // wpd (@jantimon/web-performance-debugger) drives its OWN Puppeteer browser against the shared
 // hydrate server, so the in-process server MUST stay responsive → async exec, never execFileSync
 // (a sync child would block the event loop and the server couldn't answer wpd's navigation).
-// Chrome yields authoritative counts; Firefox yields Gecko reflow/style ms (no counts/paint/INP).
+// Chrome yields comparable exact counts; Firefox yields Gecko marker counts + sampled reflow/style
+// ms. Gecko counts are useful diagnostics but are not comparable to Blink's batching semantics.
 // Opt-in: needs `pnpm setup:wpd` (vendors wpd + browsers); skips gracefully when absent.
 function toMetrics(summary: unknown): RenderTimingMetrics {
   const s = (summary ?? {}) as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
-  // wpd 0.5 digest.summary.perStep carries the "mount" step's raw wall samples — one per timed
+  // wpd 0.6 digest.summary.perStep carries the "mount" step's raw wall samples — one per timed
   // `--iterations` loop (counts are pinned to the first timed iteration by wpd, so they do not
   // scale). Take the MEDIAN (wpd's own StepIndexEntry.wallMs convention; matches gen's medians),
   // falling back to the run-level summary.wallMs. NB: this is wpd's NODE-SIDE step wall — it
@@ -685,7 +686,8 @@ function toMetrics(summary: unknown): RenderTimingMetrics {
     layoutCount: num(s.layoutCount), layoutMs: num(s.layoutMs),
     styleCount: num(s.styleCount), styleMs: num(s.styleMs),
     paintCount: num(s.paintCount), paintMs: num(s.paintMs),
-    compositeCount: num(s.compositeCount), compositeMs: num(s.compositeMs),
+    // Removed by WPD 0.6 because committed-frame counts tracked settle duration, not page work.
+    compositeCount: null, compositeMs: null,
     forcedLayoutCount: num(s.forcedLayoutCount), forcedLayoutMs: num(s.forcedLayoutMs),
     longTaskCount: num(s.longTaskCount),
   };
@@ -712,20 +714,19 @@ async function renderTimingTech(tech: string, ssrMod: SsrModule, cells: Cell[], 
       for (const browser of cfg.browsers) {
         if (browser === "firefox" && !firefoxOk) continue;
         const rec = join(recDir, `${tech}__${cell.caseId}__${browser}.json`);
-        // wpd 0.5 CLI: `--target` (was `--browser`); CPU profiling is default-on. Both flags below are
-        // CHROME-ONLY — wpd rejects `--protocol-timeout` on `--target firefox` ("no CDP … unsupported").
-        // --protocol-timeout raises Chrome's CDP timeout on heavy traced cells; --no-cpu-profile keeps
-        // Chrome's timing pass free of the CPU sampler. Firefox keeps profiling on for forced-layout blame.
+        // WPD 0.6 supports --protocol-timeout on both browser targets. --no-cpu-profile remains
+        // Chrome-only; Firefox needs its profiler for rendering markers and attribution.
         const args = ["record", WPD_FLOW, "--url", url, "--target", browser, "--settle", String(cfg.settleMs),
-          "--warmup", String(cfg.warmup), "--iterations", String(cfg.iterations), "--out", rec];
-        if (browser === "chrome") args.push("--protocol-timeout", String(cfg.protocolTimeoutMs), "--no-cpu-profile");
+          "--warmup", String(cfg.warmup), "--iterations", String(cfg.iterations),
+          "--protocol-timeout", String(cfg.protocolTimeoutMs), "--out", rec];
+        if (browser === "chrome") args.push("--headless-mode", "shell", "--no-cpu-profile");
         // Firefox's first `session.new` per process flakes under load (times out); a fresh spawn usually
         // succeeds. Retry once before latching firefoxOk=false, so one cold-launch flake doesn't drop a
         // whole tech to chrome-only. wpd exposes no firefox-applicable launch-timeout flag (see feedback).
         for (let attempt = 0; ; attempt++) {
           try {
             await runWpd(args, { WPD_FLOW: "mount" });
-            // wpd 0.5: `query index` needs the sidecar <name>.index.json; `query digest` already carries
+            // `query index` needs the sidecar <name>.index.json; `query digest` already carries
             // per-step wall samples + the iteration-1 counts, so one digest query is enough.
             const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
             sample[browser as "chrome" | "firefox"] = toMetrics(digest.summary);

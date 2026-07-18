@@ -9,6 +9,7 @@ import type { AttrRow } from "./components/AttributionChart.tsx";
 import type { StackRow } from "./components/StackChart.tsx";
 import type { SweepLine } from "./components/LineChart.tsx";
 import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
+import type { WpdBreakdownRow } from "./components/WpdBreakdownChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
@@ -23,10 +24,13 @@ export interface MdSection {
   attrRows: AttrRow[];
   hydBars: Bar[];
   hydAttrRows: AttrRow[];
+  hydWpdRows: WpdBreakdownRow[];
   inpBars: Bar[];
   inpAttrRows: AttrRow[];
+  inpWpdRows: WpdBreakdownRow[];
   mountBars: Bar[];
   mountAttrRows: AttrRow[];
+  mountWpdRows: WpdBreakdownRow[];
   sweepLines: SweepLine[];
   rtRows: RenderTimingRow[];
 }
@@ -100,6 +104,18 @@ const rtTable = (rows: RenderTimingRow[]): string => {
   );
 };
 
+const wpdTable = (rows: WpdBreakdownRow[]): string => {
+  const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.span.wallMs - a.span.slices.idle) - (b.span.wallMs - b.span.slices.idle));
+  if (!picked.length) return "";
+  return table(
+    ["Technique", "active ms", "span ms", "timing median", "JS", "style", "layout", "paint", "idle"],
+    picked.map((r, i) => {
+      const active = r.span.wallMs - r.span.slices.idle;
+      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), ms(r.span.slices.js), ms(r.span.slices.style), ms(r.span.slices.layout), ms(r.span.slices.paint), ms(r.span.slices.idle)];
+    }),
+  );
+};
+
 // Render time (ms) at each instance count — one column per n, one row per lane.
 const sweepTable = (lines: SweepLine[]): string => {
   const picked = pick(lines, (l) => l.tech);
@@ -114,8 +130,9 @@ const sweepTable = (lines: SweepLine[]): string => {
 const MEASUREMENTS = `## Measurements
 
 Every per-case section below reports these as tables. Definitions are given here once. The
-statistic is the **median** of repeated runs; production React in every lane. In each table the
-best value is **bold** and rows are sorted best-first.
+statistic is the **median** where a repeated timing distribution exists; WPD 0.6 span anatomy is
+the first instrumented iteration and is labelled separately. Production React in every lane. In
+each table the best value is **bold** and rows are sorted best-first.
 
 - **SSR render throughput** — renders/sec, higher is better. How many times per second the lane
   renders the whole workload to an HTML string in Node (\`renderToString\`), timing the production
@@ -128,24 +145,24 @@ best value is **bold** and rows are sorted best-first.
   server \`renderToString()\` split by CPU self-time from a sampled V8 profile mapped through
   source maps: **react-dom** (the floor every lane shares), the **styling library** runtime, and
   **your component**. *other* is GC / unattributed native work.
-- **Where the client hydration time goes** — CPU self-time, ms, lower is better. Time for React to
+- **Where the client hydration time goes** — WPD 0.6 reconciling span, ms, lower is better. Time for React to
   **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
-  existing DOM (no markup re-creation) — as a single hydration commit, split the same way. *other*
-  is browser-native / GC.
-- **Where the interaction time goes** — in-place re-render, ms, lower is better. A state change
+  existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
+- **Where the interaction time goes** — WPD 0.6 in-place re-render, ms, lower is better. A state change
   triggers a synchronous re-render (\`flushSync\`) of the whole mounted workload, then waits for the
-  next paint — click→paint latency, split by package. This is where **runtime** CSS-in-JS re-runs
+  next paint — click→paint latency, with active work separated from frame-alignment idle. This is where **runtime** CSS-in-JS re-runs
   its per-element styling on every update; build-time lanes do almost none.
-- **Where the cold-mount time goes** — blank screen → first render, ms, lower is better. From a
+- **Where the cold-mount time goes** — WPD 0.6 blank screen → first render, ms, lower is better. From a
   **blank root** (no SSR markup) a "click" renders the whole workload from scratch
   (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
-  paint includes each **runtime** library's **first style injection** into the document.
+  paint includes each **runtime** library's **first style injection** into the document. The span's
+  JS/style/layout/paint/GC/other/idle slices reconcile exactly to its wall time.
 - **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The
   browser engine's OWN rendering work (not JS), on a cold mount, measured by \`wpd\` in Chrome and
   Firefox. Runtime CSS-in-JS injects a style rule per instance, so the engine recalculates styles
   ~once per instance — **Chrome**'s authoritative signal is that **style-recalc count** (n instances
-  → ~n recalcs vs 1 for extracted CSS). **Firefox** (Gecko) reports style / forced-layout **ms**, no
-  paint or per-element counts. Opt-in (\`pnpm setup:wpd\`); a "—" means that engine doesn't report it.
+  → ~n recalcs vs 1 for extracted CSS). **Firefox** (Gecko) reports sampled style/layout **ms**, no
+  main-thread paint; a sampled zero is not proof of absence. Opt-in (\`pnpm setup:wpd\` + \`pnpm gen:wpd\`).
 - **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. Gzipped bytes the browser
   downloads: the client JS runtime the lane ships over the bare-React floor, the CSS, and the SSR
   HTML.
@@ -187,16 +204,16 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
       ["### SSR throughput under load — requests/sec, higher is better", barTable(s.acanBars, "requests/sec", true)],
       ["### Where the SSR render time goes — ms/render, lower is better", attrTable(s.attrRows, "other")],
       [
-        "### Where the client hydration time goes — ms, lower is better",
-        s.hydAttrRows.length ? attrTable(s.hydAttrRows, "browser/gc") : barTable(s.hydBars, "ms", false),
+        "### Client hydration — WPD 0.6 active work, lower is better",
+        s.hydWpdRows.length ? wpdTable(s.hydWpdRows) : s.hydAttrRows.length ? attrTable(s.hydAttrRows, "browser/gc") : barTable(s.hydBars, "ms", false),
       ],
       [
-        "### Where the interaction time goes — in-place re-render, ms, lower is better",
-        s.inpAttrRows.length ? attrTable(s.inpAttrRows, "browser/gc") : barTable(s.inpBars, "ms", false),
+        "### Interaction re-render — WPD 0.6 active work, lower is better",
+        s.inpWpdRows.length ? wpdTable(s.inpWpdRows) : s.inpAttrRows.length ? attrTable(s.inpAttrRows, "browser/gc") : barTable(s.inpBars, "ms", false),
       ],
       [
-        "### Where the cold-mount time goes — ms, lower is better",
-        s.mountAttrRows.length ? attrTable(s.mountAttrRows, "browser/gc") : barTable(s.mountBars, "ms", false),
+        "### Cold mount — WPD 0.6 active work, lower is better",
+        s.mountWpdRows.length ? wpdTable(s.mountWpdRows) : s.mountAttrRows.length ? attrTable(s.mountAttrRows, "browser/gc") : barTable(s.mountBars, "ms", false),
       ],
       ["### Browser render-work on cold mount — Chrome counts + Firefox ms, lower is better", rtTable(s.rtRows)],
       ["### Page bytes shipped — gzipped, lower is better", payloadTable(s.payRows)],

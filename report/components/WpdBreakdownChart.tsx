@@ -1,0 +1,57 @@
+import React from "react";
+import { groupBreaks } from "../stats.ts";
+import type { WpdSpanSample } from "../types.ts";
+
+export interface WpdBreakdownRow {
+  tech: string;
+  label: string;
+  span: WpdSpanSample;
+  medianMs?: number;
+}
+
+const SEGMENTS = [
+  ["js", "#4c6ef5", "JavaScript"],
+  ["style", "#e8590c", "style"],
+  ["layout", "#7950f2", "layout"],
+  ["paint", "#12b886", "paint"],
+  ["gc", "#f59f00", "GC"],
+  ["other", "#868e96", "browser / other"],
+  ["idle", "#343a40", "idle / frame wait"],
+] as const;
+
+const activeMs = (row: WpdBreakdownRow) => row.span.wallMs - row.span.slices.idle;
+
+/** WPD 0.6's reconciling browser span: every segment sums exactly to the measured wall. */
+export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
+  const sorted = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
+  const max = Math.max(1e-6, ...sorted.map((row) => row.span.wallMs));
+  const breaks = groupBreaks(sorted.map(activeMs));
+  return (
+    <div className="attr wpd-breakdown">
+      <div className="attr-legend">
+        {SEGMENTS.map(([key, color, label]) => (
+          <span key={key}><i style={{ background: color }} />{label}</span>
+        ))}
+      </div>
+      {sorted.map((row, index) => (
+        <div className={"bar-row" + (breaks[index] ? " gap-before" : "")} data-tech={row.tech} key={row.tech}>
+          <span className="bar-label">{row.label}</span>
+          <span className="bar-track">
+            {SEGMENTS.map(([key, color]) => {
+              const value = row.span.slices[key];
+              return value > 0 ? <span key={key} className="attr-seg" data-val={value} title={`${key}: ${value.toFixed(2)} ms`} style={{ width: `${(value / max) * 100}%`, background: color }} /> : null;
+            })}
+          </span>
+          <span className="bar-val">
+            {activeMs(row).toFixed(2)}<span className="bar-unit"> ms active</span>
+            <span className="bar-breakdown">({row.span.wallMs.toFixed(2)} ms span{row.medianMs !== undefined ? ` · ${row.medianMs.toFixed(2)} ms median` : ""})</span>
+          </span>
+        </div>
+      ))}
+      <p className="rt-note">
+        WPD 0.6 instrumented first-span anatomy; segments reconcile exactly to span wall. Rank uses active time (wall minus idle).
+        Repeated timing median is shown when available; WPD currently retains slice anatomy for the first iteration only.
+      </p>
+    </div>
+  );
+}

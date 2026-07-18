@@ -12,7 +12,7 @@ export interface RenderTimingRow {
 // Per-engine stacked segments (ms). The two browsers measure render-work DIFFERENTLY, so each
 // gets the segments it reports reliably: Chrome splits style-recalc / layout / paint durations
 // (and its authoritative signal is the style-recalc COUNT, shown as a badge); Firefox reports
-// Gecko style / layout / forced-layout ms (no paint, no per-element counts). Same colour = same
+// sampled Gecko style / layout ms (no main-thread paint). Same colour = same
 // kind of work across engines so the eye can compare, but they are labelled per browser.
 const CHROME_SEGS = [
   ["styleMs", "#e8590c", "style recalc"],
@@ -22,7 +22,6 @@ const CHROME_SEGS = [
 const FF_SEGS = [
   ["styleMs", "#e8590c", "style"],
   ["layoutMs", "#4c6ef5", "layout"],
-  ["forcedLayoutMs", "#f03e3e", "forced layout"],
 ] as const;
 
 type Seg = readonly [keyof RenderTimingMetrics, string, string];
@@ -78,7 +77,6 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         <span><i style={{ background: "#e8590c" }} />style recalc</span>
         <span><i style={{ background: "#4c6ef5" }} />layout</span>
         <span><i style={{ background: "#12b886" }} />paint (Chrome)</span>
-        <span><i style={{ background: "#f03e3e" }} />forced layout (Firefox)</span>
       </div>
       {sorted.map((r) => (
         <React.Fragment key={r.tech}>
@@ -88,8 +86,8 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
       ))}
       <p className="rt-note">
         Cold mount of {sorted[0]?.n ?? 0} instances. Chrome's trustworthy signal is the <b>style-recalc count</b> (badge);
-        Firefox reports Gecko style / forced-layout <b>ms</b> but no paint or per-element counts — so the two engines'
-        bars aren't strictly apples-to-apples, but both show the same story.
+        Firefox reports sampled Gecko style/layout <b>ms</b> but no main-thread paint. A zero sampled slice is not proof
+        that no work occurred; Chrome's exact count badges are the reliable presence/absence signal.
       </p>
     </div>
   );

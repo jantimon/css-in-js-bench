@@ -96,6 +96,8 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 pnpm setup:yak  # vendor next-yak from source: clone + build js + swc wasm (see below)
 pnpm install
 pnpm gen        # build every lane in isolation, write raw samples → result/ (then verifies)
+pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
+pnpm gen:wpd    # WPD 0.6 migration lanes: SSR, mount, hydrate, INP, Firefox, blame
 pnpm report     # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
 pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen runs this too)
 pnpm lint       # validate every tech package's schema
@@ -159,8 +161,11 @@ opt-in, run them deliberately and the browser/load ones on an idle machine: `nsw
 `result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
 live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
 `pnpm exec playwright install chromium` once). The render-timing pass is isolated from
-the normal workspace install: run `pnpm setup:wpd` once, then
-`pnpm gen --measure=render-timing`
+the normal workspace install: run `pnpm setup:wpd` once, then `pnpm gen:wpd`. The
+WPD migration currently runs six lanes side-by-side with the existing measurements:
+Node SSR attribution, Chrome mount/hydration/INP breakdowns, Firefox mount breakdown,
+and Chrome forced-layout blame. Raw outputs are committed as
+`result/measurement-wpd-*.json`; `pnpm report` prefers them when present
 
 `gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
 choice and can change without re-running. History is git, not labeled runs

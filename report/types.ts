@@ -90,10 +90,10 @@ export interface AttributionSample {
 
 /**
  * render-timing: browser render-work on a cold mount, per engine, from wpd. Chrome's authoritative
- * axis is the *counts* (one style-recalc per runtime-injected instance); Firefox's is Gecko *ms*
- * (style/forced-layout reflow time). Counts/paint/INP are null in Firefox (no CDP) — the report
- * picks the right headline field per engine. `stepMs` is wpd's coarse per-interaction wall (single
- * sample, from wpd 0.5's labelled `summary.perStep`) — directional only, NOT a replacement for the
+ * axis is the *counts* (one style-recalc per runtime-injected instance); Firefox's is sampled Gecko
+ * style/layout time plus target-specific marker counts. Paint is unmeasured in Firefox, and its
+ * marker counts are not comparable to Blink's batching. `stepMs` is WPD's coarse per-interaction
+ * wall (single sample from labelled `summary.perStep`) — directional only, NOT a replacement for the
  * harness's timing medians.
  */
 export interface RenderTimingMetrics {
@@ -104,6 +104,7 @@ export interface RenderTimingMetrics {
   styleMs: number | null;
   paintCount: number | null;
   paintMs: number | null;
+  /** Legacy compatibility only; WPD 0.6 removed these settle-duration-dependent fields. */
   compositeCount: number | null;
   compositeMs: number | null;
   forcedLayoutCount: number | null;
@@ -116,6 +117,44 @@ export interface RenderTimingSample {
   n: number;
   chrome?: RenderTimingMetrics;
   firefox?: RenderTimingMetrics;
+}
+
+/** WPD 0.6's unified per-span browser breakdown, normalized by gen-wpd. */
+export interface WpdSpanSample {
+  wallMs: number;
+  slices: { js: number; style: number; layout: number; paint: number; gc: number; other: number; idle: number };
+  jsByPackage: Record<string, number>;
+  frames?: { presented: number; presentedPartial: number; dropped: number; total: number; worstStages?: { name: string; ms: number }[] };
+}
+
+export interface WpdBrowserSample {
+  span: WpdSpanSample | null;
+  runSpan: WpdSpanSample | null;
+  timing: {
+    wallMs: number | null;
+    perIteration: number[];
+    stats: { samples: number; minMs: number; medianMs: number; meanMs: number; maxMs: number } | null;
+  };
+}
+
+export interface WpdFirefoxSample {
+  wallMs: number | null;
+  breakdown: { js: number; style: number; layout: number; browser: number; gc: number; idle: number } | null;
+  jsByPackage: Record<string, number>;
+  forced: { at: string; count: number; durMs: number }[];
+  counts: { layout: number | null; style: number | null; forcedLayout: number | null; paint: number | null };
+}
+
+export interface WpdBlameSample {
+  forced: { at: string; count: number; durMs: number }[];
+  forcedLayoutCount: number | null;
+  layoutCount: number | null;
+  styleCount: number | null;
+  paintCount: number | null;
+  forcedLayoutMs: number | null;
+  layoutMs: number | null;
+  styleMs: number | null;
+  paintMs: number | null;
 }
 
 /** result/meta.json (§9). */

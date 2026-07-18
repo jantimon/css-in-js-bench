@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WPD_DIR = join(ROOT, "vendor", "wpd");
-const WPD_VERSION = process.env.WPD_VERSION || "0.5.0";
+const WPD_VERSION = process.env.WPD_VERSION || "0.6.0";
 const force = process.argv.includes("--force");
 
 const major = Number(process.versions.node.split(".")[0]);
@@ -46,4 +46,4 @@ execSync("npm install --silent --no-audit --no-fund", { cwd: WPD_DIR, stdio: "in
 console.log("installing Chrome + Firefox for wpd's Puppeteer …");
 execSync("npx --yes puppeteer browsers install chrome firefox", { cwd: WPD_DIR, stdio: "inherit" });
 
-console.log("\n✓ vendor/wpd ready. Now: pnpm gen --measure=render-timing --tech 'next-yak*,emotion' && pnpm report");
+console.log("\n✓ vendor/wpd ready. Now: pnpm gen:wpd && pnpm report");

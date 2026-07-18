@@ -12,12 +12,6 @@ result/verify/
 vendor/
 # wpd's latest-pointer dir + scratch recordings (recordings/.wpd-last.json).
 recordings/
-# Experimental all-WPD comparison path. The canonical report uses gen.ts's
-# render-timing measurement; keep this local spike and its raw data out of commits.
-gen-wpd.ts
-scripts/wpd/bench-flow.mjs
-scripts/wpd/node-ssr-entry.mjs
-result/measurement-wpd-*.json
 # Per-tech build output.
 node_modules/
 .pnpm-store/
