@@ -38,8 +38,15 @@ function App() {
   const [, setTick] = useState(0);
   useEffect(() => {
     const ms = performance.now() - start;
+    // A wpd span for the commit: mark the end and measure back to the start mark set in
+    // hydrate()/mount(). Under `wpd record --bench --breakdown` this "hydrate"/"mount" measure
+    // becomes a span with the reconciling seven-slice bar; the wall of the span === this ms, so
+    // the bench's own commit number stays derivable while wpd adds the anatomy.
+    const phase = isMount ? "mount" : "hydrate";
     if (isMount) window.__mountMs = ms;
     else window.__hydrateMs = ms;
+    performance.mark(`${phase}:end`);
+    performance.measure(phase, `${phase}:start`, `${phase}:end`);
     bump = () => setTick((t) => t + 1);
   }, []);
   const children = Array.from({ length: n }, (_, i) => React.createElement(React.Fragment, { key: i }, render(i)));
@@ -49,12 +56,14 @@ function App() {
 let start = 0;
 function hydrate() {
   start = performance.now();
+  performance.mark("hydrate:start");
   if (render) hydrateRoot(document.getElementById("root")!, React.createElement(App));
 }
 // Cold mount: createRoot into the empty root — the first render the user would see after
 // a "click", including each runtime lib's first style injection into the document.
 function mount() {
   start = performance.now();
+  performance.mark("mount:start");
   if (render) createRoot(document.getElementById("root")!).render(React.createElement(App));
 }
 // mount + mount-attribution serve an empty root and trigger window.__mount() themselves, so
@@ -70,6 +79,16 @@ else hydrate();
 window.__inp = () =>
   new Promise<number>((resolve) => {
     const t0 = performance.now();
+    // A wpd span for the in-place re-render: mark before the flushSync commit and after the
+    // next frame lands, so the "inp" measure spans flushSync + one rAF. Under
+    // `wpd record --bench --breakdown` the rAF wait shows up as an explicit idle slice, which is
+    // exactly the frame-floor time gen's single __inp number could never separate from the work.
+    performance.mark("inp:start");
     flushSync(() => bump?.());
-    requestAnimationFrame(() => resolve(performance.now() - t0));
+    requestAnimationFrame(() => {
+      const wall = performance.now() - t0;
+      performance.mark("inp:end");
+      performance.measure("inp", "inp:start", "inp:end");
+      resolve(wall);
+    });
   });

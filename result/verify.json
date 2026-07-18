@@ -1,17 +1,9 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-15T21:14:09.505Z",
+  "generatedAt": "2026-07-18T08:50:19.793Z",
   "reports": [
     {
       "caseId": "btn-variant",
-      "ok": true,
-      "notes": [
-        "✓ 18 techs · 2 elements · attrs clean",
-        "✓ pixels: 18 techs match styled-components"
-      ]
-    },
-    {
-      "caseId": "compose-3",
       "ok": true,
       "notes": [
         "✓ 12 techs · 2 elements · attrs clean",
@@ -19,35 +11,43 @@
       ]
     },
     {
+      "caseId": "compose-3",
+      "ok": true,
+      "notes": [
+        "✓ 9 techs · 2 elements · attrs clean",
+        "✓ pixels: 9 techs match styled-components"
+      ]
+    },
+    {
       "caseId": "dyn-translate",
       "ok": true,
       "notes": [
-        "✓ 17 techs · 2 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✓ 11 techs · 2 elements · attrs clean",
+        "✓ pixels: 11 techs match styled-components"
       ]
     },
     {
       "caseId": "product-grid",
       "ok": true,
       "notes": [
-        "✓ 17 techs · 27 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✓ 11 techs · 27 elements · attrs clean",
+        "✓ pixels: 11 techs match styled-components"
       ]
     },
     {
       "caseId": "realistic-button",
       "ok": true,
       "notes": [
-        "✓ 17 techs · 5 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✓ 11 techs · 5 elements · attrs clean",
+        "✓ pixels: 11 techs match styled-components"
       ]
     },
     {
       "caseId": "tabs",
       "ok": true,
       "notes": [
-        "✓ 17 techs · 16 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✓ 11 techs · 16 elements · attrs clean",
+        "✓ pixels: 11 techs match styled-components"
       ]
     }
   ]

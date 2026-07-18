@@ -60,6 +60,9 @@ For each case you get:
   then we wait for the first paint. Unlike hydration this is a cold client mount, so the
   first paint includes each runtime library's first style injection into the document.
   The build-time lanes inject nothing
+- **Browser render work on cold mount** (Chrome counts + Firefox ms, lower better): the
+  browser engine's style recalculation, layout and paint work for that same blank-root
+  mount, captured by `wpd`. This is an opt-in heavyweight pass
 - **Scaling** (render time vs instance count): the nsweep, how each lane's render time
   grows with n (= distinct values for dynamic cases). Flat for build-time CSS, steep for
   runtime-per-value libs
@@ -150,11 +153,14 @@ pnpm gen --measure=microbench,payload  # only these measurements (default = all)
 opt-in, run them deliberately and the browser/load ones on an idle machine: `nsweep`
 (scaling), `autocannon` (req/s under load), `attribution` (SSR CPU split), `hydrate` +
 `hydrate-attribution` + `inp` + `inp-attribution` + `mount` + `mount-attribution` +
-`screenshots` (Playwright passes, `screenshots` writes PNGs to `result/assets/`). E.g.
+`render-timing` + `screenshots` (browser passes; `screenshots` writes PNGs to
+`result/assets/`). E.g.
 `pnpm gen --measure=attribution,nsweep`. A filtered or partial-measure run merges into
 `result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
 live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
-`pnpm exec playwright install chromium` once)
+`pnpm exec playwright install chromium` once). The render-timing pass is isolated from
+the normal workspace install: run `pnpm setup:wpd` once, then
+`pnpm gen --measure=render-timing`
 
 `gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
 choice and can change without re-running. History is git, not labeled runs

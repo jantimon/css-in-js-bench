@@ -19,10 +19,11 @@ import { AttributionChart, type AttrRow } from "./report/components/AttributionC
 import { InfoTip } from "./report/components/InfoTip.tsx";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
+import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { renderMarkdown } from "./report/markdown.ts";
 import { compileCodeAssets } from "./report/code-assets.ts";
-import type { AttributionSample, NsweepSample } from "./report/types.ts";
+import type { AttributionSample, NsweepSample, RenderTimingSample } from "./report/types.ts";
 import type { CaseMeta, RunMeta, Snapshot, TechInfo } from "./report/types.ts";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -75,6 +76,7 @@ async function main() {
   const mount = readJson<Record<string, number[]>>(join(RESULT, "measurement-mount.json"), {});
   const mountAttr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-mount-attribution.json"), {});
   const nsweep = readJson<Record<string, NsweepSample[]>>(join(RESULT, "measurement-nsweep.json"), {});
+  const rt = readJson<Record<string, RenderTimingSample[]>>(join(RESULT, "measurement-render-timing.json"), {});
   const shots = readJson<Record<string, string[]>>(join(RESULT, "measurement-screenshots.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
 
@@ -173,13 +175,20 @@ async function main() {
     const sweepLines: SweepLine[] = usedTechs
       .filter((t) => nsweep[`${caseId}/${t}`]?.length)
       .map((t) => ({ tech: t, label: techs[t].label, color: techs[t].bench.color, points: nsweep[`${caseId}/${t}`] }));
+    // render-timing: browser render-work on a cold mount (Chrome counts + Firefox ms) — optional/heavy.
+    const rtRows: RenderTimingRow[] = usedTechs
+      .filter((t) => rt[`${caseId}/${t}`]?.[0])
+      .map((t) => {
+        const s = rt[`${caseId}/${t}`][0];
+        return { tech: t, label: techs[t].label, n: s.n, chrome: s.chrome, firefox: s.firefox };
+      });
     // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
     // each also carries its rendered-preview PNG (if screenshots ran) so the editor's "preview"
     // tab can show that lane's output inline — one image, switched with the selected lane.
     const editorLanes: EditorLane[] = usedTechs
       .filter((t) => snaps[`${caseId}/${t}`])
       .map((t) => ({ tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0] }));
-    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, inpBars, inpAttrRows, mountBars, mountAttrRows, sweepLines, editorLanes };
+    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, inpBars, inpAttrRows, mountBars, mountAttrRows, sweepLines, rtRows, editorLanes };
   });
 
   const doc = (
@@ -236,6 +245,11 @@ async function main() {
                 <span>production React · median of repeated runs</span>
               </div>
             </div>
+          </div>
+        </header>
+
+        <nav className="measure-nav" aria-label="Report measurements">
+          <div className="measure-inner">
             <div className="show">
               <span className="show-label">Show</span>
               <div className="show-pills">
@@ -247,17 +261,18 @@ async function main() {
                   ["hydrate", "Hydration"],
                   ["inp", "Interaction"],
                   ["mount", "Cold mount"],
+                  ["render-timing", "Paint/Layout"],
                   ["payload", "Page bytes"],
                   ["nsweep", "Scaling"],
                 ].map(([k, label]) => (
-                  <button type="button" className="show-pill active" data-measure-filter={k} key={k}>
+                  <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
                     {label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-        </header>
+        </nav>
 
         <main className="wrap">
           <section className="tech-panel">
@@ -290,7 +305,7 @@ async function main() {
             ))}
           </section>
 
-          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, inpBars, inpAttrRows, mountBars, mountAttrRows, sweepLines, editorLanes }) => {
+          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, inpBars, inpAttrRows, mountBars, mountAttrRows, sweepLines, rtRows, editorLanes }) => {
             const [caseTitle, caseSub] = cm.label.split(/\s+—\s+/, 2);
             return (
             <details className="case" open key={caseId}>
@@ -384,6 +399,24 @@ async function main() {
                 {mountAttrRows.length ? <AttributionChart rows={mountAttrRows} otherLabel="browser-native / gc" /> : <BarChart bars={mountBars} unit="ms" higherBetter={false} />}
               </div>
             ) : null}
+            {rtRows.length ? (
+              <div data-measure="render-timing">
+                <h3 className="chart-title">
+                  Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
+                  <InfoTip>
+                    Where the browser's <b>rendering</b> time goes on a cold mount (not JS — the engine's own style-recalc,
+                    layout and paint), measured by <a href="https://github.com/jantimon/web-performance-debugger">wpd</a> in
+                    two engines. This is where <b>runtime</b> CSS-in-JS pays a tax build-time lanes don't: it injects a style
+                    rule per instance, so the engine recalculates styles once per instance — <b>Chrome</b>'s authoritative
+                    signal is that <b>style-recalc count</b> (the badge; e.g. 50 instances → ~50 recalcs vs 1 for extracted
+                    CSS). <b>Firefox</b> (Gecko) reports style / forced-layout <b>ms</b> instead of counts (no paint metric).
+                    Bars are ms; the two engines measure differently, so compare within an engine and read both as
+                    corroboration. Lower is better. Opt-in via <code>pnpm setup:wpd</code> + <code>gen --measure=render-timing</code>.
+                  </InfoTip>
+                </h3>
+                <RenderTimingChart rows={rtRows} />
+              </div>
+            ) : null}
             {payRows.length ? (
               <div data-measure="payload">
                 <h3 className="chart-title">
@@ -449,8 +482,10 @@ const CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:#080a0d;color:#e6edf3;font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
 .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
-.page-head{border-bottom:1px solid #1c2128;position:sticky;top:0;background:#0d1117ee;backdrop-filter:blur(6px);z-index:5;margin-bottom:24px}
-.head-inner{max-width:1000px;margin:0 auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.page-head{background:#0d1117}
+.head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
+.measure-nav{position:sticky;top:0;z-index:5;margin-bottom:24px;border-block:1px solid #1c2128;background:#0d1117ee;backdrop-filter:blur(6px)}
+.measure-inner{max-width:1000px;margin:0 auto;padding:8px 24px}
 h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
 .gh-link{display:inline-flex;align-items:center;color:#8b949e;margin-left:2px}
@@ -459,10 +494,11 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:#8b949e}
 .head-stats b{color:#e6edf3;font-weight:600}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
-.show{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.show-label{color:#6e7681;text-transform:uppercase;font-size:10px;letter-spacing:.08em}
-.show-pills{display:flex;gap:6px;flex-wrap:wrap}
-.show-pill{background:#161b22;color:#8b949e;border:1px solid #21262d;border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
+.show{display:flex;align-items:center;gap:10px;min-width:0}
+.show-label{flex:none;color:#6e7681;text-transform:uppercase;font-size:10px;letter-spacing:.08em}
+.show-pills{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.show-pills::-webkit-scrollbar{display:none}
+.show-pill{flex:none;white-space:nowrap;background:#161b22;color:#8b949e;border:1px solid #21262d;border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
 .show-pill:hover{color:#c9d1d9}
 .show-pill.active{background:#21262d;color:#e6edf3;border-color:#30363d}
 .tech-panel{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
@@ -494,7 +530,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid #30363d;border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:#8b949e;cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
 .info:hover{color:#c9d1d9;border-color:#6e7681}
 .info .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:#c9d1d9;text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
-.info:hover .tip{display:block}
+.info:hover .tip,.info:focus .tip{display:block}
 .bars{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:230px 1fr auto;align-items:center;gap:12px}
 .bar-row.tech-off{display:none}
@@ -513,6 +549,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:12px;color:#8b949e}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.rt .bar-label{display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
+.rt-lane{color:#c9d1d9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt-eng{color:#6e7681;font-size:11px;flex:none}
+.rt-badge{margin-left:8px;padding:1px 6px;border:1px solid #30363d;border-radius:999px;font-size:11px;color:#adbac7;font-variant-numeric:tabular-nums}
+.rt-note{margin:8px 0 0;font-size:11px;line-height:1.5;color:#6e7681}
+.rt .bar-val{min-width:150px}
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:#8b949e;font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
@@ -534,9 +576,31 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
-@media(max-width:680px){.ed-side{flex-basis:140px}}
 .page-foot{color:#6e7681;font-size:12px;max-width:1000px;margin:0 auto;padding:8px 24px}
 code{background:#161b22;padding:1px 5px;border-radius:4px;font-size:12px}
+@media(max-width:767px){
+  .wrap{padding-inline:12px}
+  .head-inner,.measure-inner{padding-inline:12px}
+  .measure-nav{position:static}
+  .tech-panel{padding-inline:14px}
+  .case{padding:4px 14px 16px}
+  .bar-row{grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
+  .bar-label{grid-column:1;grid-row:1;min-width:0;text-align:left;line-height:1.35;white-space:normal}
+  .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px}
+  .bar-val{grid-column:2;grid-row:1;min-width:0;text-align:right;line-height:1.35;white-space:nowrap}
+  .bar-breakdown{display:block;margin-left:0;font-size:10.5px}
+  .rt .bar-label{justify-content:flex-start}
+  .rt .bar-val{min-width:0}
+  .editor{display:block}
+  .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid #21262d;overflow-x:auto}
+  .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}
+  .ed-main{width:100%}
+  .ed-frame,.ed-shot{height:min(440px,65vh)}
+  .ed-shot{padding:8px}
+  .info .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
+  .page-foot{padding-inline:12px}
+}
+@media print{.measure-nav{position:static}}
 `;
 
 const CONTROLLER = `
@@ -638,6 +702,7 @@ afterTech();
 // measure pills — toggle which measurement sections are visible.
 for (const b of document.querySelectorAll('[data-measure-filter]')) b.onclick = () => {
   const on = b.classList.toggle('active');
+  b.setAttribute('aria-pressed', String(on));
   for (const el of document.querySelectorAll('[data-measure="'+b.dataset.measureFilter+'"]')) el.classList.toggle('measure-off', !on);
 };
 `;

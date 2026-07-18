@@ -12,7 +12,8 @@
 //   pnpm gen --tech 'next-yak*'          glob over tech dirnames
 //   pnpm gen --case 'realistic-button'   glob over cases
 import { build } from "vite";
-import { execSync } from "node:child_process";
+import { execSync, execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -24,7 +25,9 @@ import { Session } from "node:inspector/promises";
 import autocannon from "autocannon";
 import { chromium, type Browser } from "@playwright/test";
 import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
-import type { AttributionSample, CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SsrModule } from "./report/types.ts";
+import type { AttributionSample, CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RenderTimingMetrics, RenderTimingSample, RunMeta, Snapshot, SsrModule } from "./report/types.ts";
+
+const execFileP = promisify(execFile);
 import { verify } from "./verify.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
@@ -39,6 +42,12 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 const TECHS_DIR = join(ROOT, "techs");
 const CASES_DIR = join(ROOT, "cases");
 const RESULT_DIR = join(ROOT, "result");
+
+// wpd (@jantimon/web-performance-debugger) for the opt-in `render-timing` pass — vendored,
+// isolated from the pnpm workspace, by `pnpm setup:wpd`. Absent unless that ran → render-timing
+// skips gracefully. The driver module must live inside the cwd wpd runs in (here: ROOT).
+const WPD_BIN = join(ROOT, "vendor", "wpd", "node_modules", ".bin", "wpd");
+const WPD_FLOW = join(ROOT, "scripts", "wpd", "render-flow.mjs");
 
 // Deliberate, shared viewport for every Playwright pass (hydrate / inp / screenshots) so
 // the browser metrics aren't taken at Playwright's implicit default. The SSR passes render
@@ -70,7 +79,7 @@ async function applyCpuThrottle(page: import("@playwright/test").Page): Promise<
 // All measurements gen knows how to run. Each maps to a vite.<name>.config.ts and a
 // sampler over the built SSR entry. The slice ships `microbench`; new measurements
 // are added here, not by editing the per-tech folders.
-const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "attribution", "hydrate", "hydrate-attribution", "inp", "inp-attribution", "mount", "mount-attribution", "screenshots"] as const;
+const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "attribution", "hydrate", "hydrate-attribution", "inp", "inp-attribution", "mount", "mount-attribution", "render-timing", "screenshots"] as const;
 type Measurement = (typeof ALL_MEASUREMENTS)[number];
 // Fast + deterministic → run by default. The heavy ones (autocannon/attribution/hydrate/
 // inp) and the nsweep are opt-in via `--measure=…` so a plain `pnpm gen` stays quick.
@@ -338,9 +347,9 @@ async function buildOnly(tech: string, measurement: Measurement): Promise<void> 
   cfg = await cfg;
   await build({ ...cfg, configFile: false, logLevel: "warn" });
 }
-// Build the hydrate client bundle, serve SSR-markup + bundle, launch a browser, and
-// hand (browser, port) to `run`. Shared by hydrate + inp (same client-entry bundle).
-async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (browser: Browser, port: number) => Promise<T>): Promise<T> {
+// Build the hydrate client bundle and stand up the SSR-markup + bundle server (no browser).
+// Shared by withHydrateServer (Playwright passes) and renderTimingTech (wpd's own browser).
+async function serveHydrate(tech: string, ssrMod: SsrModule): Promise<{ port: number; close: () => Promise<void> }> {
   await buildOnly(tech, "hydrate");
   const bundle = join(TECHS_DIR, tech, "dist", "hydrate", "entry.js");
   if (!existsSync(bundle)) throw new Error(`${tech}: hydrate build produced no entry.js`);
@@ -355,19 +364,27 @@ async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (brows
     const caseId = url.searchParams.get("case") ?? "";
     const n = Number(url.searchParams.get("n") ?? "1");
     // mount mode renders into an EMPTY root from scratch (cold client mount); every other
-    // consumer hydrates the SSR markup, so the root carries it.
-    const body = url.searchParams.get("mount") === "1" ? "" : render(caseId, n);
+    // consumer hydrates the SSR markup, so the root carries it. Guard a missing case (e.g. a
+    // stray favicon request from wpd's browser) so the handler never throws and kills gen.
+    const body = url.searchParams.get("mount") === "1" || !caseId ? "" : render(caseId, n);
     res.setHeader("content-type", "text/html");
     res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as { port: number }).port;
+  return { port, close: () => new Promise<void>((r) => server.close(() => r())) };
+}
+
+// Serve the hydrate bundle, launch a browser, and hand (browser, port) to `run`. Shared by
+// hydrate + inp + mount (same client-entry bundle).
+async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (browser: Browser, port: number) => Promise<T>): Promise<T> {
+  const { port, close } = await serveHydrate(tech, ssrMod);
   const browser = await chromium.launch();
   try {
     return await run(browser, port);
   } finally {
     await browser.close();
-    await new Promise<void>((r) => server.close(() => r()));
+    await close();
   }
 }
 
@@ -645,6 +662,99 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
   }
 }
 
+// ---- render-timing: browser render-work (style-recalc / layout / paint / forced) on a cold mount ----
+// wpd (@jantimon/web-performance-debugger) drives its OWN Puppeteer browser against the shared
+// hydrate server, so the in-process server MUST stay responsive → async exec, never execFileSync
+// (a sync child would block the event loop and the server couldn't answer wpd's navigation).
+// Chrome yields authoritative counts; Firefox yields Gecko reflow/style ms (no counts/paint/INP).
+// Opt-in: needs `pnpm setup:wpd` (vendors wpd + browsers); skips gracefully when absent.
+function toMetrics(summary: unknown): RenderTimingMetrics {
+  const s = (summary ?? {}) as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
+  // wpd 0.5 digest.summary.perStep carries the "mount" step's raw wall samples — one per timed
+  // `--iterations` loop (counts are pinned to the first timed iteration by wpd, so they do not
+  // scale). Take the MEDIAN (wpd's own StepIndexEntry.wallMs convention; matches gen's medians),
+  // falling back to the run-level summary.wallMs. NB: this is wpd's NODE-SIDE step wall — it
+  // brackets the whole page.evaluate + settle, so it runs larger than an in-page interaction time.
+  const perStep = (Array.isArray(s.perStep) ? s.perStep : []) as { label?: string; perIteration?: number[] }[];
+  const step = perStep.find((x) => x?.label === "mount") ?? perStep[0];
+  const iters = Array.isArray(step?.perIteration) ? step.perIteration.filter((n): n is number => typeof n === "number") : [];
+  const stepMs = iters.length ? Math.round(median(iters) * 100) / 100 : num(s.wallMs);
+  return {
+    stepMs,
+    layoutCount: num(s.layoutCount), layoutMs: num(s.layoutMs),
+    styleCount: num(s.styleCount), styleMs: num(s.styleMs),
+    paintCount: num(s.paintCount), paintMs: num(s.paintMs),
+    compositeCount: num(s.compositeCount), compositeMs: num(s.compositeMs),
+    forcedLayoutCount: num(s.forcedLayoutCount), forcedLayoutMs: num(s.forcedLayoutMs),
+    longTaskCount: num(s.longTaskCount),
+  };
+}
+
+async function renderTimingTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, RenderTimingSample[]>> {
+  const cfg = benchConfig.renderTiming;
+  if (!existsSync(WPD_BIN)) {
+    console.warn(`  ⏭ render-timing: vendor/wpd missing — run \`pnpm setup:wpd\` first (skipped ${tech}).`);
+    return {};
+  }
+  const recDir = join(os.tmpdir(), "wpd-bench");
+  mkdirSync(recDir, { recursive: true });
+  const runWpd = (args: string[], env: Record<string, string> = {}) =>
+    execFileP(WPD_BIN, args, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...env }, maxBuffer: 128 * 1024 * 1024 });
+  let firefoxOk = cfg.browsers.includes("firefox"); // detect a broken/absent firefox once, then chrome-only
+
+  const { port, close } = await serveHydrate(tech, ssrMod);
+  const out: Record<string, RenderTimingSample[]> = {};
+  try {
+    for (const cell of cells) {
+      const url = `http://127.0.0.1:${port}/?case=${cell.caseId}&n=${cfg.n}&mount=1`;
+      const sample: RenderTimingSample = { n: cfg.n };
+      for (const browser of cfg.browsers) {
+        if (browser === "firefox" && !firefoxOk) continue;
+        const rec = join(recDir, `${tech}__${cell.caseId}__${browser}.json`);
+        // wpd 0.5 CLI: `--target` (was `--browser`); CPU profiling is default-on. Both flags below are
+        // CHROME-ONLY — wpd rejects `--protocol-timeout` on `--target firefox` ("no CDP … unsupported").
+        // --protocol-timeout raises Chrome's CDP timeout on heavy traced cells; --no-cpu-profile keeps
+        // Chrome's timing pass free of the CPU sampler. Firefox keeps profiling on for forced-layout blame.
+        const args = ["record", WPD_FLOW, "--url", url, "--target", browser, "--settle", String(cfg.settleMs),
+          "--warmup", String(cfg.warmup), "--iterations", String(cfg.iterations), "--out", rec];
+        if (browser === "chrome") args.push("--protocol-timeout", String(cfg.protocolTimeoutMs), "--no-cpu-profile");
+        // Firefox's first `session.new` per process flakes under load (times out); a fresh spawn usually
+        // succeeds. Retry once before latching firefoxOk=false, so one cold-launch flake doesn't drop a
+        // whole tech to chrome-only. wpd exposes no firefox-applicable launch-timeout flag (see feedback).
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await runWpd(args, { WPD_FLOW: "mount" });
+            // wpd 0.5: `query index` needs the sidecar <name>.index.json; `query digest` already carries
+            // per-step wall samples + the iteration-1 counts, so one digest query is enough.
+            const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
+            sample[browser as "chrome" | "firefox"] = toMetrics(digest.summary);
+            break;
+          } catch (e) {
+            const msg = (((e as { stderr?: string }).stderr || (e as Error).message) ?? "").toString().split("\n")[0];
+            if (attempt === 0) {
+              console.warn(`  ↻ render-timing ${tech} · ${cell.caseId} · ${browser} retry (${msg})`);
+              continue;
+            }
+            if (browser === "firefox") {
+              firefoxOk = false; // e.g. wrong pinned build — see `pnpm setup:wpd --force`
+              console.warn(`  ⏭ render-timing firefox unavailable (${msg}) — chrome-only from here.`);
+            } else {
+              console.error(`  ✗ ${tech} · render-timing · ${cell.caseId} · ${browser}: ${msg}`);
+            }
+            break;
+          }
+        }
+      }
+      out[`${cell.caseId}/${tech}`] = [sample];
+    }
+  } finally {
+    await close();
+    rmSync(recDir, { recursive: true, force: true });
+  }
+  return out;
+}
+
 // ---- main ----------------------------------------------------------------------
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -701,7 +811,7 @@ async function main() {
       const file = join(RESULT_DIR, `measurement-${measurement}.json`);
       const data: Record<string, unknown[]> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
       // hydrate(-attribution) + inp(-attribution) + mount(-attribution) + screenshots are browser passes over the SSR markup.
-      const browserFns = { hydrate: hydrateTech, "hydrate-attribution": hydrateAttrTech, inp: inpTech, "inp-attribution": inpAttrTech, mount: mountTech, "mount-attribution": mountAttrTech, screenshots: screenshotTech } as const;
+      const browserFns = { hydrate: hydrateTech, "hydrate-attribution": hydrateAttrTech, inp: inpTech, "inp-attribution": inpAttrTech, mount: mountTech, "mount-attribution": mountAttrTech, "render-timing": renderTimingTech, screenshots: screenshotTech } as const;
       if (measurement in browserFns) {
         const fn = browserFns[measurement as keyof typeof browserFns];
         try {

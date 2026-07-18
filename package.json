@@ -6,6 +6,7 @@
   "scripts": {
     "setup:yak": "node scripts/setup-next-yak.mjs",
     "setup:yak-main": "node scripts/setup-next-yak-main.mjs",
+    "setup:wpd": "node scripts/setup-wpd.mjs",
     "gen": "node --import tsx ./gen.ts",
     "report": "node --import tsx ./report.tsx",
     "verify": "node --import tsx ./verify.ts",

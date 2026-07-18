@@ -88,6 +88,36 @@ export interface AttributionSample {
   other: number; // node / native / gc
 }
 
+/**
+ * render-timing: browser render-work on a cold mount, per engine, from wpd. Chrome's authoritative
+ * axis is the *counts* (one style-recalc per runtime-injected instance); Firefox's is Gecko *ms*
+ * (style/forced-layout reflow time). Counts/paint/INP are null in Firefox (no CDP) — the report
+ * picks the right headline field per engine. `stepMs` is wpd's coarse per-interaction wall (single
+ * sample, from wpd 0.5's labelled `summary.perStep`) — directional only, NOT a replacement for the
+ * harness's timing medians.
+ */
+export interface RenderTimingMetrics {
+  stepMs: number | null;
+  layoutCount: number | null;
+  layoutMs: number | null;
+  styleCount: number | null;
+  styleMs: number | null;
+  paintCount: number | null;
+  paintMs: number | null;
+  compositeCount: number | null;
+  compositeMs: number | null;
+  forcedLayoutCount: number | null;
+  forcedLayoutMs: number | null;
+  longTaskCount: number | null;
+}
+
+/** One render-timing sample for a cell: the fixed instance count used + per-engine metrics. */
+export interface RenderTimingSample {
+  n: number;
+  chrome?: RenderTimingMetrics;
+  firefox?: RenderTimingMetrics;
+}
+
 /** result/meta.json (§9). */
 export interface RunMeta {
   host: string;
@@ -96,4 +126,6 @@ export interface RunMeta {
   gitSha: string;
   techs: string[];
   cases: string[];
+  /** Browser builds used by the render-timing (wpd) pass, when it ran. */
+  browsers?: { chrome?: string; firefox?: string };
 }

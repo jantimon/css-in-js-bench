@@ -8,6 +8,7 @@ import type { Bar } from "./components/BarChart.tsx";
 import type { AttrRow } from "./components/AttributionChart.tsx";
 import type { StackRow } from "./components/StackChart.tsx";
 import type { SweepLine } from "./components/LineChart.tsx";
+import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
@@ -27,6 +28,7 @@ export interface MdSection {
   mountBars: Bar[];
   mountAttrRows: AttrRow[];
   sweepLines: SweepLine[];
+  rtRows: RenderTimingRow[];
 }
 
 const int = (n: number) => Math.round(n).toLocaleString("en-US");
@@ -78,6 +80,26 @@ const payloadTable = (rows: StackRow[]): string => {
   );
 };
 
+// Browser render-work on a cold mount (from wpd), best-first by Chrome style-recalc count.
+// Chrome's authoritative axis is counts; Firefox's is Gecko ms — cells are "—" when an engine
+// doesn't report that field (Firefox has no paint / per-element counts).
+const rtTable = (rows: RenderTimingRow[]): string => {
+  const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.chrome?.styleCount ?? Infinity) - (b.chrome?.styleCount ?? Infinity));
+  if (!picked.length) return "";
+  const cell = (v: number | null | undefined, f: (n: number) => string) => (typeof v === "number" ? f(v) : "—");
+  return table(
+    ["Technique", "Chrome recalcs", "Chrome layout ms", "Chrome paint ms", "Firefox style ms", "Firefox forced ms"],
+    picked.map((r, i) => [
+      r.label,
+      (i === 0 ? "**" : "") + cell(r.chrome?.styleCount, int) + (i === 0 ? "**" : ""),
+      cell(r.chrome?.layoutMs, ms),
+      cell(r.chrome?.paintMs, ms),
+      cell(r.firefox?.styleMs, ms),
+      cell(r.firefox?.forcedLayoutMs, ms),
+    ]),
+  );
+};
+
 // Render time (ms) at each instance count — one column per n, one row per lane.
 const sweepTable = (lines: SweepLine[]): string => {
   const picked = pick(lines, (l) => l.tech);
@@ -118,6 +140,12 @@ best value is **bold** and rows are sorted best-first.
   **blank root** (no SSR markup) a "click" renders the whole workload from scratch
   (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
   paint includes each **runtime** library's **first style injection** into the document.
+- **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The
+  browser engine's OWN rendering work (not JS), on a cold mount, measured by \`wpd\` in Chrome and
+  Firefox. Runtime CSS-in-JS injects a style rule per instance, so the engine recalculates styles
+  ~once per instance — **Chrome**'s authoritative signal is that **style-recalc count** (n instances
+  → ~n recalcs vs 1 for extracted CSS). **Firefox** (Gecko) reports style / forced-layout **ms**, no
+  paint or per-element counts. Opt-in (\`pnpm setup:wpd\`); a "—" means that engine doesn't report it.
 - **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. Gzipped bytes the browser
   downloads: the client JS runtime the lane ships over the bare-React floor, the CSS, and the SSR
   HTML.
@@ -170,6 +198,7 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
         "### Where the cold-mount time goes — ms, lower is better",
         s.mountAttrRows.length ? attrTable(s.mountAttrRows, "browser/gc") : barTable(s.mountBars, "ms", false),
       ],
+      ["### Browser render-work on cold mount — Chrome counts + Firefox ms, lower is better", rtTable(s.rtRows)],
       ["### Page bytes shipped — gzipped, lower is better", payloadTable(s.payRows)],
       ["### Scaling — SSR render time (ms) vs instance count", sweepTable(s.sweepLines)],
     ];
