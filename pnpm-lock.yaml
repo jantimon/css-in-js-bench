@@ -126,6 +126,78 @@ importers:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
 
+  techs/next-yak-css-folding:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/folding/next-yak
+        version: file:vendor/yak-snapshots/folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-css-perf:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/perf/next-yak
+        version: file:vendor/yak-snapshots/perf/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-css-perf-folding:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/perf-folding/next-yak
+        version: file:vendor/yak-snapshots/perf-folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-folding:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/folding/next-yak
+        version: file:vendor/yak-snapshots/folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-perf:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/perf/next-yak
+        version: file:vendor/yak-snapshots/perf/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-perf-folding:
+    dependencies:
+      next-yak:
+        specifier: file:../../vendor/yak-snapshots/perf-folding/next-yak
+        version: file:vendor/yak-snapshots/perf-folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
   techs/panda:
     dependencies:
       '@pandacss/dev':
@@ -1775,6 +1847,66 @@ packages:
       vite:
         optional: true
 
+  next-yak@file:vendor/yak-snapshots/folding/next-yak:
+    resolution: {directory: vendor/yak-snapshots/folding/next-yak, type: directory}
+    peerDependencies:
+      '@rsbuild/core': '>=2.0.0'
+      '@types/react': '>=19'
+      next: '>=16.1.0'
+      react: '>=19.0.0'
+      vite: '>=7.0.0'
+    peerDependenciesMeta:
+      '@rsbuild/core':
+        optional: true
+      '@types/react':
+        optional: true
+      next:
+        optional: true
+      react:
+        optional: true
+      vite:
+        optional: true
+
+  next-yak@file:vendor/yak-snapshots/perf-folding/next-yak:
+    resolution: {directory: vendor/yak-snapshots/perf-folding/next-yak, type: directory}
+    peerDependencies:
+      '@rsbuild/core': '>=2.0.0'
+      '@types/react': '>=19'
+      next: '>=16.1.0'
+      react: '>=19.0.0'
+      vite: '>=7.0.0'
+    peerDependenciesMeta:
+      '@rsbuild/core':
+        optional: true
+      '@types/react':
+        optional: true
+      next:
+        optional: true
+      react:
+        optional: true
+      vite:
+        optional: true
+
+  next-yak@file:vendor/yak-snapshots/perf/next-yak:
+    resolution: {directory: vendor/yak-snapshots/perf/next-yak, type: directory}
+    peerDependencies:
+      '@rsbuild/core': '>=2.0.0'
+      '@types/react': '>=19'
+      next: '>=16.1.0'
+      react: '>=19.0.0'
+      vite: '>=7.0.0'
+    peerDependenciesMeta:
+      '@rsbuild/core':
+        optional: true
+      '@types/react':
+        optional: true
+      next:
+        optional: true
+      react:
+        optional: true
+      vite:
+        optional: true
+
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
@@ -2218,6 +2350,15 @@ packages:
 
   yak-swc@9.6.0:
     resolution: {integrity: sha512-RTlLiahwJ30MoIY3p7iOeNJjbjPRz364FF1KqGKtIuLJPfC3wnWsFQAnPrPY0W1qH/fp06IA7iyDPd2xq5fcSg==}
+
+  yak-swc@file:vendor/yak-snapshots/folding/yak-swc:
+    resolution: {directory: vendor/yak-snapshots/folding/yak-swc, type: directory}
+
+  yak-swc@file:vendor/yak-snapshots/perf-folding/yak-swc:
+    resolution: {directory: vendor/yak-snapshots/perf-folding/yak-swc, type: directory}
+
+  yak-swc@file:vendor/yak-snapshots/perf/yak-swc:
+    resolution: {directory: vendor/yak-snapshots/perf/yak-swc, type: directory}
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
@@ -3621,6 +3762,39 @@ snapshots:
     transitivePeerDependencies:
       - '@swc/helpers'
 
+  next-yak@file:vendor/yak-snapshots/folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
+    dependencies:
+      '@babel/parser': 8.0.0
+      '@swc/core': 1.15.43
+      yak-swc: file:vendor/yak-snapshots/folding/yak-swc
+    optionalDependencies:
+      react: 19.2.7
+      vite: 8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+
+  next-yak@file:vendor/yak-snapshots/perf-folding/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
+    dependencies:
+      '@babel/parser': 8.0.0
+      '@swc/core': 1.15.43
+      yak-swc: file:vendor/yak-snapshots/perf-folding/yak-swc
+    optionalDependencies:
+      react: 19.2.7
+      vite: 8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+
+  next-yak@file:vendor/yak-snapshots/perf/next-yak(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
+    dependencies:
+      '@babel/parser': 8.0.0
+      '@swc/core': 1.15.43
+      yak-swc: file:vendor/yak-snapshots/perf/yak-swc
+    optionalDependencies:
+      react: 19.2.7
+      vite: 8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+
   node-addon-api@7.1.1: {}
 
   node-releases@2.0.51: {}
@@ -4056,6 +4230,18 @@ snapshots:
       object-keys: 0.4.0
 
   yak-swc@9.6.0:
+    dependencies:
+      '@swc/counter': 0.1.3
+
+  yak-swc@file:vendor/yak-snapshots/folding/yak-swc:
+    dependencies:
+      '@swc/counter': 0.1.3
+
+  yak-swc@file:vendor/yak-snapshots/perf-folding/yak-swc:
+    dependencies:
+      '@swc/counter': 0.1.3
+
+  yak-swc@file:vendor/yak-snapshots/perf/yak-swc:
     dependencies:
       '@swc/counter': 0.1.3
 

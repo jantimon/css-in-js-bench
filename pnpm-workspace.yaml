@@ -2,14 +2,10 @@
 # with its own declared deps, so the comparison is isolated by construction — a
 # styled-components lane physically cannot import goober.
 #
-# The one external seam is `next-yak`, compared as two axes:
-#   • latest npm release — `next-yak` / `next-yak-css` lanes pin `^9.6.0` from npm.
-#   • latest github main — `next-yak-main` / `next-yak-css-main` lanes, generated ONLY when
-#     main is ahead of the latest release tag (changesets bumps the version at release, so
-#     right after a release main == npm and the build is redundant). `pnpm setup:yak-main`
-#     does the tag check and, when needed, clones+builds github main into vendor/next-yak
-#     (js + swc wasm) and materialises the two `*-main` lanes (link:) — run BEFORE `pnpm install`.
-#     The low-level `pnpm setup:yak` (next-yak.ref → vendor/next-yak) is what it builds with.
+# The one external seam is `next-yak`. The `next-yak` / `next-yak-css` lanes pin the
+# published 9.6.0 baseline. The perf / folding / perf-folding pairs resolve immutable local
+# package snapshots (matching JS + SWC wasm) created by `pnpm setup:yak-snapshots`; run it
+# with NEXT_YAK_WORKTREE set to a clean next-yak checkout BEFORE `pnpm install`.
 packages:
   - techs/*
 
@@ -34,4 +30,3 @@ catalogs:
     react-dom: ^19.2.5
     styled-components: ^6.4.1
     "@pandacss/dev": 2.0.0-beta.8
-    # next-yak comes from the local source via a per-lane link: path (see note above).

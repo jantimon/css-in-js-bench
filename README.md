@@ -93,8 +93,8 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 ## Running it
 
 ```bash
+NEXT_YAK_WORKTREE=/path/to/next-yak pnpm setup:yak-snapshots  # build the pinned local variants
 pnpm install
-pnpm setup:yak-main  # optional: add two GitHub-main lanes only when main is ahead of npm
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
 pnpm gen        # full suite: gen:samples → gen:wpd → report (this is the one you usually want)
 
@@ -109,11 +109,13 @@ pnpm dev        # author a single cell with HMR
 
 ### How the next-yak lanes get the library
 
-The committed `next-yak` and `next-yak-css` lanes install `next-yak ^9.6.0` from npm.
-`pnpm setup:yak-main` is optional: it compares GitHub `main` with the newest release tag
-and creates `next-yak-main` plus `next-yak-css-main` only when `main` contains unreleased
-changes. It uses `setup:yak` internally to clone and build that exact commit; `setup:yak`
-is the low-level source-build command, not part of the normal baseline setup
+The npm 9.6.0 pair is the baseline. The perf, folding, and perf+fold pairs use frozen
+local package snapshots produced from immutable commits in a separate next-yak checkout.
+`pnpm setup:yak-snapshots` checks out each pin detached, builds `next-yak` and the
+matching `yak-swc` wasm, packs both packages under `vendor/yak-snapshots/<variant>/`,
+and restores the checkout it was given. Each styled/css-prop pair points at the same
+snapshot, so syntax is the only difference inside a variant. The ignored snapshots must
+exist before `pnpm install` resolves the six experimental workspace packages.
 
 Building needs the Rust toolchain (rust-lang.org) with the wasm target:
 
@@ -121,8 +123,9 @@ Building needs the Rust toolchain (rust-lang.org) with the wasm target:
 rustup target add wasm32-wasip1
 ```
 
-Local-ref next-yak technology matrices are deliberately maintained on the experiment
-branch, not materialized on `main`
+The three source SHAs live in `scripts/pack-yak-snapshots.mjs`. `--only <variant>` rebuilds
+one snapshot and `--skip-build` repacks an already-built checkout. The script refuses a
+dirty source worktree and always restores its initial branch or detached commit.
 
 ### gen and verify
 

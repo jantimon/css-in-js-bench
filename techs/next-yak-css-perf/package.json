@@ -1,0 +1,17 @@
+{
+  "name": "next-yak-css-perf",
+  "description": "next-yak perf (css-prop)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#c026d3",
+    "buildPlugin": "yak",
+    "appStylesheet": null,
+    "cssKind": "extracted"
+  },
+  "dependencies": {
+    "next-yak": "file:../../vendor/yak-snapshots/perf/next-yak",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}
