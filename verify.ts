@@ -29,6 +29,7 @@ import { createServer } from "node:http";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import benchConfig from "./bench.config.ts";
 import type { Snapshot, SsrModule } from "./report/types.ts";
+import { validateWpdResults } from "./report/wpd-results.ts";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const TECHS_DIR = join(ROOT, "techs");
@@ -267,6 +268,12 @@ export async function verify({ quiet = false }: { quiet?: boolean } = {}): Promi
     return { ok: false, reports: [] };
   }
   const snaps: Record<string, Snapshot> = JSON.parse(readFileSync(snapPath, "utf8"));
+  try {
+    validateWpdResults(RESULT_DIR);
+  } catch (error) {
+    if (!quiet) console.error(`verify: ${(error as Error).message}`);
+    return { ok: false, reports: [] };
+  }
   rmSync(VERIFY_DIR, { recursive: true, force: true });
   mkdirSync(VERIFY_DIR, { recursive: true });
 

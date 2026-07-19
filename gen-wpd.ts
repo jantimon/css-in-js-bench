@@ -21,18 +21,19 @@
 // Run:  node --import tsx ./gen-wpd.ts [--lane=ssr,mount,inp,firefox,blame] [--tech 'glob'] [--case 'glob']
 //
 // Results land in result/measurement-wpd-<lane>.json, keyed "case/tech" like every other
-// measurement file. During the migration these live beside gen's existing measurements so the two
-// paths can be compared before the old profiler plumbing is removed.
+// measurement file. These six files plus their manifest are the canonical attribution and
+// rendering-work data consumed by report and verify.
 import { build } from "vite";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "node:http";
 import os from "node:os";
 import benchConfig from "./bench.config.ts";
 import type { CaseMeta, SsrModule } from "./report/types.ts";
+import { WPD_MANIFEST, writeJsonAtomic, type WpdManifest, type WpdLane } from "./report/wpd-results.ts";
 
 const execFileP = promisify(execFile);
 process.env.NODE_ENV = "production"; // load-bearing, same reason as gen.ts:33-39
@@ -57,7 +58,9 @@ function parseArgs(argv: string[]) {
     const arg = argv[i];
     if (arg.startsWith("--lane=")) out.lane = arg.slice("--lane=".length);
     else if (arg === "--lane") out.lane = argv[++i];
+    else if (arg.startsWith("--tech=")) out.tech = arg.slice("--tech=".length);
     else if (arg === "--tech") out.tech = argv[++i];
+    else if (arg.startsWith("--case=")) out.case = arg.slice("--case=".length);
     else if (arg === "--case") out.case = argv[++i];
   }
   return out;
@@ -244,14 +247,14 @@ async function querySpan(rec: string, label: string): Promise<SpanResult | null>
 }
 
 async function breakdownLane(phase: "mount" | "hydrate" | "inp", tech: string, port: number, cell: Cell): Promise<{ span: SpanResult | null; runSpan: SpanResult | null; timing: TimingSummary }> {
-  const n = benchConfig.renderTiming.n;
+  const n = benchConfig.wpd.n;
   const mode = phase === "mount" ? "&mount=1" : phase === "hydrate" ? "&manual=1" : "";
   const base = `?case=${cell.caseId}&n=${n}${mode}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `${phase}__${tech}__${cell.caseId}.json`);
   const iterations = phase === "inp" ? 5 : 1; // mount/hydrate are single-shot; inp re-renders in place
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--headless-mode", "shell",
-    "--protocol-timeout", String(benchConfig.renderTiming.protocolTimeoutMs), "--iterations", String(iterations),
+    "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
     "--warmup", "0", "--settle", "300", "--out", rec]);
   const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
   const summary = digest.summary ?? {};
@@ -275,13 +278,19 @@ interface FirefoxResult {
   note?: string;
 }
 async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, cell: Cell): Promise<FirefoxResult> {
-  const n = benchConfig.renderTiming.n;
+  const n = benchConfig.wpd.n;
   const base = phase === "mount" ? `?case=${cell.caseId}&n=${n}&mount=1` : `?case=${cell.caseId}&n=${n}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `firefox__${tech}__${cell.caseId}.json`);
-  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--target", "firefox",
-    "--protocol-timeout", String(benchConfig.renderTiming.protocolTimeoutMs), "--iterations", "1", "--warmup", "0",
-    "--settle", "300", "--out", rec]);
+  const args = ["record", BENCH_FLOW, "--bench", "--url", url, "--target", "firefox",
+    "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", "1", "--warmup", "0",
+    "--settle", "300", "--out", rec];
+  try {
+    await runWpd(args);
+  } catch (firstError) {
+    console.warn(`  ↻ firefox ${cell.caseId}/${tech}: retrying once (${errLine(firstError)})`);
+    await runWpd(args);
+  }
   const span = await querySpan(rec, `${phase}:frame`);
   let forced: { at: string; count: number; durMs: number }[] = [];
   try {
@@ -310,7 +319,7 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
 // blame lane: chrome DEFAULT mode (keeps the `.stack` + invalidationTracking categories --breakdown
 // drops) → forced layout/style grouped by the reading source line.
 async function blameLane(phase: "mount" | "inp", tech: string, port: number, cell: Cell) {
-  const n = benchConfig.renderTiming.n;
+  const n = benchConfig.wpd.n;
   const base = phase === "mount" ? `?case=${cell.caseId}&n=${n}&mount=1` : `?case=${cell.caseId}&n=${n}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `blame__${tech}__${cell.caseId}.json`);
@@ -330,14 +339,14 @@ async function blameLane(phase: "mount" | "inp", tech: string, port: number, cel
 }
 
 // ---- main ----------------------------------------------------------------------
-type Lane = "ssr" | "mount" | "hydrate" | "inp" | "firefox" | "blame";
+type Lane = WpdLane;
 const ALL_LANES: Lane[] = ["ssr", "mount", "hydrate", "inp", "firefox", "blame"];
 
 function readResult(file: string): Record<string, unknown> {
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
 }
 function writeResult(file: string, data: Record<string, unknown>) {
-  writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
+  writeJsonAtomic(file, data);
 }
 function toolMeta() {
   const version = existsSync(WPD_PACKAGE) ? JSON.parse(readFileSync(WPD_PACKAGE, "utf8")).version : "unknown";
@@ -361,6 +370,25 @@ async function main() {
   const tally: Record<string, { run: number; ok: number; fail: number }> = {};
   for (const lane of lanes) tally[lane] = { run: 0, ok: 0, fail: 0 };
   const bump = (lane: Lane, ok: boolean) => { tally[lane].run++; ok ? tally[lane].ok++ : tally[lane].fail++; };
+
+  const manifestFile = join(RESULT_DIR, WPD_MANIFEST);
+  const runId = process.env.WPD_RUN_ID ?? `${new Date().toISOString()}-${process.pid}`;
+  let gitSha = "";
+  try { gitSha = (await execFileP("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" })).stdout.trim(); } catch {}
+  const cpu = os.cpus();
+  const manifest: WpdManifest = process.env.WPD_RUN_ID && existsSync(manifestFile)
+    ? JSON.parse(readFileSync(manifestFile, "utf8"))
+    : {
+      schemaVersion: 1, runId, complete: false, expectedCells: cells.length, lanes: {},
+      environment: { gitSha, host: os.hostname(), node: process.version, platform: os.platform(), release: os.release(), arch: os.arch(), cpuModel: cpu[0]?.model ?? "unknown", logicalCpus: cpu.length },
+      wpd: toolMeta(), config: { n: benchConfig.wpd.n },
+    };
+  if (manifest.runId !== runId) throw new Error("WPD manifest belongs to another run");
+  if (manifest.expectedCells !== cells.length) throw new Error("WPD lane filters differ within one run");
+  for (const lane of lanes) manifest.lanes[lane] = {
+    run: 0, ok: 0, fail: 0, startedAt: new Date().toISOString(), finishedAt: "", loadAverageStart: os.loadavg(), loadAverageEnd: [],
+  };
+  writeJsonAtomic(manifestFile, manifest);
 
   const files: Record<Lane, string> = {
     ssr: join(RESULT_DIR, "measurement-wpd-ssr.json"), mount: join(RESULT_DIR, "measurement-wpd-mount.json"),
@@ -435,13 +463,17 @@ async function main() {
 
   console.log("\n=== tally ===");
   for (const lane of lanes) console.log(`  ${lane.padEnd(8)} run ${tally[lane].run}  ok ${tally[lane].ok}  fail ${tally[lane].fail}`);
-  let gitSha = "";
-  try { gitSha = (await execFileP("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" })).stdout.trim(); } catch {}
-  writeResult(join(RESULT_DIR, "measurement-wpd-tally.json"), {
-    tally, wpd: toolMeta(), n: benchConfig.renderTiming.n,
-    host: os.hostname(), node: process.version, timestamp: new Date().toISOString(), gitSha,
-  });
+  let failed = false;
+  for (const lane of lanes) {
+    const laneTally = tally[lane];
+    manifest.lanes[lane] = {
+      ...manifest.lanes[lane]!, ...laneTally, finishedAt: new Date().toISOString(), loadAverageEnd: os.loadavg(),
+    };
+    if (laneTally.fail !== 0 || laneTally.run !== cells.length || laneTally.ok !== cells.length) failed = true;
+  }
+  writeJsonAtomic(manifestFile, manifest);
   rmSync(TMP, { recursive: true, force: true });
+  if (failed) process.exitCode = 1;
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });

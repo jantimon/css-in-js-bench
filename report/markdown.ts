@@ -23,13 +23,10 @@ export interface MdSection {
   acanBars: Bar[];
   attrRows: AttrRow[];
   hydBars: Bar[];
-  hydAttrRows: AttrRow[];
   hydWpdRows: WpdBreakdownRow[];
   inpBars: Bar[];
-  inpAttrRows: AttrRow[];
   inpWpdRows: WpdBreakdownRow[];
   mountBars: Bar[];
-  mountAttrRows: AttrRow[];
   mountWpdRows: WpdBreakdownRow[];
   sweepLines: SweepLine[];
   rtRows: RenderTimingRow[];
@@ -130,7 +127,7 @@ const sweepTable = (lines: SweepLine[]): string => {
 const MEASUREMENTS = `## Measurements
 
 Every per-case section below reports these as tables. Definitions are given here once. The
-statistic is the **median** where a repeated timing distribution exists; WPD 0.6 span anatomy is
+statistic is the **median** where a repeated timing distribution exists; WPD_VERSION span anatomy is
 the first instrumented iteration and is labelled separately. Production React in every lane. In
 each table the best value is **bold** and rows are sorted best-first.
 
@@ -145,14 +142,14 @@ each table the best value is **bold** and rows are sorted best-first.
   server \`renderToString()\` split by CPU self-time from a sampled V8 profile mapped through
   source maps: **react-dom** (the floor every lane shares), the **styling library** runtime, and
   **your component**. *other* is GC / unattributed native work.
-- **Where the client hydration time goes** — WPD 0.6 reconciling span, ms, lower is better. Time for React to
+- **Where the client hydration time goes** — WPD_VERSION reconciling span, ms, lower is better. Time for React to
   **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
   existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
-- **Where the interaction time goes** — WPD 0.6 in-place re-render, ms, lower is better. A state change
+- **Where the interaction time goes** — WPD_VERSION in-place re-render, ms, lower is better. A state change
   triggers a synchronous re-render (\`flushSync\`) of the whole mounted workload, then waits for the
   next paint — click→paint latency, with active work separated from frame-alignment idle. This is where **runtime** CSS-in-JS re-runs
   its per-element styling on every update; build-time lanes do almost none.
-- **Where the cold-mount time goes** — WPD 0.6 blank screen → first render, ms, lower is better. From a
+- **Where the cold-mount time goes** — WPD_VERSION blank screen → first render, ms, lower is better. From a
   **blank root** (no SSR markup) a "click" renders the whole workload from scratch
   (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
   paint includes each **runtime** library's **first style injection** into the document. The span's
@@ -176,7 +173,7 @@ than **styling lib** (which reads ~0 for it). StyleX and styled-components keep 
 "no runtime cost" — it moved buckets.`;
 
 /** Build the full agent-readable markdown report. */
-export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null): string {
+export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string): string {
   const shownLabels = MD_TECHS.filter((t) => techs[t]).map((t) => `**${techs[t].label}** (\`${t}\`)`);
   const out: string[] = [
     `# Styling benchmarks`,
@@ -204,16 +201,16 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
       ["### SSR throughput under load — requests/sec, higher is better", barTable(s.acanBars, "requests/sec", true)],
       ["### Where the SSR render time goes — ms/render, lower is better", attrTable(s.attrRows, "other")],
       [
-        "### Client hydration — WPD 0.6 active work, lower is better",
-        s.hydWpdRows.length ? wpdTable(s.hydWpdRows) : s.hydAttrRows.length ? attrTable(s.hydAttrRows, "browser/gc") : barTable(s.hydBars, "ms", false),
+        "### Client hydration — WPD_VERSION active work, lower is better",
+        wpdTable(s.hydWpdRows),
       ],
       [
-        "### Interaction re-render — WPD 0.6 active work, lower is better",
-        s.inpWpdRows.length ? wpdTable(s.inpWpdRows) : s.inpAttrRows.length ? attrTable(s.inpAttrRows, "browser/gc") : barTable(s.inpBars, "ms", false),
+        "### Interaction re-render — WPD_VERSION active work, lower is better",
+        wpdTable(s.inpWpdRows),
       ],
       [
-        "### Cold mount — WPD 0.6 active work, lower is better",
-        s.mountWpdRows.length ? wpdTable(s.mountWpdRows) : s.mountAttrRows.length ? attrTable(s.mountAttrRows, "browser/gc") : barTable(s.mountBars, "ms", false),
+        "### Cold mount — WPD_VERSION active work, lower is better",
+        wpdTable(s.mountWpdRows),
       ],
       ["### Browser render-work on cold mount — Chrome counts + Firefox ms, lower is better", rtTable(s.rtRows)],
       ["### Page bytes shipped — gzipped, lower is better", payloadTable(s.payRows)],
@@ -222,5 +219,9 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     for (const [heading, tbl] of blocks) if (tbl) out.push(``, heading, ``, tbl);
   }
 
-  return out.join("\n") + "\n";
+  const renderRows = sections.flatMap((section) => section.rtRows);
+  const noForcedLayouts = renderRows.length > 0 && renderRows.every((row) =>
+    row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
+  if (noForcedLayouts) out.push("", "**No forced layouts observed in this WPD run.**");
+  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", `WPD ${wpdVersion}`);
 }

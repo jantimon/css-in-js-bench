@@ -43,6 +43,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
     if (r.firefox) totals.push(sumSegs(r.firefox, FF_SEGS));
   }
   const max = Math.max(1e-6, ...totals);
+  const noForcedLayouts = sorted.length > 0 && sorted.every((row) => row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
 
   const engineRow = (r: RenderTimingRow, engine: "Chrome" | "Firefox", m: RenderTimingMetrics, segs: readonly Seg[], first: boolean) => {
     const total = sumSegs(m, segs);
@@ -85,6 +86,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         </React.Fragment>
       ))}
       <p className="rt-note">
+        {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
         Cold mount of {sorted[0]?.n ?? 0} instances. Chrome's trustworthy signal is the <b>style-recalc count</b> (badge);
         Firefox reports sampled Gecko style/layout <b>ms</b> but no main-thread paint. A zero sampled slice is not proof
         that no work occurred; Chrome's exact count badges are the reliable presence/absence signal.

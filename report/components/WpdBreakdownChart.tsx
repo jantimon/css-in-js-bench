@@ -21,8 +21,8 @@ const SEGMENTS = [
 
 const activeMs = (row: WpdBreakdownRow) => row.span.wallMs - row.span.slices.idle;
 
-/** WPD 0.6's reconciling browser span: every segment sums exactly to the measured wall. */
-export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
+/** WPD's reconciling browser span: every segment sums exactly to the measured wall. */
+export function WpdBreakdownChart({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; wpdVersion: string }) {
   const sorted = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
   const max = Math.max(1e-6, ...sorted.map((row) => row.span.wallMs));
   const breaks = groupBreaks(sorted.map(activeMs));
@@ -49,7 +49,7 @@ export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
         </div>
       ))}
       <p className="rt-note">
-        WPD 0.6 instrumented first-span anatomy; segments reconcile exactly to span wall. Rank uses active time (wall minus idle).
+        WPD {wpdVersion} instrumented first-span anatomy; segments reconcile exactly to span wall. Rank uses active time (wall minus idle).
         Repeated timing median is shown when available; WPD currently retains slice anatomy for the first iteration only.
       </p>
     </div>

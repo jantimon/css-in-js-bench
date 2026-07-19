@@ -92,34 +92,20 @@ export interface AttributionSample {
  * render-timing: browser render-work on a cold mount, per engine, from wpd. Chrome's authoritative
  * axis is the *counts* (one style-recalc per runtime-injected instance); Firefox's is sampled Gecko
  * style/layout time plus target-specific marker counts. Paint is unmeasured in Firefox, and its
- * marker counts are not comparable to Blink's batching. `stepMs` is WPD's coarse per-interaction
- * wall (single sample from labelled `summary.perStep`) — directional only, NOT a replacement for the
- * harness's timing medians.
+ * marker counts are not comparable to Blink's batching.
  */
 export interface RenderTimingMetrics {
-  stepMs: number | null;
   layoutCount: number | null;
   layoutMs: number | null;
   styleCount: number | null;
   styleMs: number | null;
   paintCount: number | null;
   paintMs: number | null;
-  /** Legacy compatibility only; WPD 0.6 removed these settle-duration-dependent fields. */
-  compositeCount: number | null;
-  compositeMs: number | null;
   forcedLayoutCount: number | null;
   forcedLayoutMs: number | null;
-  longTaskCount: number | null;
 }
 
-/** One render-timing sample for a cell: the fixed instance count used + per-engine metrics. */
-export interface RenderTimingSample {
-  n: number;
-  chrome?: RenderTimingMetrics;
-  firefox?: RenderTimingMetrics;
-}
-
-/** WPD 0.6's unified per-span browser breakdown, normalized by gen-wpd. */
+/** WPD's unified per-span browser breakdown, normalized by gen-wpd. */
 export interface WpdSpanSample {
   wallMs: number;
   slices: { js: number; style: number; layout: number; paint: number; gc: number; other: number; idle: number };

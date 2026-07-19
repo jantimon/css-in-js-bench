@@ -8,15 +8,16 @@
     "setup:yak-main": "node scripts/setup-next-yak-main.mjs",
     "setup:wpd": "node scripts/setup-wpd.mjs",
     "gen": "node --import tsx ./gen.ts",
-    "gen:wpd": "node --import tsx ./gen-wpd.ts",
+    "gen:wpd": "node ./scripts/run-wpd.mjs",
+    "gen:wpd:lane": "node --import tsx ./gen-wpd.ts",
     "report": "node --import tsx ./report.tsx",
     "verify": "node --import tsx ./verify.ts",
     "dev": "vite",
-    "lint": "node --import tsx ./report/lint.ts"
+    "lint": "node --import tsx ./report/lint.ts",
+    "test:wpd": "node --import tsx --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs"
   },
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {
-    "@jridgewell/trace-mapping": "^0.3.25",
     "@playwright/test": "^1.61.1",
     "@vitejs/plugin-react": "^6.0.1",
     "autocannon": "^8.0.0",

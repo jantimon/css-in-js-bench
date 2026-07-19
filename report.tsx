@@ -24,7 +24,8 @@ import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/Wpd
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { renderMarkdown } from "./report/markdown.ts";
 import { compileCodeAssets } from "./report/code-assets.ts";
-import type { AttributionSample, NsweepSample, RenderTimingSample, WpdBlameSample, WpdBrowserSample, WpdFirefoxSample } from "./report/types.ts";
+import { validateWpdResults } from "./report/wpd-results.ts";
+import type { AttributionSample, NsweepSample, WpdBlameSample, WpdBrowserSample, WpdFirefoxSample } from "./report/types.ts";
 import type { CaseMeta, RunMeta, Snapshot, TechInfo } from "./report/types.ts";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -66,19 +67,17 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 async function main() {
   const techs = await loadTechs();
   const cases = await loadCases();
+  const wpdManifest = validateWpdResults(RESULT);
+  const wpdVersion = wpdManifest.wpd.version;
+  const wpdLabel = `WPD ${wpdVersion}`;
   const micro = readJson<Record<string, number[]>>(join(RESULT, "measurement-microbench.json"), {});
   const pay = readJson<Record<string, { js: number; css: number; html: number }[]>>(join(RESULT, "measurement-payload.json"), {});
   const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
-  const attr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-attribution.json"), {});
   const wpdSsr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-wpd-ssr.json"), {});
   const hyd = readJson<Record<string, number[]>>(join(RESULT, "measurement-hydrate.json"), {});
-  const hydAttr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-hydrate-attribution.json"), {});
   const inp = readJson<Record<string, number[]>>(join(RESULT, "measurement-inp.json"), {});
-  const inpAttr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-inp-attribution.json"), {});
   const mount = readJson<Record<string, number[]>>(join(RESULT, "measurement-mount.json"), {});
-  const mountAttr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-mount-attribution.json"), {});
   const nsweep = readJson<Record<string, NsweepSample[]>>(join(RESULT, "measurement-nsweep.json"), {});
-  const rt = readJson<Record<string, RenderTimingSample[]>>(join(RESULT, "measurement-render-timing.json"), {});
   const wpdHydrate = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-hydrate.json"), {});
   const wpdInp = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {});
   const wpdMount = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-mount.json"), {});
@@ -94,10 +93,14 @@ async function main() {
   rmSync(assetsDst, { recursive: true, force: true });
   if (existsSync(assetsSrc)) cpSync(assetsSrc, assetsDst, { recursive: true });
   const baseMeta = readJson<RunMeta | null>(join(RESULT, "meta.json"), null);
-  const wpdMeta = readJson<{ host: string; node: string; timestamp: string; gitSha?: string; n?: number; wpd?: { chrome?: string; firefox?: string } } | null>(join(RESULT, "measurement-wpd-tally.json"), null);
-  const meta: RunMeta | null = wpdMeta
-    ? { ...(baseMeta ?? { techs: [], cases: [] }), host: wpdMeta.host, node: wpdMeta.node, timestamp: wpdMeta.timestamp, gitSha: wpdMeta.gitSha ?? baseMeta?.gitSha ?? "", browsers: { chrome: wpdMeta.wpd?.chrome, firefox: wpdMeta.wpd?.firefox } }
-    : baseMeta;
+  const meta: RunMeta = {
+    ...(baseMeta ?? { techs: [], cases: [] }),
+    host: wpdManifest.environment.host,
+    node: wpdManifest.environment.node,
+    timestamp: Object.values(wpdManifest.lanes).map((lane) => lane!.finishedAt).sort().at(-1)!,
+    gitSha: wpdManifest.environment.gitSha,
+    browsers: { chrome: wpdManifest.wpd.chrome, firefox: wpdManifest.wpd.firefox },
+  };
   const hl = await makeHighlighter();
   // Compile the per-cell editor files into assets/code/ (after the assets copy above, so
   // it isn't wiped). The report references them from the <iframe> editor by convention.
@@ -134,11 +137,10 @@ async function main() {
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
     // attribution: SSR render time split by package (react / lib / component / other).
-    const attrSource = Object.keys(wpdSsr).length ? wpdSsr : attr;
     const attrRows: AttrRow[] = usedTechs
-      .filter((t) => attrSource[`${caseId}/${t}`]?.[0])
+      .filter((t) => wpdSsr[`${caseId}/${t}`]?.[0])
       .map((t) => {
-        const s = attrSource[`${caseId}/${t}`][0];
+        const s = wpdSsr[`${caseId}/${t}`][0];
         return { tech: t, label: techs[t].label, renderMs: s.renderMs, react: s.react, lib: s.lib, component: s.component, other: s.other };
       });
     // hydrate: client hydration time (ms, lower better) — optional/heavy.
@@ -148,13 +150,6 @@ async function main() {
         const xs = hyd[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
-    // hydrate-attribution: hydration time split by package (react / lib / component / other).
-    const hydAttrRows: AttrRow[] = usedTechs
-      .filter((t) => hydAttr[`${caseId}/${t}`]?.[0])
-      .map((t) => {
-        const s = hydAttr[`${caseId}/${t}`][0];
-        return { tech: t, label: techs[t].label, renderMs: s.renderMs, react: s.react, lib: s.lib, component: s.component, other: s.other };
-      });
     // inp: click→next-paint of an in-place re-render (ms, lower better) — optional/heavy.
     const inpBars: Bar[] = usedTechs
       .filter((t) => inp[`${caseId}/${t}`]?.length)
@@ -162,26 +157,12 @@ async function main() {
         const xs = inp[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
-    // inp-attribution: in-place re-render time split by package (react / lib / component / other).
-    const inpAttrRows: AttrRow[] = usedTechs
-      .filter((t) => inpAttr[`${caseId}/${t}`]?.[0])
-      .map((t) => {
-        const s = inpAttr[`${caseId}/${t}`][0];
-        return { tech: t, label: techs[t].label, renderMs: s.renderMs, react: s.react, lib: s.lib, component: s.component, other: s.other };
-      });
     // mount: cold client mount of the workload into a blank root (ms, lower better) — optional/heavy.
     const mountBars: Bar[] = usedTechs
       .filter((t) => mount[`${caseId}/${t}`]?.length)
       .map((t) => {
         const xs = mount[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
-      });
-    // mount-attribution: cold-mount time split by package (react / lib / component / other).
-    const mountAttrRows: AttrRow[] = usedTechs
-      .filter((t) => mountAttr[`${caseId}/${t}`]?.[0])
-      .map((t) => {
-        const s = mountAttr[`${caseId}/${t}`][0];
-        return { tech: t, label: techs[t].label, renderMs: s.renderMs, react: s.react, lib: s.lib, component: s.component, other: s.other };
       });
     const wpdRows = (data: Record<string, WpdBrowserSample[]>): WpdBreakdownRow[] => usedTechs
       .filter((t) => data[`${caseId}/${t}`]?.[0]?.span)
@@ -198,37 +179,29 @@ async function main() {
     const sweepLines: SweepLine[] = usedTechs
       .filter((t) => nsweep[`${caseId}/${t}`]?.length)
       .map((t) => ({ tech: t, label: techs[t].label, color: techs[t].bench.color, points: nsweep[`${caseId}/${t}`] }));
-    // render-timing: browser render-work on a cold mount (Chrome counts + Firefox ms) — optional/heavy.
-    const hasWpdRender = Object.keys(wpdMount).length > 0 && Object.keys(wpdBlame).length > 0;
+    // Browser rendering work on a cold mount, sourced exclusively from the canonical WPD run.
     const rtRows: RenderTimingRow[] = usedTechs
-      .filter((t) => hasWpdRender ? wpdMount[`${caseId}/${t}`]?.[0]?.span : rt[`${caseId}/${t}`]?.[0])
+      .filter((t) => wpdMount[`${caseId}/${t}`]?.[0]?.span)
       .map((t) => {
-        if (hasWpdRender) {
-          const mountSample = wpdMount[`${caseId}/${t}`][0];
-          const chrome = mountSample.span!;
-          const counts = wpdBlame[`${caseId}/${t}`]?.[0];
-          const ff = wpdFirefox[`${caseId}/${t}`]?.[0];
-          const metric = (engine: "chrome" | "firefox") => {
-            const isChrome = engine === "chrome";
-            const slices = isChrome ? chrome.slices : ff?.breakdown;
-            return {
-              stepMs: isChrome ? chrome.wallMs : ff?.wallMs ?? null,
-              layoutCount: isChrome ? counts?.layoutCount ?? null : ff?.counts.layout ?? null,
-              layoutMs: slices?.layout ?? null,
-              styleCount: isChrome ? counts?.styleCount ?? null : ff?.counts.style ?? null,
-              styleMs: slices?.style ?? null,
-              paintCount: isChrome ? counts?.paintCount ?? null : null,
-              paintMs: isChrome ? chrome.slices.paint : null,
-              compositeCount: null, compositeMs: null,
-              forcedLayoutCount: isChrome ? counts?.forcedLayoutCount ?? null : null,
-              forcedLayoutMs: isChrome ? counts?.forcedLayoutMs ?? null : null,
-              longTaskCount: null,
-            };
+        const mountSample = wpdMount[`${caseId}/${t}`][0];
+        const chrome = mountSample.span!;
+        const counts = wpdBlame[`${caseId}/${t}`][0];
+        const ff = wpdFirefox[`${caseId}/${t}`][0];
+        const metric = (engine: "chrome" | "firefox") => {
+          const isChrome = engine === "chrome";
+          const slices = isChrome ? chrome.slices : ff.breakdown;
+          return {
+            layoutCount: isChrome ? counts.layoutCount : ff.counts.layout,
+            layoutMs: slices?.layout ?? null,
+            styleCount: isChrome ? counts.styleCount : ff.counts.style,
+            styleMs: slices?.style ?? null,
+            paintCount: isChrome ? counts.paintCount : ff.counts.paint,
+            paintMs: isChrome ? chrome.slices.paint : null,
+            forcedLayoutCount: isChrome ? counts.forcedLayoutCount : ff.counts.forcedLayout,
+            forcedLayoutMs: isChrome ? counts.forcedLayoutMs : null,
           };
-          return { tech: t, label: techs[t].label, n: wpdMeta?.n ?? 50, chrome: metric("chrome"), firefox: ff?.breakdown ? metric("firefox") : undefined };
-        }
-        const s = rt[`${caseId}/${t}`][0];
-        return { tech: t, label: techs[t].label, n: s.n, chrome: s.chrome, firefox: s.firefox };
+        };
+        return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome: metric("chrome"), firefox: metric("firefox") };
       });
     // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
     // each also carries its rendered-preview PNG (if screenshots ran) so the editor's "preview"
@@ -236,7 +209,7 @@ async function main() {
     const editorLanes: EditorLane[] = usedTechs
       .filter((t) => snaps[`${caseId}/${t}`])
       .map((t) => ({ tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0] }));
-    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, hydWpdRows, inpBars, inpAttrRows, inpWpdRows, mountBars, mountAttrRows, mountWpdRows, sweepLines, rtRows, editorLanes };
+    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes };
   });
 
   const doc = (
@@ -353,7 +326,7 @@ async function main() {
             ))}
           </section>
 
-          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydAttrRows, hydWpdRows, inpBars, inpAttrRows, inpWpdRows, mountBars, mountAttrRows, mountWpdRows, sweepLines, rtRows, editorLanes }) => {
+          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes }) => {
             const [caseTitle, caseSub] = cm.label.split(/\s+—\s+/, 2);
             return (
             <details className="case" open key={caseId}>
@@ -394,9 +367,9 @@ async function main() {
             {attrRows.length ? (
               <div data-measure="attribution">
                 <h3 className="chart-title">
-                  Where the SSR render time goes — WPD 0.6 Node CPU self-time · median ms / render
+                  Where the SSR render time goes — {wpdLabel} Node CPU self-time · median ms / render
                   <InfoTip>
-                    The median server <code>renderToString()</code>, measured by <b>WPD 0.6</b> and split by CPU self-time from a sampled V8 profile mapped
+                    The median server <code>renderToString()</code>, measured by <b>{wpdLabel}</b> and split by CPU self-time from a sampled V8 profile mapped
                     through source maps: <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
                     and <b>your component</b>. <b>other</b> is GC / unattributed native work.
                   </InfoTip>
@@ -404,25 +377,25 @@ async function main() {
                 <AttributionChart rows={attrRows} />
               </div>
             ) : null}
-            {hydWpdRows.length || hydAttrRows.length || hydBars.length ? (
+            {hydWpdRows.length || hydBars.length ? (
               <div data-measure="hydrate">
                 <h3 className="chart-title">
-                  Client hydration — repeated timing + WPD 0.6 span anatomy
+                  Client hydration — repeated timing + {wpdLabel} span anatomy
                   <InfoTip>
                     Time for React to <b>hydrate</b> the server HTML in the browser — attach event handlers and build the
                     fiber tree over the existing DOM (it does not re-create markup). The first chart is the existing repeated
-                    end-to-end timing; the WPD 0.6 chart then splits one instrumented commit into JS, style, layout, paint,
+                    end-to-end timing; the {wpdLabel} chart then splits one instrumented commit into JS, style, layout, paint,
                     GC, browser work and idle. Lower is better.
                   </InfoTip>
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
-                {hydWpdRows.length ? <WpdBreakdownChart rows={hydWpdRows} /> : hydAttrRows.length ? <AttributionChart rows={hydAttrRows} otherLabel="browser-native / gc" /> : null}
+                <WpdBreakdownChart rows={hydWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
-            {inpWpdRows.length || inpAttrRows.length || inpBars.length ? (
+            {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction re-render — repeated timing + WPD 0.6 span anatomy
+                  Interaction re-render — repeated timing + {wpdLabel} span anatomy
                   <InfoTip>
                     A state change triggers a <b>synchronous re-render</b> (<code>flushSync</code>) of the whole mounted
                     workload, then we wait for the next paint — click→paint latency. WPD separates active work from the
@@ -432,13 +405,13 @@ async function main() {
                   </InfoTip>
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
-                {inpWpdRows.length ? <WpdBreakdownChart rows={inpWpdRows} /> : inpAttrRows.length ? <AttributionChart rows={inpAttrRows} otherLabel="browser-native / gc" /> : null}
+                <WpdBreakdownChart rows={inpWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
-            {mountWpdRows.length || mountAttrRows.length || mountBars.length ? (
+            {mountWpdRows.length || mountBars.length ? (
               <div data-measure="mount">
                 <h3 className="chart-title">
-                  Cold mount — repeated timing + WPD 0.6 span anatomy
+                  Cold mount — repeated timing + {wpdLabel} span anatomy
                   <InfoTip>
                     Starting from a <b>blank root</b> (no SSR markup), a "click" renders the whole workload from scratch
                     (<code>createRoot().render()</code>), then we wait for the first paint. Unlike hydration — which attaches to
@@ -448,7 +421,7 @@ async function main() {
                   </InfoTip>
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
-                {mountWpdRows.length ? <WpdBreakdownChart rows={mountWpdRows} /> : mountAttrRows.length ? <AttributionChart rows={mountAttrRows} otherLabel="browser-native / gc" /> : null}
+                <WpdBreakdownChart rows={mountWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {rtRows.length ? (
@@ -512,7 +485,7 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion));
 
   console.log(`✓ wrote BENCHMARK.html + BENCHMARK.md — ${sections.length} case(s), ${usedTechs.length} lane(s)`);
 

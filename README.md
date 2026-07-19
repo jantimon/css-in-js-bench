@@ -76,9 +76,9 @@ for reading, but the byte sizes and class counts in the status bar are measured 
 raw emitted output. Since every lane renders identically, the preview is the same image
 for all of them
 
-Every lane is built in production mode (React's prod runtime). `next-yak (released)`
-benches the published npm version alongside the source lane, so you can see what a given
-change buys
+Every lane is built in production mode (React's prod runtime). The two committed next-yak
+lanes use the published `next-yak ^9.6.0` package: one styled-components API lane and one
+CSS-prop lane. Experimental local-ref matrices stay on their own experiment branch
 
 The report is `BENCHMARK.html` plus a sibling `assets/` folder: screenshots and the
 editor's Shiki-highlighted code files, loaded one at a time via an `<iframe>` (keeps the
@@ -93,11 +93,11 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 ## Running it
 
 ```bash
-pnpm setup:yak  # vendor next-yak from source: clone + build js + swc wasm (see below)
 pnpm install
+pnpm setup:yak-main  # optional: add two GitHub-main lanes only when main is ahead of npm
 pnpm gen        # build every lane in isolation, write raw samples → result/ (then verifies)
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
-pnpm gen:wpd    # WPD 0.6 migration lanes: SSR, mount, hydrate, INP, Firefox, blame
+pnpm gen:wpd    # mandatory WPD lanes, sequential: SSR, mount, hydrate, INP, Firefox, blame
 pnpm report     # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
 pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen runs this too)
 pnpm lint       # validate every tech package's schema
@@ -106,17 +106,11 @@ pnpm dev        # author a single cell with HMR
 
 ### How the next-yak lanes get the library
 
-The `next-yak` and `next-yak (css prop)` lanes don't install next-yak from npm, they
-bench it built from source. `pnpm setup:yak` clones
-<https://github.com/jantimon/next-yak> at the ref in `next-yak.ref` into
-`vendor/next-yak/` and builds it fresh: `pnpm build` for the JS package and a cargo
-build of the SWC plugin to wasm. The lanes then declare
-`"next-yak": "link:../../vendor/next-yak/packages/next-yak"`, which pnpm turns into a
-plain symlink. A linked package resolves its own dependencies where it really lives, so
-next-yak finds its `yak-swc` wasm through the clone's workspace and the lanes never need
-to know about it. That's also why `setup:yak` has to run before `pnpm install`: the
-symlink target must exist. The `next-yak (released)` lane skips all of this and pins the
-published npm version, that's the baseline the source lanes are compared against
+The committed `next-yak` and `next-yak-css` lanes install `next-yak ^9.6.0` from npm.
+`pnpm setup:yak-main` is optional: it compares GitHub `main` with the newest release tag
+and creates `next-yak-main` plus `next-yak-css-main` only when `main` contains unreleased
+changes. It uses `setup:yak` internally to clone and build that exact commit; `setup:yak`
+is the low-level source-build command, not part of the normal baseline setup
 
 Building needs the Rust toolchain (rust-lang.org) with the wasm target:
 
@@ -124,15 +118,8 @@ Building needs the Rust toolchain (rust-lang.org) with the wasm target:
 rustup target add wasm32-wasip1
 ```
 
-`next-yak.ref` holds either a commit SHA (pinned and reproducible, the mode the committed
-numbers in `result/` correspond to) or a branch name for perf experiments, e.g.
-`perf-styled-jsx-folding`. There is no `git pull`: a pinned SHA is never updated, a branch
-ref re-fetches its tip on every `pnpm setup:yak` run. To bench a different next-yak, edit
-`next-yak.ref` and re-run `pnpm setup:yak`. The clone is reused, so the Rust build cache
-survives switching refs
-
-If you only want to work on the report (`pnpm report` reads committed samples from
-`result/`), `node scripts/setup-next-yak.mjs --skip-build` is enough, no Rust required
+Local-ref next-yak technology matrices are deliberately maintained on the experiment
+branch, not materialized on `main`
 
 ### gen and verify
 
@@ -153,19 +140,18 @@ pnpm gen --measure=microbench,payload  # only these measurements (default = all)
 
 `microbench` + `payload` are fast and deterministic and run by default. The others are
 opt-in, run them deliberately and the browser/load ones on an idle machine: `nsweep`
-(scaling), `autocannon` (req/s under load), `attribution` (SSR CPU split), `hydrate` +
-`hydrate-attribution` + `inp` + `inp-attribution` + `mount` + `mount-attribution` +
-`render-timing` + `screenshots` (browser passes; `screenshots` writes PNGs to
-`result/assets/`). E.g.
-`pnpm gen --measure=attribution,nsweep`. A filtered or partial-measure run merges into
+(scaling), `autocannon` (req/s under load), `hydrate`, `inp`, `mount`, and `screenshots`
+(browser passes; `screenshots` writes PNGs to `result/assets/`). E.g.
+`pnpm gen --measure=nsweep,hydrate`. A filtered or partial-measure run merges into
 `result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
 live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
-`pnpm exec playwright install chromium` once). The render-timing pass is isolated from
-the normal workspace install: run `pnpm setup:wpd` once, then `pnpm gen:wpd`. The
-WPD migration currently runs six lanes side-by-side with the existing measurements:
-Node SSR attribution, Chrome mount/hydration/INP breakdowns, Firefox mount breakdown,
-and Chrome forced-layout blame. Raw outputs are committed as
-`result/measurement-wpd-*.json`; `pnpm report` prefers them when present
+`pnpm exec playwright install chromium` once). WPD is isolated from the normal workspace
+install: run `pnpm setup:wpd` once, then `pnpm gen:wpd`. The command waits for an idle
+machine and runs six separate processes in a fixed order: Node SSR attribution, Chrome
+mount/hydration/INP breakdowns, Firefox mount breakdown, and Chrome forced-layout blame.
+Raw outputs are committed as `result/measurement-wpd-*.json`. `report` and `verify`
+require a complete, exact, zero-failure WPD manifest; filtered WPD runs are diagnostic
+and intentionally cannot produce a report
 
 `gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
 choice and can change without re-running. History is git, not labeled runs

@@ -12,8 +12,7 @@
 //   pnpm gen --tech 'next-yak*'          glob over tech dirnames
 //   pnpm gen --case 'realistic-button'   glob over cases
 import { build } from "vite";
-import { execSync, execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -21,13 +20,9 @@ import os from "node:os";
 import benchConfig from "./bench.config.ts";
 import { gzipSync } from "node:zlib";
 import { createServer } from "node:http";
-import { Session } from "node:inspector/promises";
 import autocannon from "autocannon";
 import { chromium, type Browser } from "@playwright/test";
-import { TraceMap, originalPositionFor } from "@jridgewell/trace-mapping";
-import type { AttributionSample, CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RenderTimingMetrics, RenderTimingSample, RunMeta, Snapshot, SsrModule } from "./report/types.ts";
-
-const execFileP = promisify(execFile);
+import type { CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SsrModule } from "./report/types.ts";
 import { verify } from "./verify.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
@@ -42,12 +37,6 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 const TECHS_DIR = join(ROOT, "techs");
 const CASES_DIR = join(ROOT, "cases");
 const RESULT_DIR = join(ROOT, "result");
-
-// wpd (@jantimon/web-performance-debugger) for the opt-in `render-timing` pass — vendored,
-// isolated from the pnpm workspace, by `pnpm setup:wpd`. Absent unless that ran → render-timing
-// skips gracefully. The driver module must live inside the cwd wpd runs in (here: ROOT).
-const WPD_BIN = join(ROOT, "vendor", "wpd", "node_modules", ".bin", "wpd");
-const WPD_FLOW = join(ROOT, "scripts", "wpd", "render-flow.mjs");
 
 // Deliberate, shared viewport for every Playwright pass (hydrate / inp / screenshots) so
 // the browser metrics aren't taken at Playwright's implicit default. The SSR passes render
@@ -67,8 +56,7 @@ const PAGE_OPTS = {
 // larger signal. Measured effect (14 techs × 6 cases, back-to-back): run-to-run movers >15%
 // 41 → 7, within-cell relIQR ~37% → 24% and reproducible run-to-run. 4× also matches the
 // Lighthouse/CWV default, so it's more representative too. Applied identically to every lane,
-// so cross-lane comparisons stay fair. NOT applied to the profiler-based attribution passes
-// (it would distort per-package self-time).
+// so cross-lane comparisons stay fair.
 const CPU_THROTTLE = Math.max(1, Number(process.env.CPU_THROTTLE) || 4);
 async function applyCpuThrottle(page: import("@playwright/test").Page): Promise<void> {
   if (CPU_THROTTLE <= 1) return;
@@ -79,13 +67,13 @@ async function applyCpuThrottle(page: import("@playwright/test").Page): Promise<
 // All measurements gen knows how to run. Each maps to a vite.<name>.config.ts and a
 // sampler over the built SSR entry. The slice ships `microbench`; new measurements
 // are added here, not by editing the per-tech folders.
-const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "attribution", "hydrate", "hydrate-attribution", "inp", "inp-attribution", "mount", "mount-attribution", "render-timing", "screenshots"] as const;
+const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "hydrate", "inp", "mount", "screenshots"] as const;
 type Measurement = (typeof ALL_MEASUREMENTS)[number];
-// Fast + deterministic → run by default. The heavy ones (autocannon/attribution/hydrate/
+// Fast + deterministic → run by default. The heavy ones (autocannon/hydrate/
 // inp) and the nsweep are opt-in via `--measure=…` so a plain `pnpm gen` stays quick.
 const DEFAULT_MEASUREMENTS: Measurement[] = ["microbench", "payload"];
 // Measurements that run off the microbench SSR build (no separate vite config).
-const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep", "autocannon", "attribution"]);
+const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep", "autocannon"]);
 
 // ---- tiny CLI ------------------------------------------------------------------
 function parseArgs(argv: string[]) {
@@ -248,91 +236,13 @@ async function autocannonSample(mod: SsrModule, caseId: string, n: number): Prom
   return samples;
 }
 
-// ---- attribution: where the SSR render time goes (per-package self-time) ---------
-// Profiles renderHtml in real node V8 (in-process — the right environment for an SSR
-// cost) and splits the MEDIAN wall time by each bucket's share of CPU self-time. The
-// per-tech bundle is built un-minified with a sourcemap, so each profiled frame maps
-// back to its original package (react-dom / styling lib / the component).
 const median = (xs: number[]): number => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s.length ? s[s.length >> 1] : 0;
+  const sorted = [...xs].sort((a, b) => a - b);
+  return sorted.length ? sorted[sorted.length >> 1] : 0;
 };
 // Measured samples for a measurement — a per-measurement override (bench.config `samples`)
-// or the shared default. The flakiest browser passes take more (see bench.config).
-const samplesFor = (m: string): number => benchConfig.samples?.[m] ?? benchConfig.sampleCount;
-function bucketFor(src: string | null): "react" | "lib" | "component" | "other" {
-  if (!src) return "other";
-  if (/node_modules\/(react-dom|react|scheduler|react-is)\//.test(src)) return "react";
-  // the styling lib + its deps: node_modules, OR Panda's codegen output (styled-system,
-  // which is generated into the lane folder, not node_modules).
-  if (/node_modules\/|styled-system\//.test(src)) return "lib";
-  if (/\/case\/|ssr-entry|client-entry/.test(src)) return "component";
-  return "other";
-}
-// Split a V8 CPU profile (node SSR or browser hydrate) into per-bucket self-time hits by
-// mapping each profiled frame back through the un-minified bundle's sourcemap. Shared by the
-// SSR attribution and the two browser (hydrate / interaction) attributions — same buckets,
-// only the bundle filename differs (entry.mjs vs entry.js).
-function attributeProfile(profile: { nodes?: { hitCount?: number; callFrame: { url: string; lineNumber: number; columnNumber: number } }[] } | undefined, map: TraceMap | null, bundleName: string) {
-  const hits = { react: 0, lib: 0, component: 0, other: 0 };
-  for (const node of profile?.nodes ?? []) {
-    if (!node.hitCount) continue;
-    const f = node.callFrame;
-    let b: keyof typeof hits = "other";
-    if (map && f.url.includes(bundleName)) b = bucketFor(originalPositionFor(map, { line: f.lineNumber + 1, column: f.columnNumber }).source);
-    hits[b] += node.hitCount;
-  }
-  return hits;
-}
-// Anchor a measured median wall (ms) and split it by a profile's per-bucket CPU share — the
-// AttributionSample shape the report's stacked AttributionChart consumes.
-function splitByHits(renderMs: number, hits: { react: number; lib: number; component: number; other: number }): AttributionSample {
-  const total = hits.react + hits.lib + hits.component + hits.other || 1;
-  const part = (h: number) => (renderMs * h) / total;
-  return { renderMs, react: part(hits.react), lib: part(hits.lib), component: part(hits.component), other: part(hits.other) };
-}
-async function attributionSample(tech: string, mod: SsrModule, caseId: string, n: number): Promise<AttributionSample[]> {
-  const { loop, iters, warmup } = benchConfig.attribution;
-  const render = htmlOf(mod);
-  for (let w = 0; w < warmup * loop; w++) render(caseId, n); // warm V8
-
-  // (1) median wall per render — anchors the absolute height.
-  const walls: number[] = [];
-  for (let it = 0; it < iters; it++) {
-    const t0 = process.hrtime.bigint();
-    for (let k = 0; k < loop; k++) render(caseId, n);
-    walls.push(Number(process.hrtime.bigint() - t0) / 1e6 / loop);
-  }
-  const renderMs = median(walls);
-
-  // (2) CPU profile over the same loop → per-bucket hit share.
-  const session = new Session();
-  session.connect();
-  await session.post("Profiler.enable");
-  await session.post("Profiler.setSamplingInterval", { interval: 80 });
-  await session.post("Profiler.start");
-  for (let it = 0; it < iters; it++) for (let k = 0; k < loop; k++) render(caseId, n);
-  const { profile } = await session.post("Profiler.stop");
-  session.disconnect();
-
-  const mapPath = join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs.map");
-  const map = existsSync(mapPath) ? new TraceMap(readFileSync(mapPath, "utf8")) : null;
-  const hits = { react: 0, lib: 0, component: 0, other: 0 };
-  for (const node of profile?.nodes ?? []) {
-    if (!node.hitCount) continue;
-    const f = node.callFrame;
-    let b: keyof typeof hits = "other";
-    if (map && f.url.includes("entry.mjs")) {
-      // url carries a ?t= cache-buster from the dynamic import — match by substring.
-      const pos = originalPositionFor(map, { line: f.lineNumber + 1, column: f.columnNumber });
-      b = bucketFor(pos.source);
-    }
-    hits[b] += node.hitCount;
-  }
-  const total = hits.react + hits.lib + hits.component + hits.other || 1;
-  const part = (h: number) => (renderMs * h) / total;
-  return [{ renderMs, react: part(hits.react), lib: part(hits.lib), component: part(hits.component), other: part(hits.other) }];
-}
+// or the shared default.
+const samplesFor = (measurement: string): number => benchConfig.samples?.[measurement] ?? benchConfig.sampleCount;
 
 // ---- hydrate: client hydration time (ms, lower better) ---------------------------
 // Reuses the SSR markup (renderHtml) as the thing to hydrate, plus a per-tech BROWSER
@@ -348,7 +258,7 @@ async function buildOnly(tech: string, measurement: Measurement): Promise<void> 
   await build({ ...cfg, configFile: false, logLevel: "warn" });
 }
 // Build the hydrate client bundle and stand up the SSR-markup + bundle server (no browser).
-// Shared by withHydrateServer (Playwright passes) and renderTimingTech (wpd's own browser).
+// Shared by the hydrate, INP, and mount Playwright passes.
 async function serveHydrate(tech: string, ssrMod: SsrModule): Promise<{ port: number; close: () => Promise<void> }> {
   await buildOnly(tech, "hydrate");
   const bundle = join(TECHS_DIR, tech, "dist", "hydrate", "entry.js");
@@ -461,172 +371,6 @@ async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMet
   });
 }
 
-// ---- hydrate-attribution / inp-attribution / mount-attribution: where the CLIENT time goes ----------
-// The browser counterpart of the SSR `attribution`: split the median client wall (hydration
-// commit, or an in-place re-render) into react / styling-lib / your-component self-time. Uses
-// an UN-minified + sourcemapped variant of the hydrate browser build (so each V8 frame maps
-// back to its package, same as the SSR microbench build is un-minified for `attribution`), a
-// CDP Profiler over exactly the measured action, and the shared attributeProfile/splitByHits.
-async function buildHydrateAttr(tech: string): Promise<{ bundleJs: Buffer; map: TraceMap | null }> {
-  const cfgPath = join(TECHS_DIR, tech, "vite.hydrate.config.ts");
-  if (!existsSync(cfgPath)) throw new Error(`${tech}: missing vite.hydrate.config.ts`);
-  let cfg = (await import(pathToFileURL(cfgPath).href + `?t=${Date.now()}`)).default;
-  if (typeof cfg === "function") cfg = cfg();
-  cfg = await cfg;
-  // un-minified + sourcemap into a sibling dir so the real (minified) hydrate timing build is untouched.
-  cfg = { ...cfg, build: { ...cfg.build, outDir: "dist/hydrate-attr", minify: false, sourcemap: true } };
-  await build({ ...cfg, configFile: false, logLevel: "warn" });
-  const bundle = join(TECHS_DIR, tech, "dist", "hydrate-attr", "entry.js");
-  if (!existsSync(bundle)) throw new Error(`${tech}: hydrate-attr build produced no entry.js`);
-  const map = existsSync(bundle + ".map") ? new TraceMap(readFileSync(bundle + ".map", "utf8")) : null;
-  return { bundleJs: readFileSync(bundle), map };
-}
-// Build the attr bundle, serve SSR-markup + bundle, launch a browser, hand (browser, port, map) to run.
-async function withAttrServer<T>(tech: string, ssrMod: SsrModule, run: (browser: Browser, port: number, map: TraceMap | null) => Promise<T>): Promise<T> {
-  const { bundleJs, map } = await buildHydrateAttr(tech);
-  const render = htmlOf(ssrMod);
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
-    if (url.pathname === "/entry.js") {
-      res.setHeader("content-type", "text/javascript");
-      return res.end(bundleJs);
-    }
-    const caseId = url.searchParams.get("case") ?? "";
-    const n = Number(url.searchParams.get("n") ?? "1");
-    const body = url.searchParams.get("mount") === "1" ? "" : render(caseId, n);
-    res.setHeader("content-type", "text/html");
-    res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const port = (server.address() as { port: number }).port;
-  const browser = await chromium.launch();
-  try {
-    return await run(browser, port, map);
-  } finally {
-    await browser.close();
-    await new Promise<void>((r) => server.close(() => r()));
-  }
-}
-// hydrate-attribution: load with ?manual=1 (defers hydration), start the profiler, trigger the
-// SINGLE hydration commit, stop — so the samples cover exactly the hydration, no page-load noise.
-async function hydrateAttrTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, AttributionSample[]>> {
-  return withAttrServer(tech, ssrMod, async (browser, port, map) => {
-    type Hits = { react: number; lib: number; component: number; other: number };
-    const S = samplesFor("hydrate-attribution");
-    const walls: Record<string, number[]> = {};
-    const hits: Record<string, Hits> = {};
-    for (const c of cells) {
-      const k = `${c.caseId}/${tech}`;
-      walls[k] = [];
-      hits[k] = { react: 0, lib: 0, component: 0, other: 0 };
-    }
-    // Round-robin across cells; r = -1 is a discarded warmup hydration (no profiler) that
-    // warms the per-URL code cache so the profiled samples aren't skewed by cold compile.
-    for (let r = -1; r < S; r++) {
-      for (const cell of cells) {
-        const n = caseMeta[cell.caseId].n;
-        const key = `${cell.caseId}/${tech}`;
-        const page = await browser.newPage(PAGE_OPTS);
-        const client = await page.context().newCDPSession(page);
-        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&manual=1`, { waitUntil: "load" });
-        await page.waitForFunction(() => typeof window.__hydrate === "function", null, { timeout: 30_000 });
-        if (r < 0) {
-          await page.evaluate(() => window.__hydrate!());
-          await page.waitForFunction(() => window.__hydrateMs !== undefined, null, { timeout: 30_000 });
-          await page.close();
-          continue;
-        }
-        await client.send("Profiler.enable");
-        await client.send("Profiler.setSamplingInterval", { interval: 50 });
-        await client.send("Profiler.start");
-        await page.evaluate(() => window.__hydrate!());
-        await page.waitForFunction(() => window.__hydrateMs !== undefined, null, { timeout: 30_000 });
-        const { profile } = await client.send("Profiler.stop");
-        walls[key].push(await page.evaluate(() => window.__hydrateMs as number));
-        const h = attributeProfile(profile, map, "entry.js");
-        for (const k of Object.keys(hits[key]) as (keyof Hits)[]) hits[key][k] += h[k];
-        await page.close();
-      }
-    }
-    const out: Record<string, AttributionSample[]> = {};
-    for (const key of Object.keys(walls)) out[key] = [splitByHits(median(walls[key]), hits[key])];
-    return out;
-  });
-}
-// inp-attribution: hydrate normally, then profile a LOOP of in-place re-renders (window.__inp,
-// each a flushSync re-render + paint) and split the median click→paint wall by package.
-async function inpAttrTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, AttributionSample[]>> {
-  return withAttrServer(tech, ssrMod, async (browser, port, map) => {
-    const out: Record<string, AttributionSample[]> = {};
-    for (const cell of cells) {
-      const n = caseMeta[cell.caseId].n;
-      const page = await browser.newPage(PAGE_OPTS);
-      const client = await page.context().newCDPSession(page);
-      await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
-      await page.waitForFunction(() => window.__inp !== undefined && window.__hydrateMs !== undefined, null, { timeout: 30_000 });
-      for (let w = 0; w < 3; w++) await page.evaluate(() => window.__inp!()); // warmup, discarded
-      const S = samplesFor("inp-attribution");
-      const walls: number[] = [];
-      for (let s = 0; s < S; s++) walls.push(await page.evaluate(() => window.__inp!()));
-      await client.send("Profiler.enable");
-      await client.send("Profiler.setSamplingInterval", { interval: 50 });
-      await client.send("Profiler.start");
-      for (let k = 0; k < S; k++) await page.evaluate(() => window.__inp!());
-      const { profile } = await client.send("Profiler.stop");
-      await page.close();
-      out[`${cell.caseId}/${tech}`] = [splitByHits(median(walls), attributeProfile(profile, map, "entry.js"))];
-    }
-    return out;
-  });
-}
-// mount-attribution: serve a BLANK root, profile the SINGLE cold-mount commit (window.__mount,
-// triggered after the profiler starts), and split the median mount wall by package — the
-// browser counterpart that shows where a runtime lib's first client-side style injection lands.
-async function mountAttrTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, AttributionSample[]>> {
-  return withAttrServer(tech, ssrMod, async (browser, port, map) => {
-    type Hits = { react: number; lib: number; component: number; other: number };
-    const S = samplesFor("mount-attribution");
-    const walls: Record<string, number[]> = {};
-    const hits: Record<string, Hits> = {};
-    for (const c of cells) {
-      const k = `${c.caseId}/${tech}`;
-      walls[k] = [];
-      hits[k] = { react: 0, lib: 0, component: 0, other: 0 };
-    }
-    // Round-robin across cells; r = -1 is a discarded warmup mount (no profiler) to warm
-    // the code cache so the profiled samples aren't skewed by cold compile.
-    for (let r = -1; r < S; r++) {
-      for (const cell of cells) {
-        const n = caseMeta[cell.caseId].n;
-        const key = `${cell.caseId}/${tech}`;
-        const page = await browser.newPage(PAGE_OPTS);
-        const client = await page.context().newCDPSession(page);
-        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&mount=1`, { waitUntil: "load" });
-        await page.waitForFunction(() => typeof window.__mount === "function", null, { timeout: 30_000 });
-        if (r < 0) {
-          await page.evaluate(() => window.__mount!());
-          await page.waitForFunction(() => window.__mountMs !== undefined, null, { timeout: 30_000 });
-          await page.close();
-          continue;
-        }
-        await client.send("Profiler.enable");
-        await client.send("Profiler.setSamplingInterval", { interval: 50 });
-        await client.send("Profiler.start");
-        await page.evaluate(() => window.__mount!());
-        await page.waitForFunction(() => window.__mountMs !== undefined, null, { timeout: 30_000 });
-        const { profile } = await client.send("Profiler.stop");
-        walls[key].push(await page.evaluate(() => window.__mountMs as number));
-        const h = attributeProfile(profile, map, "entry.js");
-        for (const k of Object.keys(hits[key]) as (keyof Hits)[]) hits[key][k] += h[k];
-        await page.close();
-      }
-    }
-    const out: Record<string, AttributionSample[]> = {};
-    for (const key of Object.keys(walls)) out[key] = [splitByHits(median(walls[key]), hits[key])];
-    return out;
-  });
-}
-
 // ---- screenshots: a rendered preview of each cell (visual parity across lanes) ---
 // Serves the SSR { html, css } (no hydration needed for a static preview) in a headless
 // browser and snapshots the rendered root → result/assets/<case>__<tech>.png. Writes a
@@ -662,100 +406,6 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
   }
 }
 
-// ---- render-timing: browser render-work (style-recalc / layout / paint / forced) on a cold mount ----
-// wpd (@jantimon/web-performance-debugger) drives its OWN Puppeteer browser against the shared
-// hydrate server, so the in-process server MUST stay responsive → async exec, never execFileSync
-// (a sync child would block the event loop and the server couldn't answer wpd's navigation).
-// Chrome yields comparable exact counts; Firefox yields Gecko marker counts + sampled reflow/style
-// ms. Gecko counts are useful diagnostics but are not comparable to Blink's batching semantics.
-// Opt-in: needs `pnpm setup:wpd` (vendors wpd + browsers); skips gracefully when absent.
-function toMetrics(summary: unknown): RenderTimingMetrics {
-  const s = (summary ?? {}) as Record<string, unknown>;
-  const num = (v: unknown) => (typeof v === "number" ? v : null);
-  // wpd 0.6 digest.summary.perStep carries the "mount" step's raw wall samples — one per timed
-  // `--iterations` loop (counts are pinned to the first timed iteration by wpd, so they do not
-  // scale). Take the MEDIAN (wpd's own StepIndexEntry.wallMs convention; matches gen's medians),
-  // falling back to the run-level summary.wallMs. NB: this is wpd's NODE-SIDE step wall — it
-  // brackets the whole page.evaluate + settle, so it runs larger than an in-page interaction time.
-  const perStep = (Array.isArray(s.perStep) ? s.perStep : []) as { label?: string; perIteration?: number[] }[];
-  const step = perStep.find((x) => x?.label === "mount") ?? perStep[0];
-  const iters = Array.isArray(step?.perIteration) ? step.perIteration.filter((n): n is number => typeof n === "number") : [];
-  const stepMs = iters.length ? Math.round(median(iters) * 100) / 100 : num(s.wallMs);
-  return {
-    stepMs,
-    layoutCount: num(s.layoutCount), layoutMs: num(s.layoutMs),
-    styleCount: num(s.styleCount), styleMs: num(s.styleMs),
-    paintCount: num(s.paintCount), paintMs: num(s.paintMs),
-    // Removed by WPD 0.6 because committed-frame counts tracked settle duration, not page work.
-    compositeCount: null, compositeMs: null,
-    forcedLayoutCount: num(s.forcedLayoutCount), forcedLayoutMs: num(s.forcedLayoutMs),
-    longTaskCount: num(s.longTaskCount),
-  };
-}
-
-async function renderTimingTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, RenderTimingSample[]>> {
-  const cfg = benchConfig.renderTiming;
-  if (!existsSync(WPD_BIN)) {
-    console.warn(`  ⏭ render-timing: vendor/wpd missing — run \`pnpm setup:wpd\` first (skipped ${tech}).`);
-    return {};
-  }
-  const recDir = join(os.tmpdir(), "wpd-bench");
-  mkdirSync(recDir, { recursive: true });
-  const runWpd = (args: string[], env: Record<string, string> = {}) =>
-    execFileP(WPD_BIN, args, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...env }, maxBuffer: 128 * 1024 * 1024 });
-  let firefoxOk = cfg.browsers.includes("firefox"); // detect a broken/absent firefox once, then chrome-only
-
-  const { port, close } = await serveHydrate(tech, ssrMod);
-  const out: Record<string, RenderTimingSample[]> = {};
-  try {
-    for (const cell of cells) {
-      const url = `http://127.0.0.1:${port}/?case=${cell.caseId}&n=${cfg.n}&mount=1`;
-      const sample: RenderTimingSample = { n: cfg.n };
-      for (const browser of cfg.browsers) {
-        if (browser === "firefox" && !firefoxOk) continue;
-        const rec = join(recDir, `${tech}__${cell.caseId}__${browser}.json`);
-        // WPD 0.6 supports --protocol-timeout on both browser targets. --no-cpu-profile remains
-        // Chrome-only; Firefox needs its profiler for rendering markers and attribution.
-        const args = ["record", WPD_FLOW, "--url", url, "--target", browser, "--settle", String(cfg.settleMs),
-          "--warmup", String(cfg.warmup), "--iterations", String(cfg.iterations),
-          "--protocol-timeout", String(cfg.protocolTimeoutMs), "--out", rec];
-        if (browser === "chrome") args.push("--headless-mode", "shell", "--no-cpu-profile");
-        // Firefox's first `session.new` per process flakes under load (times out); a fresh spawn usually
-        // succeeds. Retry once before latching firefoxOk=false, so one cold-launch flake doesn't drop a
-        // whole tech to chrome-only. wpd exposes no firefox-applicable launch-timeout flag (see feedback).
-        for (let attempt = 0; ; attempt++) {
-          try {
-            await runWpd(args, { WPD_FLOW: "mount" });
-            // `query index` needs the sidecar <name>.index.json; `query digest` already carries
-            // per-step wall samples + the iteration-1 counts, so one digest query is enough.
-            const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
-            sample[browser as "chrome" | "firefox"] = toMetrics(digest.summary);
-            break;
-          } catch (e) {
-            const msg = (((e as { stderr?: string }).stderr || (e as Error).message) ?? "").toString().split("\n")[0];
-            if (attempt === 0) {
-              console.warn(`  ↻ render-timing ${tech} · ${cell.caseId} · ${browser} retry (${msg})`);
-              continue;
-            }
-            if (browser === "firefox") {
-              firefoxOk = false; // e.g. wrong pinned build — see `pnpm setup:wpd --force`
-              console.warn(`  ⏭ render-timing firefox unavailable (${msg}) — chrome-only from here.`);
-            } else {
-              console.error(`  ✗ ${tech} · render-timing · ${cell.caseId} · ${browser}: ${msg}`);
-            }
-            break;
-          }
-        }
-      }
-      out[`${cell.caseId}/${tech}`] = [sample];
-    }
-  } finally {
-    await close();
-    rmSync(recDir, { recursive: true, force: true });
-  }
-  return out;
-}
-
 // ---- main ----------------------------------------------------------------------
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -769,7 +419,7 @@ async function main() {
   }
   // Result files MERGE per cell, so a filtered (--tech/--case) or partial-measure run
   // never drops the cells it isn't regenerating — and a default run can't nuke heavy
-  // autocannon/attribution data produced by a separate `--measure=…` run. An unfiltered
+  // autocannon data produced by a separate `--measure=…` run. An unfiltered
   // run of a given measurement still refreshes that measurement's whole file (every cell
   // it covers is rewritten), so removed cells fall out of the measurements being run.
   mkdirSync(RESULT_DIR, { recursive: true });
@@ -811,8 +461,8 @@ async function main() {
     for (const measurement of measurements) {
       const file = join(RESULT_DIR, `measurement-${measurement}.json`);
       const data: Record<string, unknown[]> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
-      // hydrate(-attribution) + inp(-attribution) + mount(-attribution) + screenshots are browser passes over the SSR markup.
-      const browserFns = { hydrate: hydrateTech, "hydrate-attribution": hydrateAttrTech, inp: inpTech, "inp-attribution": inpAttrTech, mount: mountTech, "mount-attribution": mountAttrTech, "render-timing": renderTimingTech, screenshots: screenshotTech } as const;
+      // hydrate + inp + mount + screenshots are browser passes over the SSR markup.
+      const browserFns = { hydrate: hydrateTech, inp: inpTech, mount: mountTech, screenshots: screenshotTech } as const;
       if (measurement in browserFns) {
         const fn = browserFns[measurement as keyof typeof browserFns];
         try {
@@ -833,7 +483,6 @@ async function main() {
         else if (measurement === "payload") data[key] = payload(mod, cell.caseId, n, await payloadJsBytes(tech));
         else if (measurement === "nsweep") data[key] = nsweepSample(mod, cell.caseId);
         else if (measurement === "autocannon") data[key] = await autocannonSample(mod, cell.caseId, n);
-        else if (measurement === "attribution") data[key] = await attributionSample(tech, mod, cell.caseId, n);
       }
       writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
       console.log(`  ${tech} · ${measurement}: ${techCells.length} cell(s)`);

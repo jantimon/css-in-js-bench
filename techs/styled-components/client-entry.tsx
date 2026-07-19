@@ -19,7 +19,7 @@ const caseId = params.get("case") ?? "";
 const n = Number(params.get("n") ?? "1");
 const render = renders[`./case/${caseId}/index.tsx`]?.default;
 // mount mode: the server serves an EMPTY root and we render into it on demand instead of
-// hydrating SSR markup. The cold-mount measurements (mount, mount-attribution) use this.
+// hydrating SSR markup. The cold-mount measurement uses this.
 const isMount = params.get("mount") === "1";
 
 declare global {
@@ -66,10 +66,8 @@ function mount() {
   performance.mark("mount:start");
   if (render) createRoot(document.getElementById("root")!).render(React.createElement(App));
 }
-// mount + mount-attribution serve an empty root and trigger window.__mount() themselves, so
-// the CPU profiler scopes its samples to exactly the cold-mount commit. hydrate-attribution
-// loads with ?manual=1 and calls window.__hydrate() for the same reason. Every other consumer
-// (hydrate timing, inp) hydrates immediately on load.
+// WPD mount serves an empty root and triggers window.__mount(); WPD hydrate loads with
+// ?manual=1 and calls window.__hydrate(). The repeated hydrate/INP paths hydrate on load.
 if (isMount) window.__mount = mount;
 else if (params.get("manual") === "1") window.__hydrate = hydrate;
 else hydrate();

@@ -23,9 +23,6 @@ importers:
 
   .:
     devDependencies:
-      '@jridgewell/trace-mapping':
-        specifier: ^0.3.25
-        version: 0.3.31
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
