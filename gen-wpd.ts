@@ -141,6 +141,12 @@ function serveHydrate(ssrMod: SsrModule, bundleJs: Buffer, mapJson: Buffer | nul
 // ---- wpd runner ----------------------------------------------------------------
 const runWpd = (args: string[], env: Record<string, string> = {}) =>
   execFileP(WPD_BIN, args, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...env }, maxBuffer: 256 * 1024 * 1024 });
+// LOCAL DRIFT FIX (wpd 0.11.0): `query digest` was removed. Its `summary` block (perIteration,
+// stats, counts) is written into the recording file itself, so read it straight from disk.
+const readSummary = (rec: string): Record<string, any> => {
+  try { return (JSON.parse(readFileSync(rec, "utf8")) as { summary?: Record<string, any> }).summary ?? {}; }
+  catch { return {}; }
+};
 const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (error as Error).message) ?? "").toString().split("\n").filter(Boolean).slice(-1)[0] ?? "";
 
 // ---- SSR bucket remap: wpd packages → the report's react/lib/component/other -----
@@ -184,8 +190,8 @@ async function ssrLane(tech: string, mod: SsrModule, cell: Cell, caseMeta: Recor
   await runWpd(["record", NODE_ENTRY, "--target", "node", "--iterations", String(iterations), "--warmup", "5", "--out", rec],
     { WPD_SSR_MODULE: moduleAbs, WPD_CASE: cell.caseId, WPD_N: String(n) });
   const cpu = JSON.parse((await runWpd(["query", "cpu", rec, "--by", "package", "--json"])).stdout);
-  const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
-  const perIteration: number[] = (digest.summary?.perIteration ?? []).filter((x: unknown): x is number => typeof x === "number");
+  const summary = readSummary(rec);
+  const perIteration: number[] = (summary.perIteration ?? []).filter((x: unknown): x is number => typeof x === "number");
   const renderMs = perIteration.length ? round(median(perIteration)) : round((cpu.totalMs ?? 0) / iterations);
   const byPackage: Record<string, number> = cpu.breakdown?.slices?.js?.byPackage ?? {};
   const buckets = { react: 0, lib: 0, component: 0, other: 0 };
@@ -255,9 +261,8 @@ async function breakdownLane(phase: "mount" | "hydrate" | "inp", tech: string, p
   const iterations = phase === "inp" ? 5 : 1; // mount/hydrate are single-shot; inp re-renders in place
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--headless-mode", "shell",
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
-    "--warmup", "0", "--settle", "300", "--out", rec]);
-  const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
-  const summary = digest.summary ?? {};
+    "--warmup", "0", "--out", rec]);
+  const summary = readSummary(rec);
   return {
     span: await querySpan(rec, `${phase}:frame`),
     runSpan: await querySpan(rec, "run"),
@@ -284,7 +289,7 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
   const rec = join(TMP, `firefox__${tech}__${cell.caseId}.json`);
   const args = ["record", BENCH_FLOW, "--bench", "--url", url, "--target", "firefox",
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", "1", "--warmup", "0",
-    "--settle", "300", "--out", rec];
+    "--out", rec];
   try {
     await runWpd(args);
   } catch (firstError) {
@@ -297,8 +302,7 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
     const blame = JSON.parse((await runWpd(["query", "blame", rec, "--forced", "--json"])).stdout);
     forced = (Array.isArray(blame) ? blame : blame.entries ?? []).slice(0, 8);
   } catch {}
-  const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
-  const summary = digest.summary ?? {};
+  const summary = readSummary(rec);
   return {
     wallMs: span?.wallMs ?? null,
     breakdown: span ? {
@@ -316,25 +320,41 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
   };
 }
 
-// blame lane: chrome DEFAULT mode (keeps the `.stack` + invalidationTracking categories --breakdown
-// drops) → forced layout/style grouped by the reading source line.
+// blame lane: chrome `--deep` — the only chrome rung that captures the `.stack` +
+// invalidationTracking categories, so it carries the exact rendering counts (layout/style/paint,
+// forced layout/style) AND forced layout/style grouped by the reading source line. The default rung
+// records no trace at all, so it yields neither counts nor blame. `--deep` suppresses slice ms
+// (layoutMs/styleMs/paintMs read back null), which this lane does not use: the report sources those
+// durations from the mount `--breakdown` span, and only the counts + forced sites from here.
 async function blameLane(phase: "mount" | "inp", tech: string, port: number, cell: Cell) {
   const n = benchConfig.wpd.n;
   const base = phase === "mount" ? `?case=${cell.caseId}&n=${n}&mount=1` : `?case=${cell.caseId}&n=${n}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `blame__${tech}__${cell.caseId}.json`);
-  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--iterations", "1", "--warmup", "0", "--settle", "300", "--out", rec]);
-  const digest = JSON.parse((await runWpd(["query", "digest", rec, "--json"])).stdout);
+  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--deep", "--iterations", "1", "--warmup", "0", "--out", rec]);
+  const summary = readSummary(rec);
+  // `query blame --forced` groups forced layout/style flushes by read site; map its rows to the
+  // report's { at, count, durMs } shape.
+  let forced: { at: string; count: number; durMs: number }[] = [];
+  try {
+    const blame = JSON.parse((await runWpd(["query", "blame", rec, "--forced", "--json"])).stdout);
+    const rows = Array.isArray(blame) ? blame : blame.entries ?? blame.locations ?? [];
+    forced = rows.slice(0, 10).map((row: any) => ({
+      at: row.at ?? row.location ?? row.source ?? "",
+      count: row.count ?? row.forcedCount ?? row.forced ?? 0,
+      durMs: row.durMs ?? row.ms ?? row.forcedLayoutMs ?? 0,
+    }));
+  } catch {}
   return {
-    forced: (digest.forced ?? []).slice(0, 10),
-    forcedLayoutCount: digest.summary?.forcedLayoutCount ?? null,
-    layoutCount: digest.summary?.layoutCount ?? null,
-    styleCount: digest.summary?.styleCount ?? null,
-    paintCount: digest.summary?.paintCount ?? null,
-    forcedLayoutMs: digest.summary?.forcedLayoutMs ?? null,
-    layoutMs: digest.summary?.layoutMs ?? null,
-    styleMs: digest.summary?.styleMs ?? null,
-    paintMs: digest.summary?.paintMs ?? null,
+    forced,
+    forcedLayoutCount: summary.forcedLayoutCount ?? null,
+    layoutCount: summary.layoutCount ?? null,
+    styleCount: summary.styleCount ?? null,
+    paintCount: summary.paintCount ?? null,
+    forcedLayoutMs: summary.forcedLayoutMs ?? null,
+    layoutMs: summary.layoutMs ?? null,
+    styleMs: summary.styleMs ?? null,
+    paintMs: summary.paintMs ?? null,
   };
 }
 
