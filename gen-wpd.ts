@@ -22,7 +22,7 @@
 // Every record carries `--variant <tech>`, so a diff/cpu-diff gate refuses to compare two techniques
 // that ran through one module path (env-switched), and reports name the technique.
 //
-// Run:  node --import tsx ./gen-wpd.ts [--lane=ssr,mount,inp,firefox] [--tech 'glob'] [--case 'glob']
+// Run:  node ./gen-wpd.ts [--lane=ssr,mount,inp,firefox] [--tech 'glob'] [--case 'glob']
 //
 // Results land in result/measurement-wpd-<lane>.json, keyed "case/tech" like every other
 // measurement file. The mount lane also emits measurement-wpd-blame.json (its group's deep member).

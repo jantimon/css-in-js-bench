@@ -52,7 +52,7 @@ if (isSha && current === REF) {
 }
 
 if (skipBuild) {
-  console.log("--skip-build: vendor clone ready (lanes can link, but `pnpm gen` needs a build).");
+  console.log("--skip-build: vendor clone ready (lanes can link, but `pnpm gen:samples` needs a build).");
   process.exit(0);
 }
 

@@ -62,10 +62,10 @@ export async function main(argv = process.argv.slice(2)) {
   if (parsed.lanes.includes("mount")) rmSync(join(result, "measurement-wpd-blame.json"), { force: true });
   const runId = `${new Date().toISOString()}-${process.pid}`;
   const forwarded = [parsed.tech && `--tech=${parsed.tech}`, parsed.caseId && `--case=${parsed.caseId}`].filter(Boolean);
-  await runLanesSequentially(parsed.lanes, (lane) => child(["--import", "tsx", "./gen-wpd.ts", `--lane=${lane}`, ...forwarded], {
+  await runLanesSequentially(parsed.lanes, (lane) => child(["./gen-wpd.ts", `--lane=${lane}`, ...forwarded], {
     WPD_RUN_ID: runId, WPD_EXPECTED_FULL: full ? "1" : "0",
   }));
-  if (full) await child(["--import", "tsx", "./scripts/validate-wpd-results.ts", "--finalize"], {});
+  if (full) await child(["./scripts/validate-wpd-results.ts", "--finalize"], {});
   else console.log("WPD filtered run complete but intentionally not reportable (manifest remains incomplete).");
 }
 

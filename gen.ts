@@ -7,10 +7,10 @@
 // gen imports NOTHING from ../packages — only from inside benchmarks/ — which is what
 // keeps the folder extraction-ready (§13).
 //
-//   pnpm gen                             full battery · all techs · all cases
-//   pnpm gen --measure=microbench        narrow to listed measurements
-//   pnpm gen --tech 'next-yak*'          glob over tech dirnames
-//   pnpm gen --case 'realistic-button'   glob over cases
+//   pnpm gen:samples                             full battery · all techs · all cases
+//   pnpm gen:samples --measure=microbench        narrow to listed measurements
+//   pnpm gen:samples --tech 'next-yak*'          glob over tech dirnames
+//   pnpm gen:samples --case 'realistic-button'   glob over cases
 import { build } from "vite";
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
@@ -70,7 +70,7 @@ async function applyCpuThrottle(page: import("@playwright/test").Page): Promise<
 const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "hydrate", "inp", "mount", "screenshots"] as const;
 type Measurement = (typeof ALL_MEASUREMENTS)[number];
 // Fast + deterministic → run by default. The heavy ones (autocannon/hydrate/
-// inp) and the nsweep are opt-in via `--measure=…` so a plain `pnpm gen` stays quick.
+// inp) and the nsweep are opt-in via `--measure=…` so a plain `pnpm gen:samples` stays quick.
 const DEFAULT_MEASUREMENTS: Measurement[] = ["microbench", "payload"];
 // Measurements that run off the microbench SSR build (no separate vite config).
 const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep", "autocannon"]);

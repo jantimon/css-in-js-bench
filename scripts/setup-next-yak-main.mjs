@@ -13,7 +13,7 @@
 //   techs/next-yak-main       (styled)   ← techs/next-yak
 //   techs/next-yak-css-main   (css-prop) ← techs/next-yak-css
 // both linking `next-yak` to the freshly built vendor. After this: `pnpm install`, then
-// `pnpm gen --tech 'next-yak*'` + `pnpm report`. Building needs Rust + wasm32-wasip1 (see setup:yak).
+// `pnpm gen:samples --tech 'next-yak*'` + `pnpm report`. Building needs Rust + wasm32-wasip1 (see setup:yak).
 import { execSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -90,4 +90,4 @@ for (const { dir, from, desc, color } of MAIN_LANES) {
   writeFileSync(join(dst, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
   console.log(`  created techs/${dir} → github main (${mainSha.slice(0, 10)})`);
 }
-console.log("\n✓ next-yak main lanes ready. Now: pnpm install && pnpm gen --tech 'next-yak*' && pnpm report");
+console.log("\n✓ next-yak main lanes ready. Now: pnpm install && pnpm gen:samples --tech 'next-yak*' && pnpm report");
