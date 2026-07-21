@@ -17,7 +17,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VENDOR = join(ROOT, "vendor", "next-yak");
 // NEXT_YAK_REPO overrides the clone source (e.g. a local checkout while iterating).
 const REPO = process.env.NEXT_YAK_REPO || "https://github.com/jantimon/next-yak.git";
-// NEXT_YAK_REF overrides next-yak.ref (used by setup-next-yak-main.mjs to build a resolved main SHA).
+// NEXT_YAK_REF overrides next-yak.ref to build a specific commit.
 const REF = (process.env.NEXT_YAK_REF || readFileSync(join(ROOT, "next-yak.ref"), "utf8")).trim();
 const skipBuild = process.argv.includes("--skip-build");
 
