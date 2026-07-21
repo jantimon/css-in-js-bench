@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WPD_DIR = join(ROOT, "vendor", "wpd");
-const WPD_VERSION = process.env.WPD_VERSION || "0.13.1";
+const WPD_VERSION = process.env.WPD_VERSION || "0.15.1";
 const force = process.argv.includes("--force");
 
 const major = Number(process.versions.node.split(".")[0]);

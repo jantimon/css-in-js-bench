@@ -97,7 +97,7 @@ pnpm install
 pnpm setup:yak-main  # optional: add two GitHub-main lanes only when main is ahead of npm
 pnpm gen        # build every lane in isolation, write raw samples → result/ (then verifies)
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
-pnpm gen:wpd    # mandatory WPD lanes, sequential: SSR, mount, hydrate, INP, Firefox, blame
+pnpm gen:wpd    # mandatory WPD lanes, sequential: SSR, mount (a breakdown+deep run group), hydrate, INP, Firefox
 pnpm report     # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
 pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen runs this too)
 pnpm lint       # validate every tech package's schema

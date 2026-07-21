@@ -4,7 +4,9 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadavg } from "node:os";
 
-export const LANES = ["ssr", "mount", "hydrate", "inp", "firefox", "blame"];
+// The `mount` lane records a run group (--members breakdown,deep) that also emits the blame result
+// file (its deep member), so there is no separate `blame` lane.
+export const LANES = ["ssr", "mount", "hydrate", "inp", "firefox"];
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 export function parseWpdArgs(argv) {
@@ -56,6 +58,8 @@ export async function main(argv = process.argv.slice(2)) {
   const result = join(ROOT, "result");
   rmSync(join(result, "measurement-wpd-tally.json"), { force: true });
   for (const lane of parsed.lanes) rmSync(join(result, `measurement-wpd-${lane}.json`), { force: true });
+  // The blame file rides the mount lane's run group, so clear it whenever mount reruns.
+  if (parsed.lanes.includes("mount")) rmSync(join(result, "measurement-wpd-blame.json"), { force: true });
   const runId = `${new Date().toISOString()}-${process.pid}`;
   const forwarded = [parsed.tech && `--tech=${parsed.tech}`, parsed.caseId && `--case=${parsed.caseId}`].filter(Boolean);
   await runLanesSequentially(parsed.lanes, (lane) => child(["--import", "tsx", "./gen-wpd.ts", `--lane=${lane}`, ...forwarded], {

@@ -179,29 +179,31 @@ async function main() {
     const sweepLines: SweepLine[] = usedTechs
       .filter((t) => nsweep[`${caseId}/${t}`]?.length)
       .map((t) => ({ tech: t, label: techs[t].label, color: techs[t].bench.color, points: nsweep[`${caseId}/${t}`] }));
-    // Browser rendering work on a cold mount, sourced exclusively from the canonical WPD run.
+    // Browser rendering work on a cold mount, from the WPD run group. Chrome's row is the stitched
+    // render-timing metric gen-wpd already reconciled from `query span <group> run`: durations from
+    // the breakdown member, exact counts + forced sites from the deep member of ONE capture (the
+    // group join guarantees they describe the same workload). Firefox's row is the Gecko sampled
+    // bar. No per-field stitching here.
     const rtRows: RenderTimingRow[] = usedTechs
-      .filter((t) => wpdMount[`${caseId}/${t}`]?.[0]?.span)
+      .filter((t) => wpdBlame[`${caseId}/${t}`]?.[0])
       .map((t) => {
-        const mountSample = wpdMount[`${caseId}/${t}`][0];
-        const chrome = mountSample.span!;
-        const counts = wpdBlame[`${caseId}/${t}`][0];
-        const ff = wpdFirefox[`${caseId}/${t}`][0];
-        const metric = (engine: "chrome" | "firefox") => {
-          const isChrome = engine === "chrome";
-          const slices = isChrome ? chrome.slices : ff.breakdown;
-          return {
-            layoutCount: isChrome ? counts.layoutCount : ff.counts.layout,
-            layoutMs: slices?.layout ?? null,
-            styleCount: isChrome ? counts.styleCount : ff.counts.style,
-            styleMs: slices?.style ?? null,
-            paintCount: isChrome ? counts.paintCount : ff.counts.paint,
-            paintMs: isChrome ? chrome.slices.paint : null,
-            forcedLayoutCount: isChrome ? counts.forcedLayoutCount : ff.counts.forcedLayout,
-            forcedLayoutMs: isChrome ? counts.forcedLayoutMs : null,
-          };
+        const rt = wpdBlame[`${caseId}/${t}`][0];
+        const ff = wpdFirefox[`${caseId}/${t}`]?.[0];
+        const chrome = {
+          layoutCount: rt.layoutCount, layoutMs: rt.layoutMs,
+          styleCount: rt.styleCount, styleMs: rt.styleMs,
+          paintCount: rt.paintCount, paintMs: rt.paintMs,
+          forcedLayoutCount: rt.forcedLayoutCount, forcedLayoutMs: rt.forcedLayoutMs,
         };
-        return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome: metric("chrome"), firefox: metric("firefox") };
+        const firefox = ff
+          ? {
+            layoutCount: ff.counts.layout, layoutMs: ff.breakdown?.layout ?? null,
+            styleCount: ff.counts.style, styleMs: ff.breakdown?.style ?? null,
+            paintCount: ff.counts.paint, paintMs: null,
+            forcedLayoutCount: ff.counts.forcedLayout, forcedLayoutMs: null,
+          }
+          : undefined;
+        return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome, firefox };
       });
     // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
     // each also carries its rendered-preview PNG (if screenshots ran) so the editor's "preview"

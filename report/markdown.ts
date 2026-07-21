@@ -166,11 +166,12 @@ each table the best value is **bold** and rows are sorted best-first.
 - **Scaling** — SSR render time (ms) vs instance count. Render time as the workload grows from a
   handful to thousands of instances; a flatter progression scales better.
 
-**Attribution caveat:** next-yak's SWC plugin *inlines* its css-prop resolution into your
-component, so next-yak's own styling-runtime cost is bucketed under **component** / *other* rather
-than **styling lib** (which reads ~0 for it). StyleX and styled-components keep their runtime in
-\`node_modules\`, so theirs shows under **styling lib**. Don't read next-yak's ~0 "styling lib" as
-"no runtime cost" — it moved buckets.`;
+**Attribution caveat:** next-yak's SWC plugin *inlines* its css-prop resolution, so the styling work
+runs from next-yak's own runtime rather than a call into a package. wpd attributes that runtime to the
+**styling lib** bucket — next-yak ships sourcemaps whose runtime originals are off-disk here, so wpd
+names the cost by that origin and keeps it out of your app, never blaming it on **component**. StyleX
+and styled-components keep their runtime in
+\`node_modules\`, and next-yak's runtime shows under **styling lib** too, not under **component**.`;
 
 /** Build the full agent-readable markdown report. */
 export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string): string {
