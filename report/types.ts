@@ -28,9 +28,10 @@ export interface TechBench {
   appStylesheet: "tailwind" | "panda" | "stylex" | null;
   /** How this lane's CSS exists — drives the report legend. */
   cssKind: "extracted" | "atomic" | "utility" | "runtime" | "none";
-  /** Diagnostic lane: hidden by default in the report's lane filter (one click to show),
-   * left out of the Key-findings panel. For variants that matter to one library's
-   * maintainers more than to a cross-library comparison. */
+  /** Hidden by default in the report's lane filter (one click to show), left out of the
+   * Key-findings panel. For diagnostic variants that matter to one library's maintainers
+   * more than to a cross-library comparison, and for extreme outliers that would skew the
+   * default view. */
   defaultOff?: boolean;
 }
 
