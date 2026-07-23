@@ -13,14 +13,12 @@ export const FAMILIES: Family[] = [
   {
     group: "next-yak",
     items: [
-      { tech: "next-yak", short: "npm 9.6.0" },
-      { tech: "next-yak-perf", short: "perf" },
-      { tech: "next-yak-folding", short: "folding" },
-      { tech: "next-yak-perf-folding", short: "perf+fold" },
-      { tech: "next-yak-css", short: "npm 9.6.0 css-prop" },
-      { tech: "next-yak-css-perf", short: "perf css-prop" },
-      { tech: "next-yak-css-folding", short: "folding css-prop" },
-      { tech: "next-yak-css-perf-folding", short: "perf+fold css-prop" },
+      { tech: "next-yak", short: "9.6.0 styled" },
+      { tech: "next-yak-9.7", short: "9.7.0 styled" },
+      { tech: "next-yak-9.7-nofold", short: "9.7.0 styled, no fold" },
+      { tech: "next-yak-css", short: "9.6.0 css-prop" },
+      { tech: "next-yak-css-9.7", short: "9.7.0 css-prop" },
+      { tech: "next-yak-css-9.7-nofold", short: "9.7.0 css-prop, no fold" },
     ],
   },
   {

@@ -3,9 +3,9 @@
 # styled-components lane physically cannot import goober.
 #
 # The one external seam is `next-yak`. The `next-yak` / `next-yak-css` lanes pin the
-# published 9.6.0 baseline. The perf / folding / perf-folding pairs resolve immutable local
-# package snapshots (matching JS + SWC wasm) created by `pnpm setup:yak-snapshots`; run it
-# with NEXT_YAK_WORKTREE set to a clean next-yak checkout BEFORE `pnpm install`.
+# published 9.6.0 baseline; the `next-yak-9.7*` / `next-yak-css-9.7*` lanes pin published
+# 9.7.0 (the `-nofold` pair sets `foldStatic: false` in its viteYak options). Every yak lane
+# resolves straight from the npm registry.
 packages:
   - techs/*
 

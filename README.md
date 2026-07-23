@@ -76,9 +76,11 @@ for reading, but the byte sizes and class counts in the status bar are measured 
 raw emitted output. Since every lane renders identically, the preview is the same image
 for all of them
 
-Every lane is built in production mode (React's prod runtime). The two committed next-yak
-lanes use the published `next-yak ^9.6.0` package: one styled-components API lane and one
-CSS-prop lane. Experimental local-ref matrices stay on their own experiment branch
+Every lane is built in production mode (React's prod runtime). The next-yak lanes all use
+published npm packages, in two API flavours (styled and css-prop) across three build
+settings: `next-yak` / `next-yak-css` on 9.6.0, `next-yak-9.7` / `next-yak-css-9.7` on
+9.7.0 (which folds static styles at build time by default), and `next-yak-9.7-nofold` /
+`next-yak-css-9.7-nofold` on 9.7.0 with `foldStatic: false` to keep the runtime path
 
 The report is `BENCHMARK.html` plus a sibling `assets/` folder: screenshots and the
 editor's Shiki-highlighted code files, loaded one at a time via an `<iframe>` (keeps the
@@ -93,7 +95,6 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 ## Running it
 
 ```bash
-NEXT_YAK_WORKTREE=/path/to/next-yak pnpm setup:yak-snapshots  # build the pinned local variants
 pnpm install
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
 pnpm gen        # full suite: gen:samples → gen:wpd → report (this is the one you usually want)
@@ -109,23 +110,18 @@ pnpm dev        # author a single cell with HMR
 
 ### How the next-yak lanes get the library
 
-The npm 9.6.0 pair is the baseline. The perf, folding, and perf+fold pairs use frozen
-local package snapshots produced from immutable commits in a separate next-yak checkout.
-`pnpm setup:yak-snapshots` checks out each pin detached, builds `next-yak` and the
-matching `yak-swc` wasm, packs both packages under `vendor/yak-snapshots/<variant>/`,
-and restores the checkout it was given. Each styled/css-prop pair points at the same
-snapshot, so syntax is the only difference inside a variant. The ignored snapshots must
-exist before `pnpm install` resolves the six experimental workspace packages.
+Every next-yak lane pins a published npm version, so `pnpm install` is all it takes.
+There are three settings, each as a styled + css-prop pair:
 
-Building needs the Rust toolchain (rust-lang.org) with the wasm target:
+- `next-yak` / `next-yak-css` — 9.6.0, the baseline.
+- `next-yak-9.7` / `next-yak-css-9.7` — 9.7.0. It folds statically known styles at build
+  time by default: a static styled usage compiles to a plain element with a `className`,
+  and a static `css` prop becomes a plain `className`, both skipping the runtime wrapper.
+- `next-yak-9.7-nofold` / `next-yak-css-9.7-nofold` — 9.7.0 with `foldStatic: false`
+  passed to `viteYak` in each lane's vite configs, which turns folding off and keeps the
+  runtime path, so the two 9.7.0 pairs isolate what folding is worth.
 
-```bash
-rustup target add wasm32-wasip1
-```
-
-The three source SHAs live in `scripts/pack-yak-snapshots.mjs`. `--only <variant>` rebuilds
-one snapshot and `--skip-build` repacks an already-built checkout. The script refuses a
-dirty source worktree and always restores its initial branch or detached commit.
+Within a pair, styled vs css-prop syntax is the only difference.
 
 ### gen and verify
 
@@ -167,6 +163,21 @@ and intentionally cannot produce a report
 `gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
 choice and can change without re-running. History is git, not labeled runs
 
+### Report analysis
+
+The report's prose is a separate, optional layer on top of the numbers, and it is
+reproducible:
+
+- `BENCHMARK.json` is the machine-readable report data: per case, per measurement, per
+  lane, the same medians the charts draw. Read it directly if you want the numbers without
+  the HTML.
+- The per-case analyses and the Key-findings panel are written by running
+  `scripts/prompts/case-analysis.md` with a strong LLM (Opus) after a full `pnpm gen`. It
+  reads `BENCHMARK.json` plus `result/snapshot.json` and writes one JSON per case into
+  `result/analysis/`, which `pnpm report` embeds.
+- The report renders without them. If `result/analysis/` is empty the charts and tables
+  still build; only the written analysis is missing.
+
 ## Add a lane (tech)
 
 Create `techs/<name>/`:
@@ -202,7 +213,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 |---|---|---|
 | author | vanilla | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×2) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | next-yak (×6: styled + css-prop, on 9.6.0, 9.7.0, 9.7.0 no-fold) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |
