@@ -80,10 +80,11 @@ Also write `result/analysis/study.json` per the `StudyAnalysis` type in
   current default next-yak lane's dirname for the next-yak entry.
 - DEFAULT-OFF LANES (`bench.defaultOff` in techs/*/package.json — check which lanes carry
   it): never make them the subject of a finding or a hint. They are diagnostic variants
-  (e.g. the 9.6.0 pair, the foldStatic:false pair) or extreme outliers (e.g. panda-props)
-  hidden from the default view; the panel tells the cross-library story with shipped
-  defaults. Citing one inside a finding as evidence for a delta ("with folding disabled
-  the same case costs …") is fine.
+  (e.g. the 9.6.0 pair, the foldStatic:false pair), extreme outliers (e.g. panda-props),
+  or the hand-written ceiling (vanilla — not a real CSS-in-JS technique) hidden from the
+  default view; the panel tells the cross-library story with shipped defaults. Citing one
+  inside a finding as evidence ("with folding disabled the same case costs …", "ties
+  vanilla") is fine — vanilla especially stays the comparison floor in prose.
 - `provenance` as for the case files.
 
 After writing all files, run `pnpm report` and confirm it prints the ✓ lines; then spot-check
