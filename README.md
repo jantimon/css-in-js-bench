@@ -230,7 +230,7 @@ That split means:
 
 - report tweak (charts, copy, layout): just push, the site re-renders from the committed
   samples without re-measuring
-- new numbers (lane changed, next-yak ref bumped, new case): run `pnpm gen` on a quiet
+- new numbers (lane changed, next-yak version bumped, new case): run `pnpm gen` on a quiet
   machine and commit the updated `result/`
 
 `BENCHMARK.html` / `BENCHMARK.md` / `BENCHMARK.zip` are build output and gitignored, the

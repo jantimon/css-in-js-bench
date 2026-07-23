@@ -4,7 +4,6 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "setup:yak": "node scripts/setup-next-yak.mjs",
     "setup:wpd": "node scripts/setup-wpd.mjs",
     "gen": "node ./scripts/run-gen.mjs",
     "gen:samples": "node ./gen.ts",
