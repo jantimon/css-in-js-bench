@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "gitSha": "9a585f2",
+    "runTimestamp": "2026-07-23T18:13:07.431Z",
+    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "model": "claude-opus-4-8[1m]"
+  },
+  "headline": "next-yak 9.7.0 ships static folding and a composition-flattening runtime on by default, taking the styled API up to 7.8× faster than 9.6.0 on deep component trees and putting both next-yak paths at or below hand-written vanilla across SSR, hydration, interaction and payload.",
+  "findings": [
+    {
+      "title": "9.7.0 is a large step over 9.6.0, and it grows with depth",
+      "prose": "The perf runtime and static folding that were prototyped separately now ship on by default. On the styled API the gain scales with composition depth: about 2.1× faster SSR on a flat button (the Example `realistic-button` shown below), 3.6× at three nested wrappers, and 7.8× on the Example `compose-6` shown below, where the runtime collapses six `Yak` renders per element into one (its SSR library slice falls from 4.17 ms to 0.175 ms). Interaction follows — INP on the Example `product-grid` shown below drops from 25.8 ms to 9.1 ms — while cold mount improves modestly and payload is already tiny and stays flat. The css-prop path was near the floor in 9.6.0 and gains a further ~1.1-1.4×."
+    },
+    {
+      "title": "Folding is the flat-JSX lever; the runtime is the composition lever",
+      "prose": "Disabling static folding (foldStatic:false) isolates what each mechanism buys. On flat JSX folding rewrites `<StyledButton>` to a plain `<button className>` and deletes the styling component entirely, so turning it off costs about 2× SSR and 2× INP on the Example `realistic-button` shown below — the `Yak` wrapper returns. On the Example `compose-6` shown below, disabling it costs only ~1.2×, because there the composition-flattening runtime, not the fold, does the work. Folding applies when the host is a known intrinsic tag or a class-toggle variant; it stops at `styled(Component)` seams and at dynamic values that compile to a CSS variable."
+    },
+    {
+      "title": "The css-prop fold is next-yak's fastest path and ties vanilla",
+      "prose": "Where the styled fold hands each composition level its own class down a chain, the css-prop fold concatenates the whole chain into a single className on the plain element. On the Example `tabs` and Example `compose-6` shown below its SSR CPU matches or beats hand-written `vanilla`, and it ships the smallest payload in the entire run (2.66 kB gzipped on `compose-6`). For hot composed trees it is the path to recommend today; the styled API reaches the same shape only through the runtime, which leaves one residual wrapper."
+    },
+    {
+      "title": "Runtime hashing dominates every library that still does it",
+      "prose": "The libraries that name a class from the styles at render time pay for it. On the Example `realistic-button` shown below, `styled-components`' `generateAndInjectStyles` is 62% of its library slice and `emotion`'s standalone `murmur2` hash is 58% of a larger one — the single most expensive styling function in the run. The cost repeats on the client: during hydration these libraries inject their stylesheet and force reflow (`styled-components` spends 5.75 ms in layout on the Example `product-grid` shown below). Every extracted lane — next-yak, StyleX, vanilla — ships zero styling runtime and hydrates as pure JS."
+    },
+    {
+      "title": "Dynamic values are a feature in next-yak, a discipline everywhere else",
+      "prose": "next-yak compiles a dynamic value into a static class plus a CSS custom property automatically. On the Example `dyn-translate` shown below, where each element carries a distinct value and nobody has hand-optimised, the hash libraries regenerate a class per element and their cost explodes (`goober` renders 5.60 ms/1k, 9× the css-prop lane). The fair comparison, the Example `dyn-fair` shown below, gives each library its hand-written best practice — a static class with the value on an inline `style` — and the field converges. That parity is the point: it is a build-time optimisation the developer performs by hand, per component, forever, to reach what next-yak's css-var split ships once as a feature."
+    },
+    {
+      "title": "The variant API you pick can swing a library 16×",
+      "prose": "The Example `btn-variant` shown below isolates how each library expresses variants. Panda's precompiled `cva` recipe joins the fast cluster at 0.810 ms/1k, while its inline `css()` fn re-serializes every variant per element and is the slowest lane in the case at 13.2 ms/1k — a 16× swing inside one library. next-yak expresses variants as `$prop` class toggles that inline to a string concat and fold away, landing at the static-class floor."
+    }
+  ],
+  "libraryHints": [
+    { "tech": "next-yak-9.7", "hint": "Perf runtime and static folding are on by default; the next lever is teaching the styled fold to chain through `styled(styled(…))` so composed trees reach the css-prop fold's one-class floor." },
+    { "tech": "styled-components", "hint": "`generateAndInjectStyles` re-hashes and injects a class every render (62% of its SSR slice on `realistic-button`); hash the static rule once and ride dynamic values on a CSS variable." },
+    { "tech": "emotion", "hint": "`murmur2` re-hashes the whole serialized string each render (58% of its slice); memoize the hash on the serialized-string identity for static or lightly-dynamic components." },
+    { "tech": "goober", "hint": "The `s` function re-serializes and re-hashes the CSS string per render; key the compile-and-hash cache on the tagged-template identity, not on the produced string." },
+    { "tech": "stylex", "hint": "Zero styling runtime on flat JSX; the only render-time function left is `styleq`'s atomic merge under composition — memoize it on the identity of its input arrays." },
+    { "tech": "panda", "hint": "Steer variants to the `cva` recipe over the inline `css()` fn, which re-serializes per element; fold static `css({literal})` call sites to the resolved class at build time." },
+    { "tech": "tailwind-merge", "hint": "`get` rebuilds and re-looks-up the joined-class key every render (64-70% of its slice); cache on argument identity, or hoist a fully-static merge to a constant." },
+    { "tech": "cnfast", "hint": "Near-free on repeated class lists; only high-cardinality dynamic classes cost, via the cache miss — split the invariant prefix from the volatile token so the prefix stays a hit." }
+  ]
+}

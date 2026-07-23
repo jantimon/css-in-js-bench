@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "caseId": "dyn-translate",
+  "provenance": {
+    "gitSha": "9a585f2",
+    "runTimestamp": "2026-07-23T18:13:07.431Z",
+    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "model": "claude-opus-4-8[1m]"
+  },
+  "headline": "With a distinct dynamic value per element, next-yak compiles it to a CSS custom property so the class stays static, while every hash-and-inject library generates a fresh class per element and pays serialize-plus-hash a thousand times.",
+  "measurements": {
+    "microbench": {
+      "unit": "renders/s",
+      "higherBetter": true,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1658375, "ratioToBaseline": 1.95 },
+        { "tech": "vanilla", "label": "vanilla", "value": 1645641, "ratioToBaseline": 1.94 },
+        { "tech": "stylex", "label": "StyleX", "value": 1084549, "ratioToBaseline": 1.28 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 848657 },
+      "why": "next-yak lifts the per-element value into a `--var` on a static class, so no class is regenerated — the css-prop lane emits a plain element with only the variable write (0.603 ms/1k), tying `vanilla`. The styled lane keeps a `Yak` wrapper around that same var write (1.18 ms/1k), which is why the css-prop form doubles it. Everything that names the class from the value collapses: `goober` recompiles and re-hashes per element (5.60 ms/1k), `styled-components`' `generateAndInjectStyles` fires 1000 times (4.35 ms/1k), and `panda` runs its style-prop serializer per element (3.31 ms/1k).",
+      "confidence": "high"
+    },
+    "autocannon": {
+      "unit": "req/s",
+      "higherBetter": true,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1279, "ratioToBaseline": 1.7 },
+        { "tech": "vanilla", "label": "vanilla", "value": 1182, "ratioToBaseline": 1.57 },
+        { "tech": "stylex", "label": "StyleX", "value": 803, "ratioToBaseline": 1.07 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 754 },
+      "why": "The static-class-plus-var lanes serve most requests because each request only writes variables; the class-per-value libraries re-run their naming pipeline per request and fall to `goober` 169 req/s and `styled-components` 210 req/s.",
+      "confidence": "high"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 0.869, "ratioToBaseline": 0.675 },
+        { "tech": "vanilla", "label": "vanilla", "value": 0.952, "ratioToBaseline": 0.739 },
+        { "tech": "stylex", "label": "StyleX", "value": 1.03, "ratioToBaseline": 0.8 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1.288 },
+      "why": "The css-prop lane's library slice is 0.139 ms — the value is a variable write, nothing to hash — versus the styled lane's 0.421 ms for the surviving `Yak` wrapper. The naming libraries carry the whole cost in their slice: `goober` 4.71 ms (its object-to-CSS compile plus hash per element), `styled-components` 3.27 ms; `panda`'s style-props route it to component self-time, 3.27 ms of a 4.54 ms render.",
+      "confidence": "high"
+    },
+    "hydrate": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 47.0, "ratioToBaseline": 0.975 },
+        { "tech": "vanilla", "label": "vanilla", "value": 47.4, "ratioToBaseline": 0.983 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 48.2, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 48.2 },
+      "why": "The var-based lanes hydrate at ~47-48 ms with the sheet already in the HTML. The distinct-value workload wrecks the naming runtimes on the client: `goober` reaches 1240 ms rebuilding a thousand cached rules, `styled-components` and `emotion` ~115 ms — the class-per-value pattern is at its worst when a client has to reconstruct every one.",
+      "confidence": "medium"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 7.0, "ratioToBaseline": 0.864 },
+        { "tech": "styled-components", "label": "styled-components", "value": 7.1, "ratioToBaseline": 0.877 },
+        { "tech": "stylex", "label": "StyleX", "value": 7.3, "ratioToBaseline": 0.901 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 8.1 },
+      "why": "The interaction touches one element, so most lanes land at ~7-8 ms within the interaction spread — a tie that even `styled-components` joins because a single-element update regenerates only one class. `panda` (15.1 ms) and `goober` (18.6 ms) stay slow, still walking their per-element style path on the re-render.",
+      "confidence": "low"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 59.3, "ratioToBaseline": 0.921 },
+        { "tech": "vanilla", "label": "vanilla", "value": 63.1, "ratioToBaseline": 0.98 },
+        { "tech": "stylex", "label": "StyleX", "value": 63.9, "ratioToBaseline": 0.992 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 64.4 },
+      "why": "Mounting a thousand distinct values, the var lanes stay near the react-dom floor (~59-64 ms) because the sheet is static; `goober` mounts in 1215 ms building every rule at first paint, `emotion` 110 ms and `styled-components` 112 ms.",
+      "confidence": "medium"
+    },
+    "renderTiming": {
+      "unit": "recalcs",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1 },
+      "why": "One style recalc for every approach — the per-element `--var` updates recalc in a single batch just like static classes, so the css-var route adds no paint penalty. The styleMs spread (0.069-0.157 ms) is sub-millisecond.",
+      "confidence": "low"
+    },
+    "payload": {
+      "unit": "gz B",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 5238, "ratioToBaseline": 0.828 },
+        { "tech": "vanilla", "label": "vanilla", "value": 5499, "ratioToBaseline": 0.87 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 6323, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 6323 },
+      "why": "next-yak ships one static class plus inline `--var` values (5.24-6.32 kB gz), so the markup grows only by the variable strings. The class-per-value libraries inline a thousand distinct rules or class names: `styled-components` 35.3 kB, `emotion` 39.1 kB — 5.6-6.2× the css-prop lane.",
+      "confidence": "high"
+    },
+    "nsweep": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 2.604, "ratioToBaseline": 0.54 },
+        { "tech": "vanilla", "label": "vanilla", "value": 2.677, "ratioToBaseline": 0.555 },
+        { "tech": "stylex", "label": "StyleX", "value": 4.162, "ratioToBaseline": 0.862 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 4.826 },
+      "why": "As distinct values scale to 4000, the var lanes stay flat with react-dom (~2.6 ms) while the naming cost compounds one class per element — `styled-components` 18.9 ms, `goober` 139 ms, the steepest curve in the run.",
+      "confidence": "high"
+    }
+  },
+  "crossCase": "`dyn-translate` is the naive end of the dynamic-value trio. It uses each library's natural dynamic API with no hand-tuning, which is exactly why the hash libraries suffer — nobody has split the static rule from the changing value. In `dyn-fair` alongside, developers hand-write that split (static class plus inline style) to reach parity; in `dyn-inline` the value is a plain inline style from the start. next-yak needs neither workaround: it compiles the css-var split as a feature, so its number barely moves across all three."
+}

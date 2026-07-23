@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "caseId": "multifile-composition",
+  "provenance": {
+    "gitSha": "9a585f2",
+    "runTimestamp": "2026-07-23T18:13:07.431Z",
+    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "model": "claude-opus-4-8[1m]"
+  },
+  "headline": "Splitting the tab group across modules costs the styled lane one `styled(Tabs)` fold that stays runtime when imported, so `vanilla` edges the css-prop fold here where it trailed it in the single-file `tabs`.",
+  "measurements": {
+    "microbench": {
+      "unit": "renders/s",
+      "higherBetter": true,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 152278, "ratioToBaseline": 1.75 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 131839, "ratioToBaseline": 1.51 },
+        { "tech": "stylex", "label": "StyleX", "value": 128082, "ratioToBaseline": 1.47 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 87237 },
+      "why": "Folding is a same-module rewrite: the tab primitives still fold because their use sites travelled into `parts.tsx` with them, but `FullWidthTabs` is now imported into `index.tsx`, so its `styled(Tabs)` wrapper cannot fold at the foreign call site and stays a runtime `Yak`. The css-prop fold has no `styled(...)` wrapper to lose across the boundary and holds at 0.948 ms/1k; the styled lane carries the extra wrapper at 1.43 ms/1k. `vanilla` (0.821 ms/1k) leads because it hand-writes flat markup with nothing to fold.",
+      "confidence": "high"
+    },
+    "autocannon": {
+      "unit": "req/s",
+      "higherBetter": true,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 739, "ratioToBaseline": 1.62 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 645, "ratioToBaseline": 1.41 },
+        { "tech": "stylex", "label": "StyleX", "value": 526, "ratioToBaseline": 1.15 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 456 },
+      "why": "Under load the css-prop fold serves 1.4× the styled lane because its render carries no residual wrapper; both clear the runtime libraries, which re-serialize per request (`emotion` 140 req/s, `panda` 206 req/s).",
+      "confidence": "high"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1.146, "ratioToBaseline": 0.576 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1.372, "ratioToBaseline": 0.69 },
+        { "tech": "stylex", "label": "StyleX", "value": 1.486, "ratioToBaseline": 0.747 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1.989 },
+      "why": "The css-prop fold's library slice is 0.108 ms; the styled lane's is 0.478 ms — that gap is the imported `FullWidthTabs` wrapper the fold could not reach. `vanilla` renders in 1.15 ms with no styling library at all. The runtime libraries put their cost in the lib slice: `styled-components` 1.64 ms, `emotion` 3.99 ms of their renders.",
+      "confidence": "high"
+    },
+    "hydrate": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 46.0, "ratioToBaseline": 0.904 },
+        { "tech": "stylex", "label": "StyleX", "value": 46.5, "ratioToBaseline": 0.914 },
+        { "tech": "panda", "label": "Panda (css fn)", "value": 47.2, "ratioToBaseline": 0.927 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 50.9 },
+      "why": "Extracted lanes hydrate with zero style/layout/paint; the css-prop lane's flatter tree edges the styled lane. The runtime libraries inject their sheet during hydrate and reflow — `styled-components` and `goober` reach 198 ms and 183 ms, ~3.9× the extracted floor.",
+      "confidence": "medium"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "stylex",
+      "top3": [
+        { "tech": "stylex", "label": "StyleX", "value": 6.9, "ratioToBaseline": 0.986 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 7.0, "ratioToBaseline": 1.0 },
+        { "tech": "panda", "label": "Panda (css fn)", "value": 7.0, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 7.0 },
+      "why": "The static-class lanes update the tab subtree in ~7 ms, inside the interaction spread — a tie. The runtime libraries pay their sheet re-touch: `styled-components` 12.9 ms, `goober` 14.6 ms, `emotion` 25.1 ms.",
+      "confidence": "low"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 88.6, "ratioToBaseline": 0.932 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 89.8, "ratioToBaseline": 0.944 },
+        { "tech": "stylex", "label": "StyleX", "value": 91.2, "ratioToBaseline": 0.959 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 95.1 },
+      "why": "Extracted lanes mount at ~89-95 ms; the runtime libraries add first-inject — `goober` 185 ms, `styled-components` 202 ms, `emotion` 209 ms, ~2× the extracted floor.",
+      "confidence": "medium"
+    },
+    "renderTiming": {
+      "unit": "recalcs",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1 },
+      "why": "One style recalc for every approach — parity on paint and layout; the styleMs spread does not order by styling method.",
+      "confidence": "low"
+    },
+    "payload": {
+      "unit": "gz B",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 2389, "ratioToBaseline": 0.691 },
+        { "tech": "vanilla", "label": "vanilla", "value": 2724, "ratioToBaseline": 0.788 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 3455, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 3455 },
+      "why": "Splitting the module does not change the shipped bytes: the css-prop fold stays smallest at 2.39 kB gz, the styled lane 3.46 kB, and the runtime libraries 4.4-6.3× larger (`styled-components` 15.9 kB, `cnfast` 21.9 kB).",
+      "confidence": "high"
+    },
+    "nsweep": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 30.5, "ratioToBaseline": 0.473 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 35.29, "ratioToBaseline": 0.547 },
+        { "tech": "stylex", "label": "StyleX", "value": 37.9, "ratioToBaseline": 0.587 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 64.53 },
+      "why": "At 4000 groups the styled lane's residual imported wrapper compounds to 64.5 ms, roughly double the css-prop fold and `vanilla` (~30-35 ms). The hash libraries scale by their per-element serialize (`emotion` 193 ms).",
+      "confidence": "high"
+    }
+  },
+  "crossCase": "Reading `multifile-composition` against the single-file `tabs` above isolates the module boundary: the heavy primitives keep folding because their use sites moved with them, and the only casualty is the one `styled(Tabs)` wrapper (`FullWidthTabs`) that becomes an import — worth about 0.04 ms/1k on the styled lane, while the css-prop fold is unaffected. The boundary erodes folding by one wrapper, it does not defeat it."
+}

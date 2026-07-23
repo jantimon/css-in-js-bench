@@ -1,20 +1,18 @@
 {
   "host": "DG-BYOH-6084.local",
   "node": "v25.8.1",
-  "timestamp": "2026-07-19T08:39:04.850Z",
-  "gitSha": "ced9aee",
+  "timestamp": "2026-07-23T17:43:22.344Z",
+  "gitSha": "9a585f2",
   "techs": [
     "cnfast",
     "emotion",
     "goober",
     "next-yak",
+    "next-yak-9.7",
+    "next-yak-9.7-nofold",
     "next-yak-css",
-    "next-yak-css-folding",
-    "next-yak-css-perf",
-    "next-yak-css-perf-folding",
-    "next-yak-folding",
-    "next-yak-perf",
-    "next-yak-perf-folding",
+    "next-yak-css-9.7",
+    "next-yak-css-9.7-nofold",
     "panda",
     "panda-props",
     "panda-recipe",
@@ -25,10 +23,16 @@
   ],
   "cases": [
     "btn-variant",
+    "compose-1",
     "compose-3",
+    "compose-6",
+    "dyn-fair",
+    "dyn-inline",
     "dyn-translate",
+    "multifile-composition",
     "product-grid",
     "realistic-button",
     "tabs"
-  ]
+  ],
+  "snapshotN": 2
 }

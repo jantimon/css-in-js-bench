@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "caseId": "product-grid",
+  "provenance": {
+    "gitSha": "9a585f2",
+    "runTimestamp": "2026-07-23T18:13:07.431Z",
+    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "model": "claude-opus-4-8[1m]"
+  },
+  "headline": "Variant class-toggles fold to a string concat, so `next-yak-9.7` and `next-yak-css-9.7` render each card with no hash-and-inject and sit at the static-class floor, while the runtime libraries pay `generateAndInjectStyles`/`murmur2` per card.",
+  "measurements": {
+    "microbench": {
+      "unit": "renders/s",
+      "higherBetter": true,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 234055, "ratioToBaseline": 1.22 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 228615, "ratioToBaseline": 1.19 },
+        { "tech": "stylex", "label": "StyleX", "value": 197137, "ratioToBaseline": 1.03 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 192058 },
+      "why": "The `$discount`/`$wishlisted` variants compile to class toggles, so `next-yak-9.7` inlines them to a string concat and never hashes or injects — its library slice is 0.316 ms of a 2.43 ms render. `vanilla` (0.317 ms/1k) and the css-prop fold (`next-yak-css-9.7`, 0.324 ms/1k) share that same static-class floor. Of the field that stays slow, the hash-and-inject runtimes dominate: `styled-components` re-runs `generateAndInjectStyles` per card (library slice 3.34 ms), `goober` re-serializes and hashes (3.34 ms), and `emotion`'s standalone `murmur2` pushes its slice to 7.14 ms — 3.6× to 7× off the folded lanes.",
+      "confidence": "high"
+    },
+    "autocannon": {
+      "unit": "req/s",
+      "higherBetter": true,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 285, "ratioToBaseline": 1.06 },
+        { "tech": "vanilla", "label": "vanilla", "value": 285, "ratioToBaseline": 1.06 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 269, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 269 },
+      "why": "Under a real server loop the ranking follows render cost: the folded yak lanes and `vanilla` clear ~285 req/s because each request re-renders static classes, while `emotion` (75.0 req/s) and `panda` (110 req/s) re-run their per-card serializers on every request. The css-prop and styled folds land within noise of `vanilla`; the runtime libraries never recover the parse-hash-inject time they spend per request.",
+      "confidence": "medium"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1.881, "ratioToBaseline": 0.774 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1.979, "ratioToBaseline": 0.814 },
+        { "tech": "stylex", "label": "StyleX", "value": 2.413, "ratioToBaseline": 0.993 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 2.43 },
+      "why": "The whole SSR split is the library slice: `vanilla` and the atomic/extracted lanes carry ~0 lib ms (`stylex` 0.048, `next-yak-css-9.7` 0.164, `next-yak-9.7` 0.316 after the toggle fold), so their render time is almost pure react-dom. What separates the pack is what each still computes per card — `styled-components` spends 3.34 ms of its 6.40 ms render in `generateAndInjectStyles`, and `emotion` 7.14 ms of 13.0 ms in serialize-plus-`murmur2`. Disabling folding shows the lever directly: `next-yak-9.7-nofold` lib jumps to 1.07 ms (render 3.88 ms) because the `Yak` wrapper renders per card instead of vanishing.",
+      "confidence": "high"
+    },
+    "hydrate": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "panda",
+      "top3": [
+        { "tech": "panda", "label": "Panda (css fn)", "value": 54.7, "ratioToBaseline": 0.935 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 55.9, "ratioToBaseline": 0.956 },
+        { "tech": "vanilla", "label": "vanilla", "value": 57.0, "ratioToBaseline": 0.974 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 58.5 },
+      "why": "Extracted lanes ship the sheet in the HTML, so hydration is pure JS with zero style/layout/paint — `panda`, `next-yak-css-9.7`, `vanilla` and `next-yak-9.7` cluster at 55-59 ms within their spread. The runtime libraries inject their stylesheet on the client while hydrating: `styled-components` burns 5.75 ms in layout and `goober` 5.45 ms recalculating once the sheet lands, dragging them to 250 ms and 237 ms — 4.3× the extracted floor. The top of the cluster is a statistical tie; the mechanism split (static sheet vs client injection) is the certain result.",
+      "confidence": "medium"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 8.3, "ratioToBaseline": 0.912 },
+        { "tech": "cnfast", "label": "cnfast", "value": 8.4, "ratioToBaseline": 0.923 },
+        { "tech": "stylex", "label": "StyleX", "value": 8.8, "ratioToBaseline": 0.967 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 9.1 },
+      "why": "The whole static-class cluster (`vanilla`, `cnfast`, `stylex`, `next-yak-css-9.7`, `next-yak-9.7`) sits at 8-9 ms of interaction work — inside the ~20% run-to-run spread this measurement carries, so their order is noise. The signal is the gap to the runtime libraries: `styled-components` 28.8 ms, `goober` 31.3 ms and `emotion` 46.5 ms re-enter their serialize-and-inject path when the interaction re-renders, tripling to quintupling the interaction cost.",
+      "confidence": "low"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 125, "ratioToBaseline": 0.973 },
+        { "tech": "vanilla", "label": "vanilla", "value": 127, "ratioToBaseline": 0.991 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 128, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 128 },
+      "why": "Cold mount adds first-paint styling cost to the render. Extracted lanes mount at ~125-131 ms because the browser parses one static sheet once; the runtime libraries pay their first hash-and-inject on top of mount — `goober` 201 ms, `styled-components` 211 ms, `emotion` 228 ms. The extracted lanes differ only within their ~1.5% spread, so the css-prop lead over `vanilla` is a tie; the runtime penalty is the real result.",
+      "confidence": "medium"
+    },
+    "renderTiming": {
+      "unit": "recalcs",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1 },
+      "why": "Every lane triggers exactly one Chrome style recalc for the batch, extracted and runtime alike — none causes extra layout thrash, so the count is a flat parity. The sub-millisecond styleMs spread (0.233-0.725 ms) does not track the styling method and sits inside measurement noise.",
+      "confidence": "low"
+    },
+    "payload": {
+      "unit": "gz B",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 7201, "ratioToBaseline": 0.867 },
+        { "tech": "vanilla", "label": "vanilla", "value": 7881, "ratioToBaseline": 0.949 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 8304, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 8304 },
+      "why": "`next-yak-css-9.7` folds each element's variants into a single className (7.20 kB gz), just under `vanilla`; the styled fold ships one hashed class per element (8.30 kB). The utility lanes carry every atomic token in the markup — `cnfast` 27.6 kB, `tailwind-merge` 26.6 kB, 3.3× — and the runtime libraries add their client bundle plus rules (`styled-components` 21.2 kB, `panda` 21.1 kB, `emotion` 20.2 kB).",
+      "confidence": "high"
+    },
+    "nsweep": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 18.19, "ratioToBaseline": 0.865 },
+        { "tech": "vanilla", "label": "vanilla", "value": 18.44, "ratioToBaseline": 0.877 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 21.02, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 21.02 },
+      "why": "As the grid grows to 4000 cards the per-element cost compounds: the folded css-prop lane and `vanilla` scale flat with react-dom (~18 ms), the styled fold trails slightly at 21.0 ms, and the hash libraries diverge — `goober` 67.3 ms, `styled-components` 69.2 ms, `emotion` 131 ms — because each new card re-pays its serialize-hash-inject.",
+      "confidence": "high"
+    }
+  },
+  "crossCase": "`product-grid` is the case where next-yak's fold applies: its variants are class toggles (`$discount`, `$wishlisted`), which inline to string concats. Contrast `dyn-translate` shown alongside, whose per-element numeric value compiles to a CSS variable and keeps the runtime wrapper — the fold triggers on toggles, not on dynamic values."
+}
