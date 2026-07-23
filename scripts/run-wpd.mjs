@@ -37,13 +37,17 @@ export async function runLanesSequentially(lanes, runLane) {
   for (const lane of lanes) await runLane(lane);
 }
 
+// Idle threshold — overridable per machine via WPD_IDLE_MAX. The default of 15 tolerates
+// a busy developer box; set it lower for a dedicated quiet runner.
+const IDLE_MAX = Number(process.env.WPD_IDLE_MAX) > 0 ? Number(process.env.WPD_IDLE_MAX) : 15;
+
 async function waitForIdle() {
-  console.log("WPD idle gate: waiting for five consecutive one-minute samples below 2.0");
+  console.log(`WPD idle gate: waiting for five consecutive one-minute samples below ${IDLE_MAX.toFixed(1)}`);
   let consecutive = 0;
   while (consecutive < 5) {
     await new Promise((resolve) => setTimeout(resolve, 60_000));
     const current = loadavg()[0];
-    consecutive = current < 2 ? consecutive + 1 : 0;
+    consecutive = current < IDLE_MAX ? consecutive + 1 : 0;
     console.log(`WPD idle gate: load ${current.toFixed(2)} · ${consecutive}/5`);
   }
 }

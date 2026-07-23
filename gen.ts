@@ -500,7 +500,7 @@ async function main() {
   } catch {}
   const allTechs = [...new Set(Object.keys(allSnaps).map((k) => k.split("/")[1]))].sort();
   const allCases = [...new Set(Object.keys(allSnaps).map((k) => k.split("/")[0]))].sort();
-  const meta: RunMeta = { host: os.hostname(), node: process.version, timestamp: new Date().toISOString(), gitSha, techs: allTechs, cases: allCases };
+  const meta: RunMeta = { host: os.hostname(), node: process.version, timestamp: new Date().toISOString(), gitSha, techs: allTechs, cases: allCases, snapshotN: benchConfig.snapshotN };
   writeFileSync(join(RESULT_DIR, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
   console.log(`✓ wrote result/ — ${Object.keys(snapshots).length} snapshot(s), measurements: ${measurements.join(", ")}`);
 
