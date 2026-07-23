@@ -1,0 +1,32 @@
+/* Author-written CSS for the 6-level composition — the ceiling every lane compiles
+   toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR
+   entry imports it ?raw. Maps the styled-components L0→…→L5 chain onto six flat class
+   names on one element — what next-yak flattens the wrapper chain to. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background: #2563eb;
+  color: #fff;
+}
+.lvl1 {
+  border-left: 1px solid hsl(53 70% 50%);
+  padding-left: 2px;
+}
+.lvl2 {
+  border-left: 2px solid hsl(106 70% 50%);
+  padding-left: 4px;
+}
+.lvl3 {
+  border-left: 3px solid hsl(159 70% 50%);
+  padding-left: 6px;
+}
+.lvl4 {
+  border-left: 4px solid hsl(212 70% 50%);
+  padding-left: 8px;
+}
+.lvl5 {
+  border-left: 5px solid hsl(265 70% 50%);
+  padding-left: 10px;
+}

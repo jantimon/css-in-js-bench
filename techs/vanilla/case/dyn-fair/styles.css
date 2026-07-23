@@ -1,0 +1,10 @@
+/* Author-written CSS for the dynamic-transform case — the ceiling every lane compiles
+   toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR
+   entry imports it ?raw. The per-instance translateX is NOT in the sheet: it rides an
+   inline style on the element, so this stays a single static rule (cf. styled.tsx, which
+   interpolated `transform` per instance). */
+.dynBase {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+}
