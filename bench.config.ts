@@ -34,7 +34,7 @@ export default {
   browser: { width: 1280, height: 720, deviceScaleFactor: 1 },
 
   // Browser and Node work measured by WPD. This is the canonical attribution and rendering
-  // path; `pnpm gen:wpd` runs the six lanes sequentially after `pnpm setup:wpd`.
+  // path; `pnpm gen:wpd` runs the lanes sequentially after `pnpm setup:wpd`.
   // Traced instrumentation is expensive, so a FIXED small `n` (not the case's own n) keeps runs
   // tractable AND the counts comparable across cases (style-recalc count scales with instances).
   // Only `mount` has real render work — an idempotent inp re-render / SSR-inline hydrate do ~0.

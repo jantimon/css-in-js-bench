@@ -114,11 +114,59 @@ importers:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
 
+  techs/next-yak-9.7:
+    dependencies:
+      next-yak:
+        specifier: 9.7.0
+        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-9.7-nofold:
+    dependencies:
+      next-yak:
+        specifier: 9.7.0
+        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
   techs/next-yak-css:
     dependencies:
       next-yak:
         specifier: ^9.6.0
         version: 9.6.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-css-9.7:
+    dependencies:
+      next-yak:
+        specifier: 9.7.0
+        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
+  techs/next-yak-css-9.7-nofold:
+    dependencies:
+      next-yak:
+        specifier: 9.7.0
+        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
       react:
         specifier: catalog:dev
         version: 19.2.7
@@ -1775,6 +1823,26 @@ packages:
       vite:
         optional: true
 
+  next-yak@9.7.0:
+    resolution: {integrity: sha512-fbcHZKtp7DLDKvykkVb48FlzqLfQYL3wAj1uI4/VCEK0k6qiJMJSHDxAKLWmgZ6t2khP7j9tSwD3nI1dFIgoXg==}
+    peerDependencies:
+      '@rsbuild/core': '>=2.0.0'
+      '@types/react': '>=19'
+      next: '>=16.1.0'
+      react: '>=19.0.0'
+      vite: '>=7.0.0'
+    peerDependenciesMeta:
+      '@rsbuild/core':
+        optional: true
+      '@types/react':
+        optional: true
+      next:
+        optional: true
+      react:
+        optional: true
+      vite:
+        optional: true
+
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
@@ -2218,6 +2286,9 @@ packages:
 
   yak-swc@9.6.0:
     resolution: {integrity: sha512-RTlLiahwJ30MoIY3p7iOeNJjbjPRz364FF1KqGKtIuLJPfC3wnWsFQAnPrPY0W1qH/fp06IA7iyDPd2xq5fcSg==}
+
+  yak-swc@9.7.0:
+    resolution: {integrity: sha512-AZZ+mm1jK054/sW8Rb9HKkTbpw6GNpZ+/Hw+K8CjiNRDdGRPJbOTAic1AsAGjBWP/qhIE9LdWx5sjzMtYAxM8Q==}
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
@@ -3621,6 +3692,17 @@ snapshots:
     transitivePeerDependencies:
       - '@swc/helpers'
 
+  next-yak@9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
+    dependencies:
+      '@babel/parser': 8.0.0
+      '@swc/core': 1.15.43
+      yak-swc: 9.7.0
+    optionalDependencies:
+      react: 19.2.7
+      vite: 8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+
   node-addon-api@7.1.1: {}
 
   node-releases@2.0.51: {}
@@ -4056,6 +4138,10 @@ snapshots:
       object-keys: 0.4.0
 
   yak-swc@9.6.0:
+    dependencies:
+      '@swc/counter': 0.1.3
+
+  yak-swc@9.7.0:
     dependencies:
       '@swc/counter': 0.1.3
 

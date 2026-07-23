@@ -28,6 +28,11 @@ export interface TechBench {
   appStylesheet: "tailwind" | "panda" | "stylex" | null;
   /** How this lane's CSS exists — drives the report legend. */
   cssKind: "extracted" | "atomic" | "utility" | "runtime" | "none";
+  /** Hidden by default in the report's lane filter (one click to show), left out of the
+   * Key-findings panel. For diagnostic variants that matter to one library's maintainers
+   * more than to a cross-library comparison, and for extreme outliers that would skew the
+   * default view. */
+  defaultOff?: boolean;
 }
 
 /** Parsed `techs/<tech>/package.json` (the fields the suite cares about). */
@@ -153,4 +158,6 @@ export interface RunMeta {
   cases: string[];
   /** Browser builds used by the render-timing (wpd) pass, when it ran. */
   browsers?: { chrome?: string; firefox?: string };
+  /** Instances rendered into each snapshot html (bench.config snapshotN) — used to derive per-element costs. */
+  snapshotN?: number;
 }

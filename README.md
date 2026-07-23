@@ -76,9 +76,11 @@ for reading, but the byte sizes and class counts in the status bar are measured 
 raw emitted output. Since every lane renders identically, the preview is the same image
 for all of them
 
-Every lane is built in production mode (React's prod runtime). The two committed next-yak
-lanes use the published `next-yak ^9.6.0` package: one styled-components API lane and one
-CSS-prop lane. Experimental local-ref matrices stay on their own experiment branch
+Every lane is built in production mode (React's prod runtime). The next-yak lanes all use
+published npm packages, in two API flavours (styled and css-prop) across three build
+settings: `next-yak` / `next-yak-css` on 9.6.0, `next-yak-9.7` / `next-yak-css-9.7` on
+9.7.0 (which folds static styles at build time by default), and `next-yak-9.7-nofold` /
+`next-yak-css-9.7-nofold` on 9.7.0 with `foldStatic: false` to keep the runtime path
 
 The report is `BENCHMARK.html` plus a sibling `assets/` folder: screenshots and the
 editor's Shiki-highlighted code files, loaded one at a time via an `<iframe>` (keeps the
@@ -94,32 +96,32 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 
 ```bash
 pnpm install
-pnpm setup:yak-main  # optional: add two GitHub-main lanes only when main is ahead of npm
-pnpm gen        # build every lane in isolation, write raw samples → result/ (then verifies)
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
-pnpm gen:wpd    # mandatory WPD lanes, sequential: SSR, mount, hydrate, INP, Firefox, blame
-pnpm report     # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
-pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen runs this too)
+pnpm gen        # full suite: gen:samples → gen:wpd → report (this is the one you usually want)
+
+# or run the stages on their own:
+pnpm gen:samples  # build every lane in isolation, write raw samples → result/ (then verifies)
+pnpm gen:wpd      # mandatory WPD lanes, sequential: SSR, mount (a breakdown+deep run group), hydrate, INP, Firefox
+pnpm report       # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
+pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen:samples runs this too)
 pnpm lint       # validate every tech package's schema
 pnpm dev        # author a single cell with HMR
 ```
 
 ### How the next-yak lanes get the library
 
-The committed `next-yak` and `next-yak-css` lanes install `next-yak ^9.6.0` from npm.
-`pnpm setup:yak-main` is optional: it compares GitHub `main` with the newest release tag
-and creates `next-yak-main` plus `next-yak-css-main` only when `main` contains unreleased
-changes. It uses `setup:yak` internally to clone and build that exact commit; `setup:yak`
-is the low-level source-build command, not part of the normal baseline setup
+Every next-yak lane pins a published npm version, so `pnpm install` is all it takes.
+There are three settings, each as a styled + css-prop pair:
 
-Building needs the Rust toolchain (rust-lang.org) with the wasm target:
+- `next-yak` / `next-yak-css` — 9.6.0, the baseline.
+- `next-yak-9.7` / `next-yak-css-9.7` — 9.7.0. It folds statically known styles at build
+  time by default: a static styled usage compiles to a plain element with a `className`,
+  and a static `css` prop becomes a plain `className`, both skipping the runtime wrapper.
+- `next-yak-9.7-nofold` / `next-yak-css-9.7-nofold` — 9.7.0 with `foldStatic: false`
+  passed to `viteYak` in each lane's vite configs, which turns folding off and keeps the
+  runtime path, so the two 9.7.0 pairs isolate what folding is worth.
 
-```bash
-rustup target add wasm32-wasip1
-```
-
-Local-ref next-yak technology matrices are deliberately maintained on the experiment
-branch, not materialized on `main`
+Within a pair, styled vs css-prop syntax is the only difference.
 
 ### gen and verify
 
@@ -130,19 +132,24 @@ pixels, and the hydrate build matches the SSR markup. Static checks always run, 
 pixel/hydrate checks reuse the PNGs / `dist/` a full run produced (skipped when absent,
 never rebuilt). Diffs land in `result/verify/`
 
-`gen` filters:
+`gen:samples` filters:
 
 ```bash
-pnpm gen --tech 'next-yak*'          # only matching lane dirnames (glob)
-pnpm gen --case 'realistic-button'   # only matching cases (glob)
-pnpm gen --measure=microbench,payload  # only these measurements (default = all)
+pnpm gen:samples --tech 'next-yak*'          # only matching lane dirnames (glob)
+pnpm gen:samples --case 'realistic-button'   # only matching cases (glob)
+pnpm gen:samples --measure=microbench,payload  # only these measurements (default = all)
 ```
+
+The full `pnpm gen` forwards `--tech`/`--case` to **both** generation stages
+(`pnpm gen --tech 'next-yak*'`), then stops before `report` — a filtered WPD run leaves the
+manifest incomplete and isn't reportable, so re-run a plain `pnpm gen` to publish. `--measure`
+(samples-only) and `--lane` (WPD-only) don't apply to the combined run; use the stage directly.
 
 `microbench` + `payload` are fast and deterministic and run by default. The others are
 opt-in, run them deliberately and the browser/load ones on an idle machine: `nsweep`
 (scaling), `autocannon` (req/s under load), `hydrate`, `inp`, `mount`, and `screenshots`
 (browser passes; `screenshots` writes PNGs to `result/assets/`). E.g.
-`pnpm gen --measure=nsweep,hydrate`. A filtered or partial-measure run merges into
+`pnpm gen:samples --measure=nsweep,hydrate`. A filtered or partial-measure run merges into
 `result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
 live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
 `pnpm exec playwright install chromium` once). WPD is isolated from the normal workspace
@@ -155,6 +162,21 @@ and intentionally cannot produce a report
 
 `gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
 choice and can change without re-running. History is git, not labeled runs
+
+### Report analysis
+
+The report's prose is a separate, optional layer on top of the numbers, and it is
+reproducible:
+
+- `BENCHMARK.json` is the machine-readable report data: per case, per measurement, per
+  lane, the same medians the charts draw. Read it directly if you want the numbers without
+  the HTML.
+- The per-case analyses and the Key-findings panel are written by running
+  `scripts/prompts/case-analysis.md` with a strong LLM (Opus) after a full `pnpm gen`. It
+  reads `BENCHMARK.json` plus `result/snapshot.json` and writes one JSON per case into
+  `result/analysis/`, which `pnpm report` embeds.
+- The report renders without them. If `result/analysis/` is empty the charts and tables
+  still build; only the written analysis is missing.
 
 ## Add a lane (tech)
 
@@ -173,7 +195,7 @@ Create `techs/<name>/`:
 4. `case/<id>/index.tsx` for each case the lane covers, default-exporting
    `(i) => ReactElement`
 
-No registry edits anywhere. `pnpm lint` then validates the package, `pnpm gen` builds it
+No registry edits anywhere. `pnpm lint` then validates the package, `pnpm gen:samples` builds it
 
 ## Add a case
 
@@ -191,7 +213,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 |---|---|---|
 | author | vanilla | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×2) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | next-yak (×6: styled + css-prop, on 9.6.0, 9.7.0, 9.7.0 no-fold) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |
@@ -208,7 +230,7 @@ That split means:
 
 - report tweak (charts, copy, layout): just push, the site re-renders from the committed
   samples without re-measuring
-- new numbers (lane changed, next-yak ref bumped, new case): run `pnpm gen` on a quiet
+- new numbers (lane changed, next-yak version bumped, new case): run `pnpm gen` on a quiet
   machine and commit the updated `result/`
 
 `BENCHMARK.html` / `BENCHMARK.md` / `BENCHMARK.zip` are build output and gitignored, the
@@ -220,4 +242,4 @@ deployed site is the canonical copy (the zip is downloadable there for offline s
 never the lane sources). Every lane is isolated to its own package under `techs/`, so
 library authors can tune their lane via a PR that touches only `techs/<their-lib>/`, see
 "Add a lane" above. Lane PRs don't need Rust unless they touch the next-yak lanes, and
-`pnpm gen --tech '<your-lane>'` only builds your lane
+`pnpm gen:samples --tech '<your-lane>'` only builds your lane

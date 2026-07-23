@@ -4,7 +4,9 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadavg } from "node:os";
 
-export const LANES = ["ssr", "mount", "hydrate", "inp", "firefox", "blame"];
+// The `mount` lane records a run group (--members breakdown,deep) that also emits the blame result
+// file (its deep member), so there is no separate `blame` lane.
+export const LANES = ["ssr", "mount", "hydrate", "inp", "firefox"];
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 export function parseWpdArgs(argv) {
@@ -35,13 +37,17 @@ export async function runLanesSequentially(lanes, runLane) {
   for (const lane of lanes) await runLane(lane);
 }
 
+// Idle threshold — overridable per machine via WPD_IDLE_MAX. The default of 15 tolerates
+// a busy developer box; set it lower for a dedicated quiet runner.
+const IDLE_MAX = Number(process.env.WPD_IDLE_MAX) > 0 ? Number(process.env.WPD_IDLE_MAX) : 15;
+
 async function waitForIdle() {
-  console.log("WPD idle gate: waiting for five consecutive one-minute samples below 2.0");
+  console.log(`WPD idle gate: waiting for five consecutive one-minute samples below ${IDLE_MAX.toFixed(1)}`);
   let consecutive = 0;
   while (consecutive < 5) {
     await new Promise((resolve) => setTimeout(resolve, 60_000));
     const current = loadavg()[0];
-    consecutive = current < 2 ? consecutive + 1 : 0;
+    consecutive = current < IDLE_MAX ? consecutive + 1 : 0;
     console.log(`WPD idle gate: load ${current.toFixed(2)} · ${consecutive}/5`);
   }
 }
@@ -56,12 +62,14 @@ export async function main(argv = process.argv.slice(2)) {
   const result = join(ROOT, "result");
   rmSync(join(result, "measurement-wpd-tally.json"), { force: true });
   for (const lane of parsed.lanes) rmSync(join(result, `measurement-wpd-${lane}.json`), { force: true });
+  // The blame file rides the mount lane's run group, so clear it whenever mount reruns.
+  if (parsed.lanes.includes("mount")) rmSync(join(result, "measurement-wpd-blame.json"), { force: true });
   const runId = `${new Date().toISOString()}-${process.pid}`;
   const forwarded = [parsed.tech && `--tech=${parsed.tech}`, parsed.caseId && `--case=${parsed.caseId}`].filter(Boolean);
-  await runLanesSequentially(parsed.lanes, (lane) => child(["--import", "tsx", "./gen-wpd.ts", `--lane=${lane}`, ...forwarded], {
+  await runLanesSequentially(parsed.lanes, (lane) => child(["./gen-wpd.ts", `--lane=${lane}`, ...forwarded], {
     WPD_RUN_ID: runId, WPD_EXPECTED_FULL: full ? "1" : "0",
   }));
-  if (full) await child(["--import", "tsx", "./scripts/validate-wpd-results.ts", "--finalize"], {});
+  if (full) await child(["./scripts/validate-wpd-results.ts", "--finalize"], {});
   else console.log("WPD filtered run complete but intentionally not reportable (manifest remains incomplete).");
 }
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { TechLabel } from "./TechLabel.tsx";
 
 export interface EditorLane {
   tech: string;
@@ -31,7 +32,7 @@ export function Editor({ caseId, lanes }: { caseId: string; lanes: EditorLane[] 
       <div className="ed-side">
         {lanes.map((l) => (
           <button key={l.tech} type="button" className="ed-file" data-tech={l.tech} data-lane={l.tech} data-preview={l.preview ?? ""}>
-            {l.label}
+            <TechLabel tech={l.tech} label={l.label} />
           </button>
         ))}
       </div>

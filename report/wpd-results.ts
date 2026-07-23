@@ -1,8 +1,16 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const WPD_LANES = ["ssr", "mount", "hydrate", "inp", "firefox", "blame"] as const;
+// The recording lanes: each is one `gen-wpd` invocation and one manifest tally. `mount` records a
+// run group (--members breakdown,deep) that answers the render-timing question in one capture, so
+// there is no separate `blame` lane -- but it still emits the `blame` result FILE (the deep member's
+// counts + forced sites, stitched onto the breakdown member's durations). WPD_RESULT_FILES is the
+// full set of measurement files a complete run leaves; validation checks every file's keys but only
+// the lanes' tallies.
+export const WPD_LANES = ["ssr", "mount", "hydrate", "inp", "firefox"] as const;
 export type WpdLane = (typeof WPD_LANES)[number];
+export const WPD_RESULT_FILES = [...WPD_LANES, "blame"] as const;
+export type WpdResultFile = (typeof WPD_RESULT_FILES)[number];
 
 export interface WpdLaneRun {
   run: number;
@@ -29,7 +37,7 @@ export interface WpdManifest {
 }
 
 export const WPD_MANIFEST = "measurement-wpd-tally.json";
-export const wpdResultFile = (lane: WpdLane) => `measurement-wpd-${lane}.json`;
+export const wpdResultFile = (file: WpdResultFile) => `measurement-wpd-${file}.json`;
 
 export function writeJsonAtomic(file: string, value: unknown): void {
   const temporary = `${file}.tmp-${process.pid}`;
@@ -73,12 +81,15 @@ export function validateWpdResults(resultDir: string, options: { finalize?: bool
       throw new Error(`WPD lane ${lane} metadata is incomplete`);
     if (record.run !== expectedKeys.length || record.ok !== expectedKeys.length || record.fail !== 0 || record.run !== record.ok + record.fail)
       throw new Error(`WPD lane ${lane} tally is not complete (${record.run}/${record.ok}/${record.fail})`);
-    const data = readRequired<Record<string, unknown>>(join(resultDir, wpdResultFile(lane)));
+  }
+
+  for (const file of WPD_RESULT_FILES) {
+    const data = readRequired<Record<string, unknown>>(join(resultDir, wpdResultFile(file)));
     const keys = Object.keys(data).sort();
     if (!sameKeys(expectedKeys, keys)) {
       const missing = expectedKeys.filter((key) => !keys.includes(key));
       const extra = keys.filter((key) => !expectedKeys.includes(key));
-      throw new Error(`WPD lane ${lane} key mismatch (missing: ${missing.join(", ") || "none"}; extra: ${extra.join(", ") || "none"})`);
+      throw new Error(`WPD result ${file} key mismatch (missing: ${missing.join(", ") || "none"}; extra: ${extra.join(", ") || "none"})`);
     }
   }
 

@@ -16,9 +16,9 @@
 //      with no hydration mismatch and the same element count, proving the microbench/
 //      autocannon (SSR) path and the hydrate path measure the same render. Needs dist/.
 //
-// 1–2 read only result/snapshot.json (always present after any gen). 3–4 reuse the
-// artifacts a full gen already produced (PNGs / per-tech dist) and are SKIPPED, never
-// rebuilt, when absent — so a quick `pnpm gen` gets a fast static verify and a full run
+// 1–2 read only result/snapshot.json (always present after any gen:samples). 3–4 reuse the
+// artifacts a full gen:samples already produced (PNGs / per-tech dist) and are SKIPPED, never
+// rebuilt, when absent — so a quick `pnpm gen:samples` gets a fast static verify and a full run
 // gets the works. verify never builds and never writes result/ data; it writes only its
 // own report (result/verify.json + result/verify/*.png diffs) and exits non-zero on any
 // violation.
@@ -264,7 +264,7 @@ export interface VerifyResult { ok: boolean; reports: CaseReport[] }
 export async function verify({ quiet = false }: { quiet?: boolean } = {}): Promise<VerifyResult> {
   const snapPath = join(RESULT_DIR, "snapshot.json");
   if (!existsSync(snapPath)) {
-    if (!quiet) console.error("verify: no result/snapshot.json — run `pnpm gen` first.");
+    if (!quiet) console.error("verify: no result/snapshot.json — run `pnpm gen:samples` first.");
     return { ok: false, reports: [] };
   }
   const snaps: Record<string, Snapshot> = JSON.parse(readFileSync(snapPath, "utf8"));
@@ -316,7 +316,7 @@ export async function verify({ quiet = false }: { quiet?: boolean } = {}): Promi
   return { ok, reports };
 }
 
-// CLI: `node --import tsx ./verify.ts` (also imported by gen at the end of a run).
+// CLI: `node ./verify.ts` (also imported by gen:samples at the end of a run).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   verify().then((r) => process.exit(r.ok ? 0 : 1));
 }

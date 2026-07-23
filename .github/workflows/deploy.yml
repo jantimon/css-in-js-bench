@@ -26,16 +26,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      # Clone (not build) the vendored next-yak so the lanes' link: deps resolve;
-      # the report only reads result/ + techs/ sources, it never imports next-yak.
-      - run: node scripts/setup-next-yak.mjs --skip-build
       - run: pnpm install --frozen-lockfile
       - run: pnpm report
       - name: Stage site
         run: |
           mkdir -p _site
           cp BENCHMARK.html _site/index.html
-          cp BENCHMARK.html BENCHMARK.md _site/
+          cp BENCHMARK.html BENCHMARK.md BENCHMARK.json _site/
           [ -f BENCHMARK.zip ] && cp BENCHMARK.zip _site/
           cp -R assets _site/assets
           touch _site/.nojekyll

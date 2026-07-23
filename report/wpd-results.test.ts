@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { WPD_LANES, validateWpdResults, wpdResultFile, type WpdManifest } from "./wpd-results.ts";
+import { WPD_LANES, WPD_RESULT_FILES, validateWpdResults, wpdResultFile, type WpdManifest } from "./wpd-results.ts";
 
 function fixture() {
   const dir = mkdtempSync(join(tmpdir(), "wpd-validator-"));
@@ -14,7 +14,7 @@ function fixture() {
   const manifest: WpdManifest = { schemaVersion: 1, runId: "run", complete: true, expectedCells: 1, lanes,
     environment: { gitSha: "abc", host: "host", node: "v1", platform: "darwin", release: "1", arch: "arm64", cpuModel: "cpu", logicalCpus: 1 },
     wpd: { version: "0.7.0", headlessMode: "shell", chrome: "1", firefox: "1" }, config: { n: 50 } };
-  for (const lane of WPD_LANES) writeFileSync(join(dir, wpdResultFile(lane)), JSON.stringify({ [keys[0]]: [{}] }));
+  for (const file of WPD_RESULT_FILES) writeFileSync(join(dir, wpdResultFile(file)), JSON.stringify({ [keys[0]]: [{}] }));
   const save = () => writeFileSync(join(dir, "measurement-wpd-tally.json"), JSON.stringify(manifest));
   save();
   return { dir, manifest, save };

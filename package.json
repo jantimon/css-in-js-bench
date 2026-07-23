@@ -4,17 +4,16 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "setup:yak": "node scripts/setup-next-yak.mjs",
-    "setup:yak-main": "node scripts/setup-next-yak-main.mjs",
     "setup:wpd": "node scripts/setup-wpd.mjs",
-    "gen": "node --import tsx ./gen.ts",
+    "gen": "node ./scripts/run-gen.mjs",
+    "gen:samples": "node ./gen.ts",
     "gen:wpd": "node ./scripts/run-wpd.mjs",
-    "gen:wpd:lane": "node --import tsx ./gen-wpd.ts",
+    "gen:wpd:lane": "node ./gen-wpd.ts",
     "report": "node --import tsx ./report.tsx",
-    "verify": "node --import tsx ./verify.ts",
+    "verify": "node ./verify.ts",
     "dev": "vite",
-    "lint": "node --import tsx ./report/lint.ts",
-    "test:wpd": "node --import tsx --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs"
+    "lint": "node ./report/lint.ts",
+    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs"
   },
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {

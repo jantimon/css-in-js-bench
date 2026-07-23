@@ -1,5 +1,6 @@
 import React from "react";
 import type { RenderTimingMetrics } from "../types.ts";
+import { TechLabel } from "./TechLabel.tsx";
 
 export interface RenderTimingRow {
   tech: string;
@@ -50,7 +51,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
     return (
       <div className={"bar-row" + (first ? " gap-before" : "")} data-tech={r.tech} key={`${r.tech}-${engine}`}>
         <span className="bar-label">
-          <span className="rt-lane">{first ? r.label : ""}</span>
+          <span className="rt-lane">{first ? <TechLabel tech={r.tech} label={r.label} /> : ""}</span>
           <span className="rt-eng">{engine}</span>
         </span>
         <span className="bar-track">

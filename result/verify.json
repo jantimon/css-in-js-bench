@@ -1,53 +1,93 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-18T10:02:41.760Z",
+  "generatedAt": "2026-07-23T18:13:36.695Z",
   "reports": [
     {
       "caseId": "btn-variant",
       "ok": true,
       "notes": [
-        "✓ 12 techs · 2 elements · attrs clean",
-        "✓ pixels: 12 techs match styled-components"
+        "✓ 16 techs · 2 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "compose-1",
+      "ok": true,
+      "notes": [
+        "✓ 15 techs · 2 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
       ]
     },
     {
       "caseId": "compose-3",
       "ok": true,
       "notes": [
-        "✓ 9 techs · 2 elements · attrs clean",
-        "✓ pixels: 9 techs match styled-components"
+        "✓ 15 techs · 2 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "compose-6",
+      "ok": true,
+      "notes": [
+        "✓ 15 techs · 2 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "dyn-fair",
+      "ok": true,
+      "notes": [
+        "✓ 15 techs · 2 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "dyn-inline",
+      "ok": true,
+      "notes": [
+        "✓ 4 techs · 2 elements · attrs clean",
+        "✓ pixels: 4 techs match vanilla"
       ]
     },
     {
       "caseId": "dyn-translate",
       "ok": true,
       "notes": [
-        "✓ 11 techs · 2 elements · attrs clean",
-        "✓ pixels: 11 techs match styled-components"
+        "✓ 15 techs · 2 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "multifile-composition",
+      "ok": true,
+      "notes": [
+        "✓ 15 techs · 16 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
       ]
     },
     {
       "caseId": "product-grid",
       "ok": true,
       "notes": [
-        "✓ 11 techs · 27 elements · attrs clean",
-        "✓ pixels: 11 techs match styled-components"
+        "✓ 15 techs · 27 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
       ]
     },
     {
       "caseId": "realistic-button",
       "ok": true,
       "notes": [
-        "✓ 11 techs · 5 elements · attrs clean",
-        "✓ pixels: 11 techs match styled-components"
+        "✓ 15 techs · 5 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
       ]
     },
     {
       "caseId": "tabs",
       "ok": true,
       "notes": [
-        "✓ 11 techs · 16 elements · attrs clean",
-        "✓ pixels: 11 techs match styled-components"
+        "✓ 15 techs · 16 elements · attrs clean",
+        "✓ pixels: 15 techs match styled-components"
       ]
     }
   ]

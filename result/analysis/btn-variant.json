@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "caseId": "btn-variant",
+  "provenance": {
+    "gitSha": "9a585f2",
+    "runTimestamp": "2026-07-23T18:13:07.431Z",
+    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "model": "claude-opus-4-8[1m]"
+  },
+  "headline": "Variants that compile to class toggles fold to a string concat, so `next-yak-9.7` leads; the case also splits Panda in two — its precompiled `cva` recipe joins the fast cluster while its per-prop `css()` fn is the slowest lane by far.",
+  "measurements": {
+    "microbench": {
+      "unit": "renders/s",
+      "higherBetter": true,
+      "winner": "next-yak-9.7",
+      "top3": [
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1549787, "ratioToBaseline": 1.0 },
+        { "tech": "stylex", "label": "StyleX", "value": 1374021, "ratioToBaseline": 0.887 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1334668, "ratioToBaseline": 0.861 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1549787 },
+      "why": "The variant props compile to class toggles, so `next-yak-9.7` inlines them to a string concat and folds the wrapper away, leading at 0.645 ms/1k. The way each library expresses variants decides the rest: `panda`'s `css()` fn re-serializes every variant per element, dumping 13.0 ms into component self-time (13.2 ms/1k, the slowest lane), while its `cva` recipe precompiles the variants and joins the fast cluster at 0.810 ms/1k — a 16× swing inside one library. `styled-components` (1.61 ms/1k) and `emotion` (2.92 ms/1k) still hash per variant.",
+      "confidence": "high"
+    },
+    "autocannon": {
+      "unit": "req/s",
+      "higherBetter": true,
+      "winner": "next-yak-9.7",
+      "top3": [
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1590, "ratioToBaseline": 1.0 },
+        { "tech": "vanilla", "label": "vanilla", "value": 1395, "ratioToBaseline": 0.877 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1390, "ratioToBaseline": 0.874 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1590 },
+      "why": "The folded toggle lane serves the most requests because each request emits static classes; `panda`'s css-fn re-serializes variants per request and collapses to 76 req/s, 21× fewer than the folded lane.",
+      "confidence": "high"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 0.6, "ratioToBaseline": 0.769 },
+        { "tech": "vanilla", "label": "vanilla", "value": 0.601, "ratioToBaseline": 0.771 },
+        { "tech": "stylex", "label": "StyleX", "value": 0.632, "ratioToBaseline": 0.81 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 0.78 },
+      "why": "The extracted lanes render in ~0.6-0.8 ms with a near-zero library slice (`next-yak-css-9.7` 0.106 ms, `next-yak-9.7` 0.127 ms after the toggle fold). `panda`'s css-fn is the outlier by an order of magnitude — 13.0 ms of component self-time re-serializing variants — where its recipe lane sits at 0.863 ms. `emotion` (lib 1.43 ms) and `styled-components` (lib 0.648 ms) carry variant hashing.",
+      "confidence": "high"
+    },
+    "hydrate": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-9.7",
+      "top3": [
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 41.3, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 45.8, "ratioToBaseline": 1.11 },
+        { "tech": "vanilla", "label": "vanilla", "value": 47.8, "ratioToBaseline": 1.16 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 41.3 },
+      "why": "Extracted lanes hydrate as pure JS; the folded styled lane leads at 41.3 ms. The runtime libraries inject on hydrate — `panda` 97.6 ms, `styled-components` 98.0 ms — ~2.4× the folded floor.",
+      "confidence": "medium"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "cnfast",
+      "top3": [
+        { "tech": "cnfast", "label": "cnfast", "value": 7.0, "ratioToBaseline": 0.921 },
+        { "tech": "styled-components", "label": "styled-components", "value": 7.0, "ratioToBaseline": 0.921 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 7.3, "ratioToBaseline": 0.961 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 7.6 },
+      "why": "With static variants, changing one button re-renders one element; nearly every lane does it in ~7-7.7 ms within the interaction spread, and even `styled-components` joins because a static variant regenerates no class on interaction. `panda`'s css-fn stays back at 44.8 ms, still serializing on the re-render.",
+      "confidence": "low"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-9.7",
+      "top3": [
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 67.9, "ratioToBaseline": 1.0 },
+        { "tech": "stylex", "label": "StyleX", "value": 70.1, "ratioToBaseline": 1.03 },
+        { "tech": "vanilla", "label": "vanilla", "value": 72.7, "ratioToBaseline": 1.07 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 67.9 },
+      "why": "Extracted lanes mount at ~68-73 ms; the runtime libraries add first-inject (`styled-components` 92.6 ms, `emotion` 96.5 ms, `panda` 125 ms).",
+      "confidence": "medium"
+    },
+    "renderTiming": {
+      "unit": "recalcs",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 },
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 1 },
+      "why": "One style recalc for every approach — parity; the styleMs spread (0.122-0.430 ms) is sub-millisecond and the higher figures (`cnfast`, `emotion`) come from their injected sheet, not extra recalcs.",
+      "confidence": "low"
+    },
+    "payload": {
+      "unit": "gz B",
+      "higherBetter": false,
+      "winner": "next-yak-css-9.7",
+      "top3": [
+        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 3391, "ratioToBaseline": 0.758 },
+        { "tech": "vanilla", "label": "vanilla", "value": 3781, "ratioToBaseline": 0.845 },
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 4472, "ratioToBaseline": 1.0 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 4472 },
+      "why": "The css-prop fold ships smallest (3.39 kB gz), the styled toggle lane 4.47 kB, `panda`'s recipe 5.75 kB. The utility and runtime lanes are 3.3-3.8× larger (`tailwind-merge` 15.0 kB, `emotion` 16.2 kB, `styled-components` 16.8 kB).",
+      "confidence": "high"
+    },
+    "nsweep": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-9.7",
+      "top3": [
+        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 2.108, "ratioToBaseline": 1.0 },
+        { "tech": "vanilla", "label": "vanilla", "value": 2.296, "ratioToBaseline": 1.09 },
+        { "tech": "cnfast", "label": "cnfast", "value": 2.308, "ratioToBaseline": 1.09 }
+      ],
+      "baseline": { "tech": "next-yak-9.7", "value": 2.108 },
+      "why": "At 4000 buttons the folded toggle lane stays flat with react-dom (2.11 ms); `panda`'s css-fn compounds its per-variant serialize to 51.9 ms, the steepest curve, while its recipe lane stays at 2.60 ms.",
+      "confidence": "high"
+    }
+  },
+  "crossCase": "`btn-variant` and `product-grid` above are the two class-toggle cases: both express variants as `$prop` toggles that next-yak inlines to a string concat and folds, which is why the styled and css-prop lanes sit at the static-class floor in each. `btn-variant` also isolates the API choice within Panda — the `cva` recipe precompiles variants (fast) where the inline `css()` fn re-serializes them per element (slowest lane in the case)."
+}

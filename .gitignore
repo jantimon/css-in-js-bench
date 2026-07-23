@@ -22,3 +22,5 @@ techs/*/styled-system/
 techs/*/panda.css
 .swc/
 .DS_Store
+BENCHMARK.json
+result/analysis/*.md

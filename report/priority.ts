@@ -6,4 +6,10 @@ export const CASE_PRIORITY: Record<string, number> = {
   "product-grid": 100,
   "realistic-button": 90,
   tabs: 80,
+  // experiment pairs read together: multifile is the tabs A/B, the dyn trio brackets
+  // the dynamic-value mechanisms (naive → best-practice → inline control).
+  "multifile-composition": 75,
+  "dyn-translate": 60,
+  "dyn-fair": 55,
+  "dyn-inline": 50,
 };

@@ -7,7 +7,8 @@
     "color": "#f59e0b",
     "buildPlugin": null,
     "appStylesheet": null,
-    "cssKind": "none"
+    "cssKind": "none",
+    "defaultOff": true
   },
   "dependencies": {
     "react": "catalog:dev",

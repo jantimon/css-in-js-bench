@@ -7,7 +7,8 @@
     "color": "#ec4899",
     "buildPlugin": null,
     "appStylesheet": "panda",
-    "cssKind": "atomic"
+    "cssKind": "atomic",
+    "defaultOff": true
   },
   "dependencies": {
     "@pandacss/dev": "catalog:dev",

@@ -6,8 +6,8 @@
 // `render-timing` measurement:
 //   node scripts/setup-wpd.mjs            install wpd + Chrome + Firefox into vendor/wpd
 //   node scripts/setup-wpd.mjs --force    reinstall even if already present
-// Then: pnpm gen --measure=render-timing  (gen resolves vendor/wpd/node_modules/.bin/wpd and
-// skips render-timing gracefully if this was never run). Needs Node 24+ (wpd requirement).
+// Then: pnpm gen:wpd  (resolves vendor/wpd/node_modules/.bin/wpd; the WPD lanes require this
+// vendor tree to exist). Needs Node 24+ (wpd requirement).
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WPD_DIR = join(ROOT, "vendor", "wpd");
-const WPD_VERSION = process.env.WPD_VERSION || "0.13.1";
+const WPD_VERSION = process.env.WPD_VERSION || "0.15.1";
 const force = process.argv.includes("--force");
 
 const major = Number(process.versions.node.split(".")[0]);
