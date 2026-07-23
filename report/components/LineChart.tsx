@@ -1,4 +1,5 @@
 import React from "react";
+import { TechLabel } from "./TechLabel.tsx";
 
 export interface SweepLine {
   tech: string;
@@ -64,7 +65,7 @@ export function LineChart({ lines }: { lines: SweepLine[] }) {
         {lines.map((l) => (
           <span data-tech={l.tech} key={l.tech}>
             <i style={{ background: l.color }} />
-            {l.label}
+            <TechLabel tech={l.tech} label={l.label} />
           </span>
         ))}
       </div>

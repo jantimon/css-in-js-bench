@@ -11,9 +11,10 @@ import type { SweepLine } from "./components/LineChart.tsx";
 import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
 import type { WpdBreakdownRow } from "./components/WpdBreakdownChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
+import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
-const MD_TECHS = ["next-yak", "next-yak-css", "stylex", "cnfast", "styled-components"] as const;
+const MD_TECHS = ["next-yak-9.7", "next-yak", "next-yak-css-9.7", "stylex", "cnfast", "styled-components"] as const;
 
 export interface MdSection {
   caseId: string;
@@ -30,6 +31,7 @@ export interface MdSection {
   mountWpdRows: WpdBreakdownRow[];
   sweepLines: SweepLine[];
   rtRows: RenderTimingRow[];
+  analysis: CaseAnalysis | null;
 }
 
 const int = (n: number) => Math.round(n).toLocaleString("en-US");
@@ -50,12 +52,18 @@ const table = (header: string[], rows: string[][]): string => {
 };
 
 // A plain value bar (throughput, ms, req/s). Best-first; the winning value is **bolded**.
+// Rows carrying the per-element normalization get it as an extra column.
 const barTable = (rows: Bar[], unit: string, higherBetter: boolean): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (higherBetter ? b.value - a.value : a.value - b.value));
   if (!picked.length) return "";
+  const withNorm = picked.some((r) => r.msPer1kElems !== undefined);
   return table(
-    ["Technique", unit],
-    picked.map((r, i) => [r.label, (i === 0 ? "**" : "") + int(r.value) + (i === 0 ? "**" : "")]),
+    ["Technique", unit, ...(withNorm ? ["ms / 1k elements"] : [])],
+    picked.map((r, i) => [
+      r.label,
+      (i === 0 ? "**" : "") + int(r.value) + (i === 0 ? "**" : ""),
+      ...(withNorm ? [r.msPer1kElems !== undefined ? ms(r.msPer1kElems) : "—"] : []),
+    ]),
   );
 };
 
@@ -105,10 +113,10 @@ const wpdTable = (rows: WpdBreakdownRow[]): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.span.wallMs - a.span.slices.idle) - (b.span.wallMs - b.span.slices.idle));
   if (!picked.length) return "";
   return table(
-    ["Technique", "active ms", "span ms", "timing median", "JS", "style", "layout", "paint", "idle"],
+    ["Technique", "active ms", "span ms", "timing median", "p95", "JS", "style", "layout", "paint", "idle"],
     picked.map((r, i) => {
       const active = r.span.wallMs - r.span.slices.idle;
-      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), ms(r.span.slices.js), ms(r.span.slices.style), ms(r.span.slices.layout), ms(r.span.slices.paint), ms(r.span.slices.idle)];
+      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), r.p95Ms === undefined ? "—" : ms(r.p95Ms), ms(r.span.slices.js), ms(r.span.slices.style), ms(r.span.slices.layout), ms(r.span.slices.paint), ms(r.span.slices.idle)];
     }),
   );
 };
@@ -127,7 +135,8 @@ const sweepTable = (lines: SweepLine[]): string => {
 const MEASUREMENTS = `## Measurements
 
 Every per-case section below reports these as tables. Definitions are given here once. The
-statistic is the **median** where a repeated timing distribution exists; WPD_VERSION span anatomy is
+statistic is the **median** where a repeated timing distribution exists; the Chrome-profiled span anatomy
+(recorded with web-performance-debugger WPD_VERSION) is
 the first instrumented iteration and is labelled separately. Production React in every lane. In
 each table the best value is **bold** and rows are sorted best-first.
 
@@ -142,14 +151,14 @@ each table the best value is **bold** and rows are sorted best-first.
   server \`renderToString()\` split by CPU self-time from a sampled V8 profile mapped through
   source maps: **react-dom** (the floor every lane shares), the **styling library** runtime, and
   **your component**. *other* is GC / unattributed native work.
-- **Where the client hydration time goes** — WPD_VERSION reconciling span, ms, lower is better. Time for React to
+- **Where the client hydration time goes** — Chrome-profiled reconciling span, ms, lower is better. Time for React to
   **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
   existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
-- **Where the interaction time goes** — WPD_VERSION in-place re-render, ms, lower is better. A state change
+- **Where the interaction time goes** — Chrome-profiled in-place re-render, ms, lower is better. A state change
   triggers a synchronous re-render (\`flushSync\`) of the whole mounted workload, then waits for the
   next paint — click→paint latency, with active work separated from frame-alignment idle. This is where **runtime** CSS-in-JS re-runs
   its per-element styling on every update; build-time lanes do almost none.
-- **Where the cold-mount time goes** — WPD_VERSION blank screen → first render, ms, lower is better. From a
+- **Where the cold-mount time goes** — Chrome-profiled blank screen → first render, ms, lower is better. From a
   **blank root** (no SSR markup) a "click" renders the whole workload from scratch
   (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
   paint includes each **runtime** library's **first style injection** into the document. The span's
@@ -174,7 +183,7 @@ and styled-components keep their runtime in
 \`node_modules\`, and next-yak's runtime shows under **styling lib** too, not under **component**.`;
 
 /** Build the full agent-readable markdown report. */
-export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string): string {
+export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null): string {
   const shownLabels = MD_TECHS.filter((t) => techs[t]).map((t) => `**${techs[t].label}** (\`${t}\`)`);
   const out: string[] = [
     `# Styling benchmarks`,
@@ -187,6 +196,20 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     MEASUREMENTS,
   ];
 
+  if (study) {
+    // Analysis prose carries backtick-escaped tokens: case ids (`compose-3`), function and API
+    // names (`Yak`, `styled()`). In the HTML report a case id is turned into a deep link to its
+    // section anchor; here we deliberately leave every backtick as plain markdown code. Markdown
+    // anchors are heading-slug based and brittle, so linking `compose-3` to a fabricated
+    // `#composition--3-levels…` slug would rot the moment a title changed — code style is honest.
+    out.push(``, `## Key findings`, ``, `> ${study.headline}`);
+    for (const f of study.findings) out.push(``, `**${f.title}** — ${f.prose}`);
+    if (study.libraryHints.length) {
+      out.push(``, `### One hint per library`, ``);
+      for (const h of study.libraryHints) out.push(`- **${techs[h.tech]?.label ?? h.tech}** — ${h.hint}`);
+    }
+  }
+
   for (const s of sections) {
     const covered = new Set(MD_TECHS.filter((t) => s.bars.some((b) => b.tech === t) || s.attrRows.some((r) => r.tech === t)));
     const missing = MD_TECHS.filter((t) => techs[t] && !covered.has(t));
@@ -197,20 +220,29 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     if (links.length) out.push(`- **Source:** ${links.join(" · ")}`);
     if (missing.length) out.push(`- **Not covered by this case:** ${missing.map((t) => techs[t].label).join(", ")}`);
 
+    if (s.analysis) {
+      out.push(``, `### Analysis`, ``, `> ${s.analysis.headline}`);
+      for (const k of Object.keys(MEASUREMENT_TITLES) as MeasurementKey[]) {
+        const m = s.analysis.measurements[k];
+        if (m) out.push(``, `- **${MEASUREMENT_TITLES[k]}** — winner: ${techs[m.winner]?.label ?? m.winner}. ${m.why}`);
+      }
+      if (s.analysis.crossCase) out.push(``, s.analysis.crossCase);
+    }
+
     const blocks: [string, string][] = [
       ["### SSR render throughput — renders/sec, higher is better", barTable(s.bars, "renders/sec", true)],
       ["### SSR throughput under load — requests/sec, higher is better", barTable(s.acanBars, "requests/sec", true)],
       ["### Where the SSR render time goes — ms/render, lower is better", attrTable(s.attrRows, "other")],
       [
-        "### Client hydration — WPD_VERSION active work, lower is better",
+        "### Client hydration — profiled active work, lower is better",
         wpdTable(s.hydWpdRows),
       ],
       [
-        "### Interaction re-render — WPD_VERSION active work, lower is better",
+        "### Interaction re-render — profiled active work, lower is better",
         wpdTable(s.inpWpdRows),
       ],
       [
-        "### Cold mount — WPD_VERSION active work, lower is better",
+        "### Cold mount — profiled active work, lower is better",
         wpdTable(s.mountWpdRows),
       ],
       ["### Browser render-work on cold mount — Chrome counts + Firefox ms, lower is better", rtTable(s.rtRows)],
@@ -223,6 +255,6 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
   const renderRows = sections.flatMap((section) => section.rtRows);
   const noForcedLayouts = renderRows.length > 0 && renderRows.every((row) =>
     row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
-  if (noForcedLayouts) out.push("", "**No forced layouts observed in this WPD run.**");
-  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", `WPD ${wpdVersion}`);
+  if (noForcedLayouts) out.push("", "**No forced layouts observed in this profiling run.**");
+  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion);
 }

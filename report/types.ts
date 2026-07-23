@@ -153,4 +153,6 @@ export interface RunMeta {
   cases: string[];
   /** Browser builds used by the render-timing (wpd) pass, when it ran. */
   browsers?: { chrome?: string; firefox?: string };
+  /** Instances rendered into each snapshot html (bench.config snapshotN) — used to derive per-element costs. */
+  snapshotN?: number;
 }

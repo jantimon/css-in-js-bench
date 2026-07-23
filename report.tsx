@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
-import { median, spread } from "./report/stats.ts";
+import { median, percentile, spread } from "./report/stats.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -22,6 +22,10 @@ import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
+import { CaseSummary } from "./report/components/CaseSummary.tsx";
+import { StudyFindings } from "./report/components/StudyFindings.tsx";
+import { TechLabel } from "./report/components/TechLabel.tsx";
+import type { CaseAnalysis, StudyAnalysis } from "./report/analysis-schema.ts";
 import { renderMarkdown } from "./report/markdown.ts";
 import { compileCodeAssets } from "./report/code-assets.ts";
 import { validateWpdResults } from "./report/wpd-results.ts";
@@ -69,7 +73,6 @@ async function main() {
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
   const wpdVersion = wpdManifest.wpd.version;
-  const wpdLabel = `WPD ${wpdVersion}`;
   const micro = readJson<Record<string, number[]>>(join(RESULT, "measurement-microbench.json"), {});
   const pay = readJson<Record<string, { js: number; css: number; html: number }[]>>(join(RESULT, "measurement-payload.json"), {});
   const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
@@ -85,6 +88,18 @@ async function main() {
   const wpdBlame = readJson<Record<string, WpdBlameSample[]>>(join(RESULT, "measurement-wpd-blame.json"), {});
   const shots = readJson<Record<string, string[]>>(join(RESULT, "measurement-screenshots.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
+  // LLM-written per-case analyses (result/analysis/<caseId>.json) — optional like any
+  // other result file; validated only by shape (schemaVersion + matching caseId).
+  const analysisDir = join(RESULT, "analysis");
+  const analyses: Record<string, CaseAnalysis> = {};
+  if (existsSync(analysisDir)) {
+    for (const f of readdirSync(analysisDir)) {
+      if (!f.endsWith(".json")) continue;
+      const a = readJson<CaseAnalysis | null>(join(analysisDir, f), null);
+      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "")) analyses[a.caseId] = a;
+    }
+  }
+  const study = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
 
   // Screenshots live in result/assets/; mirror them next to BENCHMARK.html so the
   // self-contained report can reference assets/<…>.png (§10.6 — single file except images).
@@ -92,6 +107,10 @@ async function main() {
   const assetsDst = join(ROOT, "assets");
   rmSync(assetsDst, { recursive: true, force: true });
   if (existsSync(assetsSrc)) cpSync(assetsSrc, assetsDst, { recursive: true });
+  // Technology logos (report/logos/*.avif) — mirror into assets/logos/ so <img src="assets/logos/…">
+  // resolves both from BENCHMARK.html on disk and inside BENCHMARK.zip.
+  const logosSrc = join(ROOT, "report", "logos");
+  if (existsSync(logosSrc)) cpSync(logosSrc, join(assetsDst, "logos"), { recursive: true });
   const baseMeta = readJson<RunMeta | null>(join(RESULT, "meta.json"), null);
   const meta: RunMeta = {
     ...(baseMeta ?? { techs: [], cases: [] }),
@@ -113,6 +132,7 @@ async function main() {
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
   const techGroups = groupTechs(usedTechs);
+  const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   const sections = caseIds.map((caseId) => {
     const cm = cases[caseId];
@@ -120,7 +140,13 @@ async function main() {
       .filter((t) => micro[`${caseId}/${t}`])
       .map((t) => {
         const xs = micro[`${caseId}/${t}`];
-        return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
+        const value = median(xs); // instance renders per second (gen.ts microbench)
+        // ms per 1,000 DOM elements: element count per instance from the snapshot html
+        // (snapshotN instances) — normalizes heavy vs light workloads across cases.
+        const snapHtml = snaps[`${caseId}/${t}`]?.html;
+        const elemsPerInstance = snapHtml ? (snapHtml.match(/<[a-zA-Z]/g) ?? []).length / snapshotN : 0;
+        const msPer1kElems = value > 0 && elemsPerInstance > 0 ? 1e6 / (value * elemsPerInstance) : undefined;
+        return { tech: t, label: techs[t].label, color: techs[t].bench.color, value, spread: spread(xs), msPer1kElems };
       });
     // payload: page bytes shipped, broken into JS · CSS · HTML (gzipped) — lower better.
     const payRows: StackRow[] = usedTechs
@@ -170,7 +196,12 @@ async function main() {
         const sample = data[`${caseId}/${t}`][0];
         const timing = sample.timing;
         const timingMedian = timing.stats?.medianMs ?? (timing.perIteration.length ? median(timing.perIteration) : undefined);
-        return { tech: t, label: techs[t].label, span: sample.span!, medianMs: timingMedian };
+        const iters = timing.perIteration;
+        return {
+          tech: t, label: techs[t].label, span: sample.span!, medianMs: timingMedian,
+          p75Ms: iters.length >= 4 ? percentile(iters, 0.75) : undefined,
+          p95Ms: iters.length >= 4 ? percentile(iters, 0.95) : undefined,
+        };
       });
     const hydWpdRows = wpdRows(wpdHydrate);
     const inpWpdRows = wpdRows(wpdInp);
@@ -211,7 +242,7 @@ async function main() {
     const editorLanes: EditorLane[] = usedTechs
       .filter((t) => snaps[`${caseId}/${t}`])
       .map((t) => ({ tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0] }));
-    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes };
+    return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes, analysis: analyses[caseId] ?? null };
   });
 
   const doc = (
@@ -320,7 +351,7 @@ async function main() {
                   {g.items.map((it) => (
                     <button type="button" className="tech-pill active" data-tech-filter={it.tech} title={techs[it.tech].label} key={it.tech}>
                       <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
-                      {it.short}
+                      <TechLabel tech={it.tech} label={it.short} />
                     </button>
                   ))}
                 </div>
@@ -328,10 +359,12 @@ async function main() {
             ))}
           </section>
 
-          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes }) => {
+          {study ? <StudyFindings study={study} techs={techs} runSha={meta.gitSha} caseIds={caseIds} /> : null}
+
+          {sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes, analysis }) => {
             const [caseTitle, caseSub] = cm.label.split(/\s+—\s+/, 2);
             return (
-            <details className="case" open key={caseId}>
+            <details className="case" id={caseId} open key={caseId}>
               <summary>
                 <span className="case-title">{caseTitle}</span>
                 {caseSub ? <span className="case-sub">{caseSub}</span> : null}
@@ -339,6 +372,7 @@ async function main() {
                 <span className="chip">{cm.cardinality} cardinality</span>
               </summary>
               <p className="case-desc">{cm.description}</p>
+              {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code">
               <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview</h3>
               <Editor caseId={caseId} lanes={editorLanes} />
@@ -369,10 +403,10 @@ async function main() {
             {attrRows.length ? (
               <div data-measure="attribution">
                 <h3 className="chart-title">
-                  Where the SSR render time goes — {wpdLabel} Node CPU self-time · median ms / render
+                  Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
-                    The median server <code>renderToString()</code>, measured by <b>{wpdLabel}</b> and split by CPU self-time from a sampled V8 profile mapped
-                    through source maps: <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
+                    The median server <code>renderToString()</code>, split by CPU self-time from a sampled V8 profile mapped
+                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
                     and <b>your component</b>. <b>other</b> is GC / unattributed native work.
                   </InfoTip>
                 </h3>
@@ -382,12 +416,12 @@ async function main() {
             {hydWpdRows.length || hydBars.length ? (
               <div data-measure="hydrate">
                 <h3 className="chart-title">
-                  Client hydration — repeated timing + {wpdLabel} span anatomy
+                  Client hydration — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
                     Time for React to <b>hydrate</b> the server HTML in the browser — attach event handlers and build the
                     fiber tree over the existing DOM (it does not re-create markup). The first chart is the existing repeated
-                    end-to-end timing; the {wpdLabel} chart then splits one instrumented commit into JS, style, layout, paint,
-                    GC, browser work and idle. Lower is better.
+                    end-to-end timing; the profiled chart then splits one instrumented commit into JS, style, layout, paint,
+                    GC, browser work and idle (recorded with <code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
@@ -397,10 +431,10 @@ async function main() {
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction re-render — repeated timing + {wpdLabel} span anatomy
+                  Interaction re-render — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
                     A state change triggers a <b>synchronous re-render</b> (<code>flushSync</code>) of the whole mounted
-                    workload, then we wait for the next paint — click→paint latency. WPD separates active work from the
+                    workload, then we wait for the next paint — click→paint latency. The profile separates active work from the
                     frame-alignment idle that used to dominate this number. This
                     is where <b>runtime</b> CSS-in-JS libraries re-run their per-element styling on every update; build-time
                     lanes (next-yak / Panda / Tailwind / vanilla) do almost none. Lower is better.
@@ -413,12 +447,12 @@ async function main() {
             {mountWpdRows.length || mountBars.length ? (
               <div data-measure="mount">
                 <h3 className="chart-title">
-                  Cold mount — repeated timing + {wpdLabel} span anatomy
+                  Cold mount — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
                     Starting from a <b>blank root</b> (no SSR markup), a "click" renders the whole workload from scratch
                     (<code>createRoot().render()</code>), then we wait for the first paint. Unlike hydration — which attaches to
                     existing server HTML — this is a cold client mount, so the first paint includes each <b>runtime</b>
-                    library's <b>first style injection</b> into the document. WPD's reconciling span shows how much of the
+                    library's <b>first style injection</b> into the document. The profiled span shows how much of the
                     commit is JS, style, layout, paint, GC, browser work and idle. Lower is better.
                   </InfoTip>
                 </h3>
@@ -432,7 +466,7 @@ async function main() {
                   Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
                   <InfoTip>
                     Where the browser's <b>rendering</b> time goes on a cold mount (not JS — the engine's own style-recalc,
-                    layout and paint), measured by <a href="https://github.com/jantimon/web-performance-debugger">wpd</a> in
+                    layout and paint), profiled with <a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a> in
                     two engines. This is where <b>runtime</b> CSS-in-JS pays a tax build-time lanes don't: it injects a style
                     rule per instance, so the engine recalculates styles once per instance — <b>Chrome</b>'s authoritative
                     signal is that <b>style-recalc count</b> (the badge; e.g. 50 instances → ~50 recalcs vs 1 for extracted
@@ -487,14 +521,39 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study));
 
-  console.log(`✓ wrote BENCHMARK.html + BENCHMARK.md — ${sections.length} case(s), ${usedTechs.length} lane(s)`);
+  // Machine-readable companion: the same reduced section data the charts render, all lanes,
+  // one file. This is what the analysis prompt (scripts/prompts/case-analysis.md) reads.
+  const jsonOut = {
+    schemaVersion: 1,
+    meta,
+    wpdVersion,
+    study,
+    techs: Object.fromEntries(usedTechs.map((t) => [t, { label: techs[t].label, ...techs[t].bench }])),
+    cases: sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, analysis }) => ({
+      caseId,
+      meta: cm,
+      microbench: bars,
+      autocannon: acanBars,
+      attribution: attrRows,
+      hydrate: { bars: hydBars, wpd: hydWpdRows },
+      inp: { bars: inpBars, wpd: inpWpdRows },
+      mount: { bars: mountBars, wpd: mountWpdRows },
+      renderTiming: rtRows,
+      payload: payRows,
+      nsweep: sweepLines,
+      analysis,
+    })),
+  };
+  writeFileSync(join(ROOT, "BENCHMARK.json"), JSON.stringify(jsonOut, null, 2) + "\n");
+
+  console.log(`✓ wrote BENCHMARK.html + BENCHMARK.md + BENCHMARK.json — ${sections.length} case(s), ${usedTechs.length} lane(s)`);
 
   // Bundle the report into a single self-contained BENCHMARK.zip (the html + every asset it
   // references: screenshots and the iframe code files under assets/) so it can be sent as one
   // file and opened from disk. Shells out to `zip` (zero deps); skipped with a note if absent.
-  const zipParts = ["BENCHMARK.html", "BENCHMARK.md", ...(existsSync(join(ROOT, "assets")) ? ["assets"] : [])];
+  const zipParts = ["BENCHMARK.html", "BENCHMARK.md", "BENCHMARK.json", ...(existsSync(join(ROOT, "assets")) ? ["assets"] : [])];
   rmSync(join(ROOT, "BENCHMARK.zip"), { force: true }); // rebuild, don't append into a stale archive
   try {
     execFileSync("zip", ["-r", "-q", "-X", "BENCHMARK.zip", ...zipParts], { cwd: ROOT });
@@ -545,6 +604,10 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tech-pill:not(.active){opacity:.4}
 .tech-pill:not(.active) .tp-swatch{filter:grayscale(1)}
 .tp-swatch{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tp-line{width:3px;height:15px;border-radius:2px;display:inline-block;flex:none;align-self:center}
+.prose-tech{white-space:nowrap}
+.study .prose-tech{font-weight:600;color:#e6edf3}
+.prose-tech .tech-logo{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
 [data-measure].measure-off{display:none}
 .case{margin:0 0 18px;border:1px solid #1c2128;border-radius:12px;padding:4px 22px 18px;background:#0d1117}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
@@ -554,15 +617,41 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .chip{font:11.5px/1 ui-monospace,monospace;color:#8b949e;background:#161b22;border:1px solid #21262d;border-radius:6px;padding:4px 8px}
 .case-desc{color:#8b949e;margin:0 0 8px;max-width:92ch;font-size:13.5px}
 .chart-title{font-size:11.5px;color:#6e7681;text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
+.case-analysis{border-left:3px solid #3fb950;padding:2px 0 2px 14px;margin:0 0 10px}
+.sum-headline{margin:0 0 10px;color:#e6edf3;font-size:13.5px;max-width:92ch}
+.case-analysis .sum-headline{margin:0}
+.sum-stale{margin-left:10px;padding:2px 7px;border:1px solid #9e6a03;border-radius:999px;color:#d29922;font-size:11px;white-space:nowrap}
+.sum-winner{display:inline-flex;align-items:center;gap:6px;color:#e6edf3;font-size:13px;font-weight:600;flex:0 0 auto}
+.sum-why{margin:4px 0;color:#adbac7;font-size:13px;max-width:92ch}
+.study{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
+.study-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.study-title{font-size:14px;font-weight:650}
+.study-sub{display:block;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin:12px 0 6px}
+.study-finding{margin:10px 0}
+.study-finding b{color:#e6edf3;font-size:13.5px}
+.study-finding .sum-why{margin-left:0}
+.study-hint{display:flex;gap:12px;align-items:baseline;padding:3px 0}
+.study-hint .sum-winner{flex:0 0 210px}
+.study-hint-text{color:#adbac7;font-size:13px}
+.study-docs{margin:12px 0 0;color:#8b949e;font-size:12.5px}
+.study-docs a{color:#58a6ff}
+@media(max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
+.sum-cross{margin:8px 0 0;color:#8b949e;font-size:13px;max-width:92ch}
+.study .sum-cross{padding-top:8px;border-top:1px dashed #30363d}
 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid #30363d;border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:#8b949e;cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
 .info:hover{color:#c9d1d9;border-color:#6e7681}
 .info .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:#c9d1d9;text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
 .info:hover .tip,.info:focus .tip{display:block}
-.bars{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
-.bar-row{display:grid;grid-template-columns:230px 1fr auto;align-items:center;gap:12px}
+.bars,.attr{display:grid;grid-template-columns:230px 1fr max-content;column-gap:12px;row-gap:7px;align-items:center}
+.bars{margin-bottom:8px}
+.bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
 .bar-row.tech-off{display:none}
 .bar-row.gap-before{margin-top:6px}
-.bar-label{text-align:right;color:#c9d1d9;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:#c9d1d9;font-size:13px}
+.bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tech-logo{width:14px;height:14px;object-fit:contain;vertical-align:-2px;border-radius:3px;flex:none}
+.tech-pill .tech-logo{width:13px;height:13px}
+.ed-file .tech-logo,.lc-legend .tech-logo{margin-right:5px}
 .bar-track{background:#161b22;border-radius:5px;height:18px;overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:5px}
 .bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
@@ -571,16 +660,15 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .bar-breakdown{margin-left:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar-breakdown .bd-sep{color:#6e7681}
 .attr .bar-track{display:flex;height:12px}
-.attr .bar-row{margin-bottom:7px}
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
-.attr-legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:12px;color:#8b949e}
+.attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:#8b949e}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .rt .bar-label{display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
-.rt-lane{color:#c9d1d9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:#c9d1d9}
 .rt-eng{color:#6e7681;font-size:11px;flex:none}
 .rt-badge{margin-left:8px;padding:1px 6px;border:1px solid #30363d;border-radius:999px;font-size:11px;color:#adbac7;font-variant-numeric:tabular-nums}
-.rt-note{margin:8px 0 0;font-size:11px;line-height:1.5;color:#6e7681}
+.rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:#6e7681}
 .rt .bar-val{min-width:150px}
 .wpd-breakdown{margin-top:14px;padding-top:12px;border-top:1px dashed #30363d}
 .lchart svg{width:100%;max-width:760px;height:auto}
@@ -606,14 +694,20 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .editor.ed-show-shot .ed-shot{display:block}
 .page-foot{color:#6e7681;font-size:12px;max-width:1000px;margin:0 auto;padding:8px 24px}
 code{background:#161b22;padding:1px 5px;border-radius:4px;font-size:12px}
+.mono{font-family:ui-monospace,monospace;font-size:.92em}
+code.mono{background:none;padding:0;border-radius:0;color:#c9d1d9}
+a.mono{color:#58a6ff;text-decoration:none;background:none;padding:0}
+a.mono:hover{text-decoration:underline}
 @media(max-width:767px){
   .wrap{padding-inline:12px}
   .head-inner,.measure-inner{padding-inline:12px}
   .measure-nav{position:static}
   .tech-panel{padding-inline:14px}
   .case{padding:4px 14px 16px}
-  .bar-row{grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
-  .bar-label{grid-column:1;grid-row:1;min-width:0;text-align:left;line-height:1.35;white-space:normal}
+  .bars,.attr{display:flex;flex-direction:column;gap:7px;align-items:stretch}
+  .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
+  .bar-label{grid-column:1;grid-row:1;min-width:0;justify-content:flex-start;flex-wrap:wrap;line-height:1.35}
+  .bar-label .tl-text{white-space:normal;overflow:visible}
   .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px}
   .bar-val{grid-column:2;grid-row:1;min-width:0;text-align:right;line-height:1.35;white-space:nowrap}
   .bar-breakdown{display:block;margin-left:0;font-size:10.5px}

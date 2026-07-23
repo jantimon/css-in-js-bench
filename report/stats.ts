@@ -13,6 +13,13 @@ export function bestOf(xs: number[]): number {
   return xs.length ? Math.max(...xs) : 0;
 }
 
+/** p in [0,1]; nearest-rank on the sorted samples. */
+export function percentile(xs: number[], p: number): number {
+  if (!xs.length) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.max(0, Math.ceil(p * s.length) - 1))];
+}
+
 /** Relative spread (half the IQR over the median), as a fraction — for ± copy. */
 export function spread(xs: number[]): number {
   if (xs.length < 4) return 0;

@@ -1,5 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
+import { TechLabel } from "./TechLabel.tsx";
 
 export interface AttrRow {
   tech: string;
@@ -39,7 +40,7 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
       </div>
       {sorted.map((r, i) => (
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
-          <span className="bar-label">{r.label}</span>
+          <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
             {BUCKETS.map(([k, c]) => {
               const ms = r[k] as number;
