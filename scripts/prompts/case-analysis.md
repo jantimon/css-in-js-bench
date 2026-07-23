@@ -66,6 +66,19 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
    generatedAt = now (ISO), model = your model id.
 8. Numbers in prose: round to 3 significant digits, always with units. Never invent a number
    that is not derivable from the inputs.
+9. Prose hygiene — write like a sharp human editor, not a model:
+   - Active voice; concrete numbers, mechanisms and function names beat abstractions.
+   - No trailing "-ing" analysis clauses ("…, highlighting/underscoring/taking X to Y").
+     Say what happens in a full clause instead.
+   - No colon reveals ("The best part: …"), no binary-contrast crutches ("This is not X.
+     It's Y." — state Y), no importance puffery (pivotal, testament, underscores its),
+     no throat-clearing ("It's worth noting"), no summary-recap endings.
+   - Em dashes are not a rhythm: at most one per paragraph; prefer commas, colons for
+     lists/labels, parentheses for asides.
+   - Never use: delve, leverage, robust, streamline, elevate, harness, foster, empower,
+     game changer, cutting-edge, transformative.
+   - A punchy contrast is fine when it IS the claim; cut it when it only decorates one.
+   - American spelling throughout (optimize, not optimise).
 
 ## Study-level findings (result/analysis/study.json)
 
