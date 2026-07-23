@@ -349,7 +349,7 @@ async function main() {
                 <span className="tp-group">{g.group}</span>
                 <div className="tp-pills">
                   {g.items.map((it) => (
-                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} title={techs[it.tech].label} key={it.tech}>
+                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
                       <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
                       <TechLabel tech={it.tech} label={it.short} />
                     </button>
@@ -797,7 +797,10 @@ function drawSweep() {
 // on file:// — the filter must keep working there, so it's best-effort.
 function syncLanesQuery() {
   const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
-  const qs = on.length === techPills.length ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
+  // The clean URL is the DEFAULT selection (all lanes minus the data-default-off ones).
+  const def = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
+  const isDefault = on.length === def.length && on.every((t, i) => t === def[i]);
+  const qs = isDefault ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
 function afterTech() {
@@ -815,10 +818,14 @@ document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
 // Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
 // pre-filtered (and syncLanesQuery then just re-serializes the same selection).
+// Without a lanes param, diagnostic lanes (data-default-off) start hidden — one
+// click on their pill brings them back.
 const lanesParam = new URLSearchParams(location.search).get('lanes');
 if (lanesParam !== null) {
   const want = new Set(lanesParam.split(',').filter(Boolean));
   for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
+} else {
+  for (const b of techPills) if (b.dataset.defaultOff === '1') setTech(b, false);
 }
 afterTech();
 // measure pills — toggle which measurement sections are visible.

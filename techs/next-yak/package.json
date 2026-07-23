@@ -7,7 +7,8 @@
     "color": "#a78bfa",
     "buildPlugin": "yak",
     "appStylesheet": null,
-    "cssKind": "extracted"
+    "cssKind": "extracted",
+    "defaultOff": true
   },
   "dependencies": {
     "next-yak": "^9.6.0",

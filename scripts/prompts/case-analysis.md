@@ -26,9 +26,9 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
      Chrome style-recalc count (lower better). For payload use total gzipped bytes. For nsweep
      rank by ms at the largest n.
 2. `winner` = the best lane's dirname. `top3` = the three best lanes (fewer if fewer exist),
-   with the exact reduced value and `ratioToBaseline = value / next-yak's value` (raw
-   quotient, never inverted). `baseline` = next-yak's value, or null if next-yak has no data
-   in this case.
+   with the exact reduced value and `ratioToBaseline = value / the baseline lane's value`
+   (raw quotient, never inverted). The baseline lane is the current default next-yak lane —
+   the 9.7 styled lane (`next-yak-9.7`) — or null if it has no data in this case.
 3. `why` must name the MECHANISM, grounded in the numbers — not restate the ranking. Use the
    WPD data: SSR CPU attribution (react vs lib vs component self-time, byPackage), span
    slices (js/style/layout/paint/gc/idle), blame counts (style-recalcs, forced layouts), and
@@ -67,5 +67,23 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
 8. Numbers in prose: round to 3 significant digits, always with units. Never invent a number
    that is not derivable from the inputs.
 
+## Study-level findings (result/analysis/study.json)
+
+Also write `result/analysis/study.json` per the `StudyAnalysis` type in
+`report/analysis-schema.ts` — it renders as the "Key findings" panel above the cases:
+
+- `headline`: one sentence, the study's single most useful takeaway.
+- `findings`: 4-6 verdicts `{ title, prose }`, mechanism-forward, management-summary voice
+  (see rule 3's AUDIENCE paragraph — introduce each case as "the Example `<caseId>` shown
+  below", backtick identifiers).
+- `libraryHints`: one entry per LIBRARY (not per lane), each under ~140 chars — use the
+  current default next-yak lane's dirname for the next-yak entry.
+- DIAGNOSTIC LANES (`bench.defaultOff` in techs/*/package.json — the 9.6.0 pair and the
+  foldStatic:false pair): never make them the subject of a finding or a hint. They exist
+  for next-yak maintainers; the panel tells the cross-library story with shipped defaults.
+  Citing them inside a finding as evidence for a delta ("with folding disabled the same
+  case costs …") is fine.
+- `provenance` as for the case files.
+
 After writing all files, run `pnpm report` and confirm it prints the ✓ lines; then spot-check
-that BENCHMARK.md contains an "### Analysis" section per case.
+that BENCHMARK.md contains an "### Analysis" section per case and a "## Key findings" section.
