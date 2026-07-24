@@ -461,7 +461,8 @@ async function main() {
     ? JSON.parse(readFileSync(manifestFile, "utf8"))
     : {
       schemaVersion: 1, runId, complete: false, expectedCells: cells.length, lanes: {},
-      environment: { gitSha, host: os.hostname(), node: process.version, platform: os.platform(), release: os.release(), arch: os.arch(), cpuModel: cpu[0]?.model ?? "unknown", logicalCpus: cpu.length },
+      // host describes the hardware, not the machine's network name (the report publishes it).
+      environment: { gitSha, host: `${cpu[0]?.model ?? "unknown"} (${os.arch()})`, node: process.version, platform: os.platform(), release: os.release(), arch: os.arch(), cpuModel: cpu[0]?.model ?? "unknown", logicalCpus: cpu.length },
       wpd: toolMeta(), config: { n: benchConfig.wpd.n },
     };
   if (manifest.runId !== runId) throw new Error("WPD manifest belongs to another run");
