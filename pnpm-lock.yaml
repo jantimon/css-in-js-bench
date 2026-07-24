@@ -237,6 +237,21 @@ importers:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
 
+  techs/stylex-layers:
+    dependencies:
+      '@stylexjs/stylex':
+        specifier: 0.19.0
+        version: 0.19.0
+      '@stylexjs/unplugin':
+        specifier: 0.19.0
+        version: 0.19.0(unplugin@2.3.11)
+      react:
+        specifier: catalog:dev
+        version: 19.2.7
+      react-dom:
+        specifier: catalog:dev
+        version: 19.2.7(react@19.2.7)
+
   techs/tailwind-merge:
     dependencies:
       clsx:
