@@ -256,5 +256,15 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
   const noForcedLayouts = renderRows.length > 0 && renderRows.every((row) =>
     row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
   if (noForcedLayouts) out.push("", "**No forced layouts observed in this profiling run.**");
+  out.push(
+    "",
+    "## How this was measured",
+    "",
+    "- **microbench** — an in-process Node loop that renders each workload to an HTML string (`renderToString`) and counts instance renders per second.",
+    "- **autocannon** — an HTTP load generator that measures requests per second against each lane's SSR server end to end.",
+    "- **[web-performance-debugger](https://github.com/jantimon/web-performance-debugger)** — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.",
+    "",
+    "Source, raw data and methodology: [github.com/jantimon/css-in-js-bench](https://github.com/jantimon/css-in-js-bench). Run it locally: clone the repo, `pnpm install`, then `pnpm report` renders this report from the committed samples — `pnpm gen` re-measures everything on your own machine.",
+  );
   return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion);
 }

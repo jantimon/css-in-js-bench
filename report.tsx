@@ -505,6 +505,19 @@ async function main() {
             </details>
             );
           })}
+          <section className="outro">
+            <h3 className="chart-title">How this was measured</h3>
+            <ul className="outro-tools">
+              <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
+              <li><b>autocannon</b> — an HTTP load generator that measures requests per second against each lane's SSR server end to end.</li>
+              <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
+            </ul>
+            <p className="outro-run">
+              Source, raw data and methodology: <a href="https://github.com/jantimon/css-in-js-bench">github.com/jantimon/css-in-js-bench</a>.
+              Run it locally: clone the repo, <code>pnpm install</code>, then <code>pnpm report</code> renders this report from the committed
+              samples — <code>pnpm gen</code> re-measures everything on your own machine.
+            </p>
+          </section>
         </main>
 
         <footer className="page-foot">
@@ -692,6 +705,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
+.outro{border:1px solid #1c2128;border-radius:12px;padding:6px 20px 16px;background:#0d1117;margin-top:24px}
+.outro-tools{margin:0;padding-left:18px;color:#adbac7;font-size:13px}
+.outro-tools li{margin:6px 0;max-width:100ch}
+.outro-tools b{color:#e6edf3}
+.outro-run{color:#8b949e;font-size:13px;margin:12px 0 0;max-width:100ch}
+.outro a{color:#58a6ff}
 .page-foot{color:#6e7681;font-size:12px;max-width:1000px;margin:0 auto;padding:8px 24px}
 code{background:#161b22;padding:1px 5px;border-radius:4px;font-size:12px}
 .mono{font-family:ui-monospace,monospace;font-size:.92em}
