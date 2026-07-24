@@ -38,6 +38,7 @@ export function StudyFindings({ study, techs, runSha, caseIds }: { study: StudyA
           })}
         </div>
       ) : null}
+      <p className="study-foot">AI-generated summary by Claude Opus, from the measured data.</p>
     </section>
   );
 }
