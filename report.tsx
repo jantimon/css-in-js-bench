@@ -20,6 +20,7 @@ import { InfoTip } from "./report/components/InfoTip.tsx";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
+import { BuildTimeChart, type BuildTimeRow } from "./report/components/BuildTimeChart.tsx";
 import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { CaseSummary } from "./report/components/CaseSummary.tsx";
@@ -87,6 +88,8 @@ async function main() {
   const wpdFirefox = readJson<Record<string, WpdFirefoxSample[]>>(join(RESULT, "measurement-wpd-firefox.json"), {});
   const wpdBlame = readJson<Record<string, WpdBlameSample[]>>(join(RESULT, "measurement-wpd-blame.json"), {});
   const shots = readJson<Record<string, string[]>>(join(RESULT, "measurement-screenshots.json"), {});
+  // buildtime is keyed per LANE (tech name), not per cell — one client build compiles every workload.
+  const buildtime = readJson<Record<string, { cold: number[]; warm?: number[] }>>(join(RESULT, "measurement-buildtime.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
   // LLM-written per-case analyses (result/analysis/<caseId>.json) — optional like any
   // other result file; validated only by shape (schemaVersion + matching caseId).
@@ -133,6 +136,23 @@ async function main() {
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
   const techGroups = groupTechs(usedTechs);
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
+
+  // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
+  // lanes with cold samples appear; empty on older result/ data (the whole section is dropped).
+  const buildRows: BuildTimeRow[] = usedTechs
+    .filter((t) => buildtime[t]?.cold?.length)
+    .map((t) => {
+      const { cold, warm } = buildtime[t];
+      return {
+        tech: t,
+        label: techs[t].label,
+        color: techs[t].bench.color,
+        cssKind: techs[t].bench.cssKind,
+        coldMs: median(cold),
+        coldSpread: spread(cold),
+        warmMs: warm?.length ? median(warm) : undefined,
+      };
+    });
 
   const sections = caseIds.map((caseId) => {
     const cm = cases[caseId];
@@ -318,6 +338,7 @@ async function main() {
                   ["render-timing", "Paint/Layout"],
                   ["payload", "Page bytes"],
                   ["nsweep", "Scaling"],
+                  ["buildtime", "Build time"],
                 ].map(([k, label]) => (
                   <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
                     {label}
@@ -505,6 +526,22 @@ async function main() {
             </details>
             );
           })}
+          {buildRows.length ? (
+            <section className="buildtime" data-measure="buildtime">
+              <h3 className="chart-title">
+                Build time — full client build · lower is better
+                <InfoTip>
+                  Wall time for a lane's whole <b>production client build</b> — the vite bundle that ships to the browser
+                  (react + react-dom + the styling runtime + every workload's components), the same build measured for page
+                  bytes. <b>cold</b> clears that lane's build output, vite's on-disk caches and Panda's generated
+                  <code>styled-system</code> first, so it includes the cache-miss regen; <b>warm</b> is the same build run
+                  again with nothing cleared. Median of 3. This is <b>build-time developer experience</b>, machine-dependent —
+                  not user-facing runtime. Opt-in via <code>pnpm gen:samples --measure=buildtime</code>.
+                </InfoTip>
+              </h3>
+              <BuildTimeChart rows={buildRows} />
+            </section>
+          ) : null}
           <section className="outro">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
@@ -534,7 +571,7 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows));
 
   // Machine-readable companion: the same reduced section data the charts render, all lanes,
   // one file. This is what the analysis prompt (scripts/prompts/case-analysis.md) reads.
@@ -544,6 +581,8 @@ async function main() {
     wpdVersion,
     study,
     techs: Object.fromEntries(usedTechs.map((t) => [t, { label: techs[t].label, ...techs[t].bench }])),
+    // Lane-level (one client build per tech), so it sits alongside `cases`, not inside it.
+    buildtime: buildRows,
     cases: sections.map(({ caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, analysis }) => ({
       caseId,
       meta: cm,
@@ -706,6 +745,8 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
+.buildtime{border:1px solid #1c2128;border-radius:12px;padding:6px 22px 18px;background:#0d1117;margin-top:24px}
+.bd-kind{color:#adbac7}
 .outro{border:1px solid #1c2128;border-radius:12px;padding:6px 20px 16px;background:#0d1117;margin-top:24px}
 .outro-tools{margin:0;padding-left:18px;color:#adbac7;font-size:13px}
 .outro-tools li{margin:6px 0;max-width:100ch}

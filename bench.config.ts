@@ -19,6 +19,9 @@ export default {
     hydrate: 21,
     mount: 15,
     inp: 13,
+    // buildtime times whole vite builds (seconds each), so a few samples per lane is the
+    // most we can afford; the report reduces to the median.
+    buildtime: 3,
   } as Record<string, number>,
 
   // Heavy measurements (run via `gen --measure=…` on an idle machine).

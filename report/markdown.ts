@@ -10,6 +10,7 @@ import type { StackRow } from "./components/StackChart.tsx";
 import type { SweepLine } from "./components/LineChart.tsx";
 import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
 import type { WpdBreakdownRow } from "./components/WpdBreakdownChart.tsx";
+import type { BuildTimeRow } from "./components/BuildTimeChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
@@ -121,6 +122,22 @@ const wpdTable = (rows: WpdBreakdownRow[]): string => {
   );
 };
 
+// Build time (ms) per LANE — cold client build (bar headline), warm build, and the lane's
+// cssKind as context. Fastest cold build first; the winner is **bold**.
+const buildtimeTable = (rows: BuildTimeRow[]): string => {
+  const picked = pick(rows, (r) => r.tech).sort((a, b) => a.coldMs - b.coldMs);
+  if (!picked.length) return "";
+  return table(
+    ["Technique", "CSS", "cold build (ms)", "warm build (ms)"],
+    picked.map((r, i) => [
+      r.label,
+      r.cssKind,
+      (i === 0 ? "**" : "") + int(r.coldMs) + (i === 0 ? "**" : ""),
+      r.warmMs === undefined ? "—" : int(r.warmMs),
+    ]),
+  );
+};
+
 // Render time (ms) at each instance count — one column per n, one row per lane.
 const sweepTable = (lines: SweepLine[]): string => {
   const picked = pick(lines, (l) => l.tech);
@@ -174,6 +191,12 @@ each table the best value is **bold** and rows are sorted best-first.
   HTML.
 - **Scaling** — SSR render time (ms) vs instance count. Render time as the workload grows from a
   handful to thousands of instances; a flatter progression scales better.
+- **Build time** — full client build (ms), lower is better. Wall time for a lane's whole production
+  client build (the vite bundle shipped to the browser). *cold* clears the lane's build output,
+  vite's on-disk caches and Panda's generated \`styled-system\` first, so it includes the cache-miss
+  regen; *warm* runs the same build again with nothing cleared. Median of 3, per lane (a build
+  compiles every workload at once, so this is not per-case). Build-time developer experience and
+  machine-dependent — not user-facing runtime. Opt-in (\`pnpm gen:samples --measure=buildtime\`).
 
 **Attribution caveat:** next-yak's SWC plugin *inlines* its css-prop resolution, so the styling work
 runs from next-yak's own runtime rather than a call into a package. wpd attributes that runtime to the
@@ -183,7 +206,7 @@ and styled-components keep their runtime in
 \`node_modules\`, and next-yak's runtime shows under **styling lib** too, not under **component**.`;
 
 /** Build the full agent-readable markdown report. */
-export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null): string {
+export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = []): string {
   const shownLabels = MD_TECHS.filter((t) => techs[t]).map((t) => `**${techs[t].label}** (\`${t}\`)`);
   const out: string[] = [
     `# Styling benchmarks`,
@@ -256,6 +279,10 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
   const noForcedLayouts = renderRows.length > 0 && renderRows.every((row) =>
     row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
   if (noForcedLayouts) out.push("", "**No forced layouts observed in this profiling run.**");
+
+  const buildtimeTbl = buildtimeTable(buildtime);
+  if (buildtimeTbl) out.push("", "## Build time — full client build, lower is better", "", buildtimeTbl);
+
   out.push(
     "",
     "## How this was measured",
