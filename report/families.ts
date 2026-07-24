@@ -41,6 +41,7 @@ export const FAMILIES: Family[] = [
     group: "Atomic / className",
     items: [
       { tech: "stylex", short: "StyleX" },
+      { tech: "stylex-layers", short: "StyleX (layers)" },
       { tech: "cnfast", short: "cnfast" },
       { tech: "tailwind-merge", short: "tailwind-merge" },
     ],

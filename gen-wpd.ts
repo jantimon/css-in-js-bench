@@ -169,7 +169,7 @@ const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (
 const COMPONENT_PACKAGES = new Set([
   "app", "css-in-js-bench", // wpd's generic first-party bundle buckets
   "emotion", // lib is @emotion/*
-  "stylex", // lib is @stylexjs/stylex
+  "stylex", "stylex-layers", // lib is @stylexjs/stylex
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
   "next-yak-css", // lib is next-yak (no npm package named next-yak-css)
   "vanilla", // no styling library
