@@ -90,37 +90,54 @@ function walk(css: string, layer: string | null, out: LeafRule[]): void {
     i = k + 1;
   }
 }
-function rules(): LeafRule[] {
-  if (leaves) return leaves;
-  leaves = [];
-  walk(extractedSheet(), null, leaves);
-  return leaves;
+// Leaves indexed by their key class, plus the layers in sheet (priority) order.
+let classMap: Map<string, LeafRule[]> | null = null;
+let layerSeq: string[] | null = null; // "" is the unlayered tier; ascending priority order
+function rules(): { byClass: Map<string, LeafRule[]>; layers: string[] } {
+  if (classMap && layerSeq) return { byClass: classMap, layers: layerSeq };
+  const parsed: LeafRule[] = [];
+  walk(extractedSheet(), null, parsed);
+  classMap = new Map();
+  layerSeq = [];
+  const seenLayer = new Set<string>();
+  for (const leaf of parsed) {
+    const key = leaf.layer ?? "";
+    if (!seenLayer.has(key)) {
+      seenLayer.add(key);
+      layerSeq.push(key);
+    }
+    if (!leaf.cls) continue;
+    (classMap.get(leaf.cls) ?? classMap.set(leaf.cls, []).get(leaf.cls)!).push(leaf);
+  }
+  return { byClass: classMap, layers: layerSeq };
 }
 
-// Slice: pick the leaf rules whose key class the render used, then re-emit them grouped by
-// @layer in sheet (priority) order. Layer wrappers are preserved (that is the whole point of the
-// variant); unlayered leaves stay bare. Grouping by first-appearance keeps the output balanced
-// and its layer order the cascade order.
+// Slice: pick the leaf rules whose key class the render used and re-emit them grouped by @layer.
+// Two cascade keys must match the plain (:not-hack) lane so both render pixel-identically: (1) LAYER
+// PRECEDENCE — emit layers in sheet (priority) order, so the highest-priority layer comes last and
+// wins, mirroring the plain lane's escalating `:not(#\#)` specificity; (2) SOURCE-ORDER TIEBREAK
+// within a layer — walk the render's classes in HTML-appearance order (exactly what the plain lane's
+// slice does), so when two equal-specificity rules set the same property the same one lands last.
+// Ordering within a layer by raw sheet order instead would flip such ties (e.g. product-grid's title
+// stacks a 15px @media and a 16px @container font-size in one layer — HTML order keeps 15px last).
 function cssFor(html: string): string {
-  const used = new Set<string>();
-  for (const m of html.matchAll(/class="([^"]*)"/g)) for (const t of m[1].split(/\s+/)) if (t) used.add(t);
-  const order: string[] = [];
+  const { byClass, layers } = rules();
   const buckets = new Map<string, string[]>();
-  for (const leaf of rules()) {
-    if (!leaf.cls || !used.has(leaf.cls)) continue;
-    const key = leaf.layer ?? "";
-    let bucket = buckets.get(key);
-    if (!bucket) {
-      bucket = [];
-      buckets.set(key, bucket);
-      order.push(key);
-    }
-    bucket.push(leaf.text);
-  }
+  const seen = new Set<string>();
+  for (const m of html.matchAll(/class="([^"]*)"/g))
+    for (const t of m[1].split(/\s+/))
+      if (t && !seen.has(t)) {
+        seen.add(t);
+        for (const leaf of byClass.get(t) ?? []) {
+          const key = leaf.layer ?? "";
+          (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(leaf.text);
+        }
+      }
   let css = "";
-  for (const key of order) {
-    const texts = buckets.get(key)!.join("\n");
-    css += key === "" ? `${texts}\n` : `@layer ${key}{\n${texts}\n}\n`;
+  for (const key of layers) {
+    const texts = buckets.get(key);
+    if (!texts) continue;
+    css += key === "" ? `${texts.join("\n")}\n` : `@layer ${key}{\n${texts.join("\n")}\n}\n`;
   }
   return css.trim();
 }
