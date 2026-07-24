@@ -1,9 +1,17 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-23T18:13:36.695Z",
+  "generatedAt": "2026-07-24T21:48:59.575Z",
   "reports": [
     {
       "caseId": "btn-variant",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 2 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "compose-1",
       "ok": true,
       "notes": [
         "✓ 16 techs · 2 elements · attrs clean",
@@ -11,35 +19,27 @@
       ]
     },
     {
-      "caseId": "compose-1",
-      "ok": true,
-      "notes": [
-        "✓ 15 techs · 2 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
-      ]
-    },
-    {
       "caseId": "compose-3",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 2 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 2 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "compose-6",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 2 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 2 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "dyn-fair",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 2 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 2 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
@@ -54,40 +54,40 @@
       "caseId": "dyn-translate",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 2 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 2 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "multifile-composition",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 16 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 16 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "product-grid",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 27 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 27 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "realistic-button",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 5 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 5 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     },
     {
       "caseId": "tabs",
       "ok": true,
       "notes": [
-        "✓ 15 techs · 16 elements · attrs clean",
-        "✓ pixels: 15 techs match styled-components"
+        "✓ 16 techs · 16 elements · attrs clean",
+        "✓ pixels: 16 techs match styled-components"
       ]
     }
   ]

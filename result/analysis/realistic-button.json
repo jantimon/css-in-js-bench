@@ -2,102 +2,228 @@
   "schemaVersion": 1,
   "caseId": "realistic-button",
   "provenance": {
-    "gitSha": "9a585f2",
-    "runTimestamp": "2026-07-23T18:13:07.431Z",
-    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "gitSha": "eebb767",
+    "runTimestamp": "2026-07-24T21:42:18.271Z",
+    "generatedAt": "2026-07-24T22:15:00.000Z",
     "model": "claude-opus-4-8[1m]"
   },
-  "headline": "On a flat depth-1 button, folding rewrites `<StyledButton>` to a plain `<button className>` at build time, so `next-yak-9.7` ships zero styling runtime and leads the field — the exact case where hash-and-inject libraries pay the most.",
+  "headline": "On a flat, real button `StyleX` and the two next-yak 9.7 paths tie the fastest cluster at ~0.44-0.53 ms/1k SSR; folding erases the `Yak` wrapper entirely, and `emotion`'s `murmur2` hash is the single most expensive styling function in the run.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
       "higherBetter": true,
-      "winner": "next-yak-9.7",
+      "winner": "stylex-layers",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 889878, "ratioToBaseline": 1.0 },
-        { "tech": "stylex", "label": "StyleX", "value": 805153, "ratioToBaseline": 0.905 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 801523, "ratioToBaseline": 0.901 }
+        {
+          "tech": "stylex-layers",
+          "label": "StyleX",
+          "value": 901274,
+          "ratioToBaseline": 1.079
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 835190,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 749719,
+          "ratioToBaseline": 0.898
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 889878 },
-      "why": "Folding recognises `<StyledButton>` renders a known intrinsic element and rewrites it to `<button className=\"…\">` at build time, so no styling component renders at all — `next-yak-9.7`'s library slice is 0.084 ms of a 1.25 ms render, below even `vanilla` and `stylex` at the pure react-dom floor. What stays slow is what each competitor computes per instance: `styled-components`' `generateAndInjectStyles` (2.58 ms/render, 62% of its slice) hashes and injects a class, and `emotion`'s standalone `murmur2` (3.33 ms, 58% of its slice) is the single most expensive styling function in the run. Turning folding off proves the lever: `next-yak-9.7-nofold` renders at 0.915 ms/1k, 2.0× slower, because the `Yak` wrapper renders per button.",
-      "confidence": "high"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 835190
+      },
+      "why": "On flat depth-1 JSX there is nothing to compose away, so the win is whoever ships zero render-time styling. `StyleX` reads a compiled atomic style object at 0.444 ms/1k, the styled perf runtime folds `<DenseButton>` to `<button className>` at 0.479, the css-prop path 0.534. Turning folding off (`next-yak-9.7-nofold`, 0.962 ms/1k) doubles the cost as the `Yak` wrapper returns and renders per button. The hashers trail, `styled-components` 1.21 ms/1k, `goober` 1.31, `emotion` 2.86.",
+      "confidence": "medium"
     },
     "autocannon": {
       "unit": "req/s",
       "higherBetter": true,
       "winner": "next-yak-9.7",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 636, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 614, "ratioToBaseline": 0.965 },
-        { "tech": "vanilla", "label": "vanilla", "value": 542, "ratioToBaseline": 0.852 }
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 596,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 575,
+          "ratioToBaseline": 0.965
+        },
+        {
+          "tech": "stylex-layers",
+          "label": "StyleX",
+          "value": 473,
+          "ratioToBaseline": 0.794
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 636 },
-      "why": "Serving the button under load, the folded lane leads because each request emits a static `<button>` with no per-request styling work, clearing `vanilla` itself. The hash-and-inject runtimes re-pay their pipeline per request and fall to `styled-components` 277 req/s and `emotion` 138 req/s — 2.3× to 4.6× fewer requests than the folded lane.",
-      "confidence": "high"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 596
+      },
+      "why": "Serving the button under load, the styled perf runtime's folded flat markup leads at 596 req/s with the css-prop path at 575. `StyleX` and `vanilla` sit at 462-473 req/s, a step back because their markup carries more class bytes per element. The hashers land far behind as each request re-serializes, `styled-components` 270, `emotion` 131.",
+      "confidence": "medium"
     },
     "attribution": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "stylex-layers",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1.25, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 1.286, "ratioToBaseline": 1.03 },
-        { "tech": "stylex", "label": "StyleX", "value": 1.347, "ratioToBaseline": 1.08 }
+        {
+          "tech": "stylex-layers",
+          "label": "StyleX",
+          "value": 1.317,
+          "ratioToBaseline": 0.961
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 1.333,
+          "ratioToBaseline": 0.972
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 1.371,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 1.25 },
-      "why": "The folded lane's library slice is 0.084 ms — the wrapper is gone — so its render is almost entirely react-dom (0.578 ms). Of the field that still runs styling, `emotion` spends 4.61 ms of a 7.53 ms render in serialize-and-`murmur2`, and `styled-components` 1.36 ms in `generateAndInjectStyles`. `next-yak-9.7-nofold` (lib 0.779 ms, render 2.41 ms) marks what the fold removes on flat JSX: nearly the whole `Yak` wrapper.",
-      "confidence": "high"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 1.371
+      },
+      "why": "`StyleX`, the css-prop fold and the styled perf runtime cluster at 1.32-1.37 ms with library slices at or near zero (styled perf 0.152 ms, css-prop 0.153, `StyleX` 0). Folding does the work: `next-yak-9.7-nofold` pays 0.786 ms of library time for the returned `Yak` wrapper and rises to 2.63 ms. `emotion` spends 4.27 ms of 7.53 ms in `murmur2`, `styled-components` 1.45 ms in `generateAndInjectStyles`.",
+      "confidence": "medium"
     },
     "hydrate": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "panda",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 56.3, "ratioToBaseline": 1.0 },
-        { "tech": "panda", "label": "Panda (css fn)", "value": 57.0, "ratioToBaseline": 1.01 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 57.2, "ratioToBaseline": 1.02 }
+        {
+          "tech": "panda",
+          "label": "Panda (css fn)",
+          "value": 59.6,
+          "ratioToBaseline": 0.998
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 59.6,
+          "ratioToBaseline": 0.998
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 59.7,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 56.3 },
-      "why": "Hydration is pure JS for the extracted lanes — the sheet already sits in the HTML — so `next-yak-9.7`, `panda`, `next-yak-css-9.7`, `stylex` and `vanilla` cluster at 56-59 ms within noise. The runtime libraries inject their sheet during hydrate: `styled-components` adds 0.64 ms layout and `goober` 0.57 ms, driving them to 165 ms and 152 ms — the leading cluster's order is a tie, the runtime penalty is not.",
-      "confidence": "medium"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 59.7
+      },
+      "why": "The static-class lanes hydrate identically at ~59.6-59.8 ms, a tie inside the sampling spread, because a single button carries a trivial component tree. The runtime hashers inject and reflow, `emotion` 119 ms, `goober` 162 ms, `styled-components` 162 ms.",
+      "confidence": "low"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "tailwind-merge",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 6.9, "ratioToBaseline": 1.0 },
-        { "tech": "vanilla", "label": "vanilla", "value": 6.9, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 7.0, "ratioToBaseline": 1.01 }
+        {
+          "tech": "tailwind-merge",
+          "label": "tailwind-merge",
+          "value": 6.9,
+          "ratioToBaseline": 0.986
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 7,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 7,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 6.9 },
-      "why": "The static-class cluster all update in ~7 ms of interaction work, inside the measurement's spread, so the folded lane ties `vanilla`. The distance is to `goober` 16.2 ms, `styled-components` 16.8 ms and `emotion` 28.0 ms, which re-run their hash-and-inject when the interaction re-renders — a 2.3-4.1× interaction penalty.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 7
+      },
+      "why": "Toggling the button re-renders one element in ~7.00 ms across every static-class lane, a statistical tie. The hashers re-inject on the interaction, `goober` 16.5 ms, `styled-components` 17.0 ms, `emotion` 29.3 ms.",
       "confidence": "low"
     },
     "mount": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "stylex-layers",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 106, "ratioToBaseline": 1.0 },
-        { "tech": "stylex", "label": "StyleX", "value": 106, "ratioToBaseline": 1.01 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 107, "ratioToBaseline": 1.01 }
+        {
+          "tech": "stylex-layers",
+          "label": "StyleX",
+          "value": 111.1,
+          "ratioToBaseline": 0.983
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 111.2,
+          "ratioToBaseline": 0.984
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 111.7,
+          "ratioToBaseline": 0.988
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 106 },
-      "why": "Cold mount ties across the extracted lanes at ~106-110 ms — one static sheet parsed once. The runtime libraries add their first hash-and-inject to mount: `goober` 149 ms, `styled-components` 162 ms, `emotion` 172 ms, a 1.4-1.6× penalty over the folded floor.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 113
+      },
+      "why": "Cold-mounting one button parses a small static sheet, so `StyleX`, `vanilla` and both folded next-yak paths land at 111-113 ms. The runtime libraries pay first-inject, `goober` 160 ms, `styled-components` 161 ms, `emotion` 185 ms.",
       "confidence": "medium"
     },
     "renderTiming": {
       "unit": "recalcs",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "cnfast",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 },
-        { "tech": "stylex", "label": "StyleX", "value": 1, "ratioToBaseline": 1.0 }
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "emotion",
+          "label": "Emotion",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "goober",
+          "label": "Goober",
+          "value": 1,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 1 },
-      "why": "One style recalc for every approach — a flat parity, no lane forces extra layout or paint. The styleMs spread (0.392-0.831 ms) is sub-millisecond and does not order by styling method.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 1
+      },
+      "why": "One recalc for every lane; a single button paints the same way regardless of technique. The styleMs difference between the two `StyleX` builds (`@layer` 0.382 ms vs the `:not()` twin 0.674) reflects selector-matching cost in the engine, not recalc count.",
       "confidence": "low"
     },
     "payload": {
@@ -105,12 +231,30 @@
       "higherBetter": false,
       "winner": "next-yak-css-9.7",
       "top3": [
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 3947, "ratioToBaseline": 0.806 },
-        { "tech": "vanilla", "label": "vanilla", "value": 4439, "ratioToBaseline": 0.907 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 4896, "ratioToBaseline": 1.0 }
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 3947,
+          "ratioToBaseline": 0.806
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 4439,
+          "ratioToBaseline": 0.907
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 4896,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 4896 },
-      "why": "The css-prop fold ships the least JS (3.95 kB gz) — a folded `css` prop leaves ~2 bytes of runtime and one class in the markup; the styled fold is a touch heavier at 4.90 kB. The runtime libraries carry their client bundle plus rules: `stylex` 9.07 kB, `emotion` 16.7 kB, `styled-components` 17.2 kB, and the utility lanes 21-22 kB of class strings.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 4896
+      },
+      "why": "The css-prop fold ships the least at 3.95 kB gzipped, under `vanilla` (4.44 kB); the styled perf runtime carries its wrapper runtime at 4.90 kB. `StyleX` adds 9.10 kB of atomic classes and the hashers 16-17 kB, `styled-components` 17.2 kB, `emotion` 16.7 kB, `panda` 16.1 kB.",
       "confidence": "high"
     },
     "nsweep": {
@@ -118,14 +262,32 @@
       "higherBetter": false,
       "winner": "next-yak-9.7",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 4.649, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-css-9.7", "label": "next-yak css-prop 9.7.0", "value": 4.921, "ratioToBaseline": 1.06 },
-        { "tech": "vanilla", "label": "vanilla", "value": 5.092, "ratioToBaseline": 1.09 }
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 4.838,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "stylex-layers",
+          "label": "StyleX",
+          "value": 4.92,
+          "ratioToBaseline": 1.017
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 5.05,
+          "ratioToBaseline": 1.044
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 4.649 },
-      "why": "At 4000 buttons the folded lane stays flat with react-dom (4.65 ms) because there is no per-instance styling to compound; the hash libraries scale by their per-instance work — `styled-components` 12.1 ms, `goober` 12.9 ms, `emotion` 28.4 ms, 2.6-6.1× the folded floor.",
-      "confidence": "high"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 4.838
+      },
+      "why": "The flat button never composes, so the styled perf runtime, `StyleX`, `vanilla` and the css-prop path scale together at 4.84-5.12 ms for 4000 buttons. `next-yak-9.7-nofold` doubles to 10.0 ms as the `Yak` wrapper renders per button; the hashers reach `styled-components` 12.9 ms, `emotion` 29.8 ms.",
+      "confidence": "medium"
     }
   },
-  "crossCase": "`realistic-button` is folding's home ground: a flat `styled.button` on an intrinsic tag folds completely and the `Yak` wrapper disappears. As composition depth grows (`compose-1`, `compose-3`, `compose-6` below) the fold can no longer resolve the element across `styled(Component)` seams, and the win shifts from the fold to the perf runtime that flattens the wrapper chain."
+  "crossCase": "`realistic-button` is the depth-1 anchor of the composition ladder (`compose-1`, `compose-3`, `compose-6` below). Here folding, not the perf runtime, is the whole win: it deletes the styling component so the styled path ties the extracted floor, and switching folding off doubles the SSR cost. Under composition the split reverses, and the perf runtime carries the load while folding leaves a residual wrapper."
 }

@@ -2,95 +2,186 @@
   "schemaVersion": 1,
   "caseId": "dyn-inline",
   "provenance": {
-    "gitSha": "9a585f2",
-    "runTimestamp": "2026-07-23T18:13:07.431Z",
-    "generatedAt": "2026-07-23T19:00:00.000Z",
+    "gitSha": "eebb767",
+    "runTimestamp": "2026-07-24T21:42:18.271Z",
+    "generatedAt": "2026-07-24T22:15:00.000Z",
     "model": "claude-opus-4-8[1m]"
   },
-  "headline": "When the dynamic value is a plain inline style from the start, next-yak folds the static class away and passes the style straight through, landing on `vanilla`'s hand-written inline-style ceiling.",
+  "headline": "The inline-style control isolates next-yak's wrapper tax: with the value written straight to `style` and folding on, `next-yak-9.7` ties `vanilla` (0.629 vs 0.615 ms/1k), and the 9.6.0 baseline without the perf runtime is 2.2× slower.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
       "higherBetter": true,
       "winner": "vanilla",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 1641249, "ratioToBaseline": 1.06 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1552192, "ratioToBaseline": 1.0 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 1624804,
+          "ratioToBaseline": 1.021
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 1590667,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 1552192 },
-      "why": "The value is an inline `style` object the component just forwards, so folding removes the static class wrapper and the styled element reduces to a plain tag with an inline style — 0.644 ms/1k, within 6% of `vanilla`'s 0.609 ms/1k hand-written ceiling. Folding still earns its place even here: with it off, `next-yak-9.7-nofold` renders at 0.887 ms/1k (1.4× slower) because the wrapper returns, and the 9.6.0 build sat at 1.30 ms/1k (2.0× slower) before the perf runtime and fold shipped as defaults.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 1590667
+      },
+      "why": "With the dynamic value written directly to the `style` attribute and the class fully static, the styled perf runtime folds `<Box>` to a plain `<div>` and renders at 0.629 ms/1k, within 2% of `vanilla` (0.615). The diagnostic twins show the two levers: `next-yak-9.7-nofold` (0.918 ms/1k) is the returned `Yak` wrapper with folding off, and the 9.6.0 baseline `next-yak` (1.36) is the same wrapper without the perf runtime, 2.2× the folded path.",
       "confidence": "high"
     },
     "autocannon": {
       "unit": "req/s",
       "higherBetter": true,
-      "winner": "next-yak-9.7",
+      "winner": "vanilla",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1242, "ratioToBaseline": 1.0 },
-        { "tech": "vanilla", "label": "vanilla", "value": 1213, "ratioToBaseline": 0.977 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 1220,
+          "ratioToBaseline": 1.026
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 1189,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 1242 },
-      "why": "Under load the folded styled element serves at the inline-style ceiling, a statistical tie with `vanilla` (1242 vs 1213 req/s) — there is no per-request styling work left once the class is static and the value rides inline.",
-      "confidence": "medium"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 1189
+      },
+      "why": "Under load the folded inline-style path serves 1189 req/s against `vanilla`'s 1220. Folding off drops it to 909 (`next-yak-9.7-nofold`) and the 9.6.0 baseline to 625, the wrapper tax made visible per request.",
+      "confidence": "high"
     },
     "attribution": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "vanilla",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 0.681, "ratioToBaseline": 1.0 },
-        { "tech": "vanilla", "label": "vanilla", "value": 0.866, "ratioToBaseline": 1.27 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 0.695,
+          "ratioToBaseline": 0.927
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 0.75,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 0.681 },
-      "why": "The folded lane's library slice is 0.091 ms and its render (0.681 ms) actually undercuts `vanilla` (0.866 ms), because folding emits tighter markup than the hand-written component. The default-off variants mark the cost of the runtime that folding removes: `next-yak-9.7-nofold` renders in 0.872 ms (lib 0.212), the 9.6.0 build in 1.47 ms (lib 0.481).",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 0.75
+      },
+      "why": "The folded path renders in 0.750 ms with a 0.124 ms library slice, just over `vanilla` (0.695). Turning folding off doubles the library slice to 0.197 ms (1.09 ms total) and the 9.6.0 baseline to 0.489 ms (1.54 ms), each an extra `Yak` render per element.",
       "confidence": "high"
     },
     "hydrate": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "vanilla",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 45.7, "ratioToBaseline": 1.0 },
-        { "tech": "vanilla", "label": "vanilla", "value": 49.2, "ratioToBaseline": 1.08 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 49.3,
+          "ratioToBaseline": 0.99
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 49.8,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 45.7 },
-      "why": "Both lanes hydrate as pure JS with the sheet in the HTML; the folded lane's flatter output edges `vanilla` (45.7 vs 49.2 ms), within their spread.",
-      "confidence": "low"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 49.8
+      },
+      "why": "The folded path hydrates with `vanilla` at 49.3-49.8 ms; the returned wrapper adds a little (`next-yak-9.7-nofold` 51.7 ms, 9.6.0 baseline 54.7).",
+      "confidence": "medium"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-9.7",
+      "winner": "vanilla",
       "top3": [
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 7.5, "ratioToBaseline": 1.0 },
-        { "tech": "vanilla", "label": "vanilla", "value": 8.2, "ratioToBaseline": 1.09 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 7.2,
+          "ratioToBaseline": 0.935
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 7.7,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 7.5 },
-      "why": "Updating an inline style is the same work for both lanes (~7.5-8.2 ms, inside the interaction spread) — a tie.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 7.7
+      },
+      "why": "Re-rendering one element with a fresh inline value is a ~7.20-7.70 ms tie between the folded path and `vanilla`; the wrapper adds nothing measurable on the interaction.",
       "confidence": "low"
     },
     "mount": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "next-yak-9.7",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 62.1, "ratioToBaseline": 0.994 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 62.5, "ratioToBaseline": 1.0 }
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 64.7,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 65.1,
+          "ratioToBaseline": 1.006
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 62.5 },
-      "why": "Cold mount is identical to within noise (62.1 vs 62.5 ms) — one static sheet, an inline style forwarded, nothing to inject.",
-      "confidence": "low"
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 64.7
+      },
+      "why": "Cold mount ties at 64.7-65.1 ms for the folded path and `vanilla`; folding off adds a few ms (`next-yak-9.7-nofold` 68.6, 9.6.0 baseline 74.2).",
+      "confidence": "medium"
     },
     "renderTiming": {
       "unit": "recalcs",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "next-yak-9.7",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 1, "ratioToBaseline": 1.0 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 1, "ratioToBaseline": 1.0 }
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 1,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 1 },
-      "why": "One style recalc for both — parity on the paint path; the styleMs difference (0.103 vs 0.109 ms) is noise.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 1
+      },
+      "why": "One recalc for both lanes; an inline style changes the value, not the recalc count.",
       "confidence": "low"
     },
     "payload": {
@@ -98,11 +189,24 @@
       "higherBetter": false,
       "winner": "vanilla",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 5499, "ratioToBaseline": 0.844 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 6513, "ratioToBaseline": 1.0 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 5499,
+          "ratioToBaseline": 0.844
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 6513,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 6513 },
-      "why": "`vanilla` ships the least (5.50 kB gz) with no library at all; the folded styled lane adds only its small runtime (6.51 kB), and folding barely moves it — `next-yak-9.7-nofold` is 6.71 kB.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 6513
+      },
+      "why": "`vanilla` ships 5.50 kB gzipped; the folded next-yak path adds its small runtime at 6.51 kB. Folding off and the 9.6.0 baseline barely change it (6.71 and 6.52 kB); the cost here is CPU, not bytes.",
       "confidence": "high"
     },
     "nsweep": {
@@ -110,13 +214,26 @@
       "higherBetter": false,
       "winner": "vanilla",
       "top3": [
-        { "tech": "vanilla", "label": "vanilla", "value": 2.671, "ratioToBaseline": 0.987 },
-        { "tech": "next-yak-9.7", "label": "next-yak 9.7.0 (styled API)", "value": 2.707, "ratioToBaseline": 1.0 }
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 2.718,
+          "ratioToBaseline": 0.976
+        },
+        {
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 2.786,
+          "ratioToBaseline": 1
+        }
       ],
-      "baseline": { "tech": "next-yak-9.7", "value": 2.707 },
-      "why": "At 4000 elements the folded lane scales flat with react-dom, tying `vanilla` (2.71 vs 2.67 ms); the inline value adds no compounding per-element styling cost.",
+      "baseline": {
+        "tech": "next-yak-9.7",
+        "value": 2.786
+      },
+      "why": "Scaling to 4000 elements, the folded path holds 2.79 ms with `vanilla` (2.72). Folding off rises to 4.12 ms and the 9.6.0 baseline to 6.20 ms as the `Yak` wrapper renders per element.",
       "confidence": "high"
     }
   },
-  "crossCase": "`dyn-inline` is the inline-style floor of the dynamic trio. It shows the ceiling that `dyn-fair`'s hand-written workarounds aim for and `dyn-translate`'s naive class-per-value pattern misses: with the value already inline there is no class to regenerate, so next-yak's folded output and `vanilla` converge. Reading the three together, next-yak's own number is near-constant across all of them — the css-var/inline split is compiled in, not paid per case."
+  "crossCase": "`dyn-inline` closes the dynamic trio (`dyn-translate` the naive version, `dyn-fair` the hand-optimized one, both above). It carries only the next-yak family and `vanilla` because it is the reference floor for a value that never needs a class at all. Folded, `next-yak-9.7` ties `vanilla`; this is where the perf runtime's worth over 9.6.0 is starkest (0.629 vs 1.36 ms/1k) with no styling to hide behind."
 }
