@@ -648,6 +648,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study-hint-text{color:#adbac7;font-size:13px}
 .study-docs{margin:12px 0 0;color:#8b949e;font-size:12.5px}
 .study-docs a{color:#58a6ff}
+.study-foot{margin:14px 0 0;color:#6e7681;font-size:11px}
 @media(max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
 .sum-cross{margin:8px 0 0;color:#8b949e;font-size:13px;max-width:92ch}
 .study .sum-cross{padding-top:8px;border-top:1px dashed #30363d}
