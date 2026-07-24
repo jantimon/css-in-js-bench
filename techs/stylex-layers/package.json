@@ -1,6 +1,6 @@
 {
   "name": "stylex-layers",
-  "description": "StyleX (CSS layers)",
+  "description": "StyleX",
   "private": true,
   "type": "module",
   "bench": {

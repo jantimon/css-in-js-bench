@@ -15,7 +15,7 @@ import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
-const MD_TECHS = ["next-yak-9.7", "next-yak", "next-yak-css-9.7", "stylex", "cnfast", "styled-components"] as const;
+const MD_TECHS = ["next-yak-9.7", "next-yak", "next-yak-css-9.7", "stylex-layers", "cnfast", "styled-components"] as const;
 
 export interface MdSection {
   caseId: string;
