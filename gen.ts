@@ -67,10 +67,11 @@ async function applyCpuThrottle(page: import("@playwright/test").Page): Promise<
 // All measurements gen knows how to run. Each maps to a vite.<name>.config.ts and a
 // sampler over the built SSR entry. The slice ships `microbench`; new measurements
 // are added here, not by editing the per-tech folders.
-const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "hydrate", "inp", "mount", "screenshots"] as const;
+const ALL_MEASUREMENTS = ["microbench", "payload", "nsweep", "autocannon", "hydrate", "inp", "mount", "screenshots", "buildtime"] as const;
 type Measurement = (typeof ALL_MEASUREMENTS)[number];
 // Fast + deterministic → run by default. The heavy ones (autocannon/hydrate/
 // inp) and the nsweep are opt-in via `--measure=…` so a plain `pnpm gen:samples` stays quick.
+// `buildtime` is opt-in too — it times whole vite builds, so it is slow and machine-dependent.
 const DEFAULT_MEASUREMENTS: Measurement[] = ["microbench", "payload"];
 // Measurements that run off the microbench SSR build (no separate vite config).
 const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep", "autocannon"]);
@@ -257,6 +258,49 @@ async function buildOnly(tech: string, measurement: Measurement): Promise<void> 
   cfg = await cfg;
   await build({ ...cfg, configFile: false, logLevel: "warn" });
 }
+// ---- buildtime sampler: how long a lane's CLIENT (hydrate) build takes (ms, lower better) --
+// Keyed per LANE, not per cell — a build compiles every workload at once, so there is one
+// number per tech, not one per case. We time the SAME hydrate build a user actually ships
+// (vite production client bundle over client-entry.tsx), via buildOnly.
+//
+// Honest semantics (documented here + in the report tooltip):
+//   cold — before each build, delete everything a fresh checkout would have to regenerate:
+//          the lane's hydrate output, vite's on-disk caches, and Panda's generated
+//          styled-system (its codegen runs in the build's buildStart, so clearing it forces a
+//          full regen). This is the cache-miss build.
+//   warm — the same build repeated immediately with nothing cleared.
+//   LIMITATION: buildOnly runs vite's build() IN THIS node process, not a fresh spawn, so V8
+//   and ESM module caches stay warm across samples — this is not an OS-cold process build.
+//   And `vite build` keeps NO persistent build cache of its own, so for most lanes cold≈warm;
+//   that closeness is the finding, not a defect. The report shows cold as the headline and
+//   warm as context so the two can be compared directly.
+function clearBuildCaches(tech: string): void {
+  const techDir = join(TECHS_DIR, tech);
+  const targets = [
+    join(techDir, "dist", "hydrate"), // the client bundle we rebuild + time
+    join(techDir, "node_modules", ".vite"), // per-lane vite cache, if any
+    join(ROOT, "node_modules", ".vite"), // workspace-root vite cache, if any
+    join(techDir, "styled-system"), // Panda codegen output (regenerated in buildStart)
+  ];
+  for (const t of targets) rmSync(t, { recursive: true, force: true }); // paths absent for a lane are no-ops
+}
+async function buildtimeSample(tech: string): Promise<{ cold: number[]; warm: number[] }> {
+  const S = samplesFor("buildtime");
+  const timeBuild = async (): Promise<number> => {
+    const t0 = process.hrtime.bigint();
+    await buildOnly(tech, "hydrate");
+    return Math.round(Number(process.hrtime.bigint() - t0) / 1e6);
+  };
+  const cold: number[] = [];
+  for (let s = 0; s < S; s++) {
+    clearBuildCaches(tech);
+    cold.push(await timeBuild());
+  }
+  const warm: number[] = [];
+  for (let s = 0; s < S; s++) warm.push(await timeBuild()); // immediate repeat, nothing cleared
+  return { cold, warm };
+}
+
 // Build the hydrate client bundle and stand up the SSR-markup + bundle server (no browser).
 // Shared by the hydrate, INP, and mount Playwright passes.
 async function serveHydrate(tech: string, ssrMod: SsrModule): Promise<{ port: number; close: () => Promise<void> }> {
@@ -460,7 +504,20 @@ async function main() {
 
     for (const measurement of measurements) {
       const file = join(RESULT_DIR, `measurement-${measurement}.json`);
-      const data: Record<string, unknown[]> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+      const data: Record<string, unknown> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+      // buildtime is a per-LANE pass (one build compiles every workload), so it writes one
+      // record keyed by the tech name rather than per cell.
+      if (measurement === "buildtime") {
+        try {
+          const bt = await buildtimeSample(tech);
+          data[tech] = bt;
+          writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
+          console.log(`  ${tech} · buildtime: cold ${median(bt.cold)}ms / warm ${median(bt.warm)}ms (${bt.cold.length} samples)`);
+        } catch (e) {
+          console.error(`  ✗ ${tech} · buildtime: ${(e as Error).message.split("\n")[0]} — skipped`);
+        }
+        continue;
+      }
       // hydrate + inp + mount + screenshots are browser passes over the SSR markup.
       const browserFns = { hydrate: hydrateTech, inp: inpTech, mount: mountTech, screenshots: screenshotTech } as const;
       if (measurement in browserFns) {

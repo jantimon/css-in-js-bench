@@ -1,8 +1,8 @@
 {
   "host": "Apple M1 Max (arm64)",
-  "node": "v25.8.1",
-  "timestamp": "2026-07-23T17:43:22.344Z",
-  "gitSha": "9a585f2",
+  "node": "v24.13.0",
+  "timestamp": "2026-07-24T21:48:14.502Z",
+  "gitSha": "eebb767",
   "techs": [
     "cnfast",
     "emotion",
@@ -18,6 +18,7 @@
     "panda-recipe",
     "styled-components",
     "stylex",
+    "stylex-layers",
     "tailwind-merge",
     "vanilla"
   ],
