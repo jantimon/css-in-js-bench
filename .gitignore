@@ -24,3 +24,7 @@ techs/*/panda.css
 .DS_Store
 BENCHMARK.json
 result/analysis/*.md
+
+# wpd 1.3.0 study: raw recordings (multi-MB, not committed)
+.wpd-runs/
+scratch-wpd/
