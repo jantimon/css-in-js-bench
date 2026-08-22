@@ -273,7 +273,7 @@ async function breakdownLane(phase: "hydrate" | "inp", tech: string, port: numbe
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `${phase}__${tech}__${cell.caseId}.json`);
   const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp re-renders in place
-  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech, "--headless-mode", "shell",
+  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
     "--warmup", "0", "--out", rec]);
   const summary = readSummary(rec);
@@ -383,7 +383,7 @@ async function mountRenderTimingLane(tech: string, port: number, cell: Cell): Pr
   // run of this cell left behind before recording afresh.
   for (const suffix of [".group.json", ".breakdown.json", ".breakdown.cpu.json", ".breakdown.cpuprofile", ".deep.json"]) rmSync(groupBase + suffix, { force: true });
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--members", "breakdown,deep", "--group", groupName,
-    "--variant", tech, "--headless-mode", "shell", "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs),
+    "--variant", tech, "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs),
     "--iterations", "1", "--warmup", "0", "--out", groupBase]);
 
   const breakdownRec = `${groupBase}.breakdown.json`;
@@ -434,7 +434,8 @@ function toolMeta() {
   const version = existsSync(WPD_PACKAGE) ? JSON.parse(readFileSync(WPD_PACKAGE, "utf8")).version : "unknown";
   const revisions = existsSync(PUPPETEER_REVISIONS) ? readFileSync(PUPPETEER_REVISIONS, "utf8") : "";
   const revision = (name: string) => revisions.match(new RegExp(`['\"]?${name}['\"]?\\s*:\\s*['\"]([^'\"]+)`))?.[1] ?? "unknown";
-  return { version, headlessMode: "shell", chrome: revision("chrome-headless-shell"), firefox: revision("firefox") };
+  // wpd always runs Chrome's built-in headless (the standalone shell mode is gone).
+  return { version, headlessMode: "built-in", chrome: revision("chrome"), firefox: revision("firefox") };
 }
 
 async function main() {
