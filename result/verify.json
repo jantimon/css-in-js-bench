@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-22T16:19:08.150Z",
+  "generatedAt": "2026-08-22T17:04:36.968Z",
   "reports": [
     {
       "caseId": "btn-variant",
@@ -54,8 +54,8 @@
       "caseId": "dyn-translate",
       "ok": true,
       "notes": [
-        "✓ 16 techs · 2 elements · attrs clean",
-        "✓ pixels: 16 techs match styled-components"
+        "✓ 17 techs · 2 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
       ]
     },
     {
