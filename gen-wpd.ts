@@ -171,6 +171,7 @@ const COMPONENT_PACKAGES = new Set([
   "emotion", // lib is @emotion/*
   "stylex", "stylex-layers", // lib is @stylexjs/stylex
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
+  "bamboo", // lib is @bamboocss/* (+ generated styled-system)
   "next-yak-css", // lib is next-yak (no npm package named next-yak-css)
   "vanilla", // no styling library
 ]);

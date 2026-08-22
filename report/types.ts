@@ -25,7 +25,7 @@ export interface TechBench {
   /** Build plugin the lane needs — informational; real wiring is in vite configs. */
   buildPlugin: "yak" | "stylex" | null;
   /** Prebuilt stylesheet the app ships (presentation/legend hint). */
-  appStylesheet: "tailwind" | "panda" | "stylex" | null;
+  appStylesheet: "tailwind" | "panda" | "stylex" | "bamboo" | null;
   /** How this lane's CSS exists — drives the report legend. */
   cssKind: "extracted" | "atomic" | "utility" | "runtime" | "none";
   /** Hidden by default in the report's lane filter (one click to show), left out of the
