@@ -1,70 +1,74 @@
 {
   "schemaVersion": 1,
   "provenance": {
-    "gitSha": "eebb767",
-    "runTimestamp": "2026-07-24T21:42:18.271Z",
-    "generatedAt": "2026-07-24T22:15:00.000Z",
-    "model": "claude-opus-4-8[1m]"
+    "gitSha": "f225399",
+    "runTimestamp": "2026-08-22T16:18:37.481Z",
+    "generatedAt": "2026-08-22T16:37:21.429Z",
+    "model": "claude-opus-5[1m]"
   },
-  "headline": "next-yak 9.7 ships static folding and the composition-flattening perf runtime on by default: the styled API holds a flat SSR cost from one wrapper to six where 9.6.0 rose 7.8×, both next-yak paths land at or below hand-written `vanilla` across SSR, payload and scaling, and the css-prop fold is the fastest shipped path.",
+  "headline": "Nothing that runs at render time is free, and the shipped defaults now split three ways: next-yak's css-prop fold ties hand-written `vanilla` at every composition depth on 2.66 kB of payload, the build-time atomic lanes trade their zero runtime for class-attribute bytes that cost `bamboo` and `panda` more react-dom time than their styling ever cost, and the hashing libraries still pay per render, per instance, on the server and again in the browser.",
   "findings": [
     {
-      "title": "The 9.7 perf runtime holds composition flat where 9.6.0 multiplied it",
-      "prose": "The styled API's library slice used to scale straight-line with nesting; the perf runtime now collapses the chain at construction time and holds it flat. On the composition ladder (the Examples `compose-1`, `compose-3` and `compose-6` shown below) `next-yak-9.7` keeps a ~0.138 ms SSR library slice at every depth, where the 9.6.0 baseline climbs 0.460 to 1.38 to 3.65 ms. In throughput that is 0.671 ms/1k at six levels against the baseline's 5.26, a 7.8× gap, and the interaction follows: the 9.6.0 baseline re-renders a six-level subtree in 24.2 ms against the perf runtime's 7.40 ms. On flat JSX (the Example `realistic-button` shown below) the perf runtime barely moves the needle, because there is no chain to collapse."
+      "title": "Build-time compilation moved the cost, it did not remove it",
+      "prose": "Every lane that resolves its classes during the build reports a library slice of roughly zero on the SSR profile, and then the ordering among them is decided by markup. On the Example `realistic-button` shown below, `stylex-layers` writes 548 B of HTML per instance with 8-character hashed class names and spends 30.5 ms in react-dom, while `bamboo` writes 1.10 kB of readable atomic names carrying 11 HTML-escaped characters per instance and its react-dom slice reaches 85.5 ms, which is the entire 2.4× SSR gap between two lanes that both do no styling work at all. The Example `tabs` shown below makes it plainer: `bamboo`'s own package costs 0.011 ms of library slice and the case still costs it 3.24 ms, because 76.6 of its 88.8 ms of JS is react-dom escaping selector text out of the class attribute. Naming is a performance decision, not a readability one."
     },
     {
-      "title": "Folding is the flat-JSX lever, the perf runtime the composition lever",
-      "prose": "Disabling static folding (`foldStatic:false`) isolates what each mechanism buys. On the flat button (the Example `realistic-button` shown below) folding rewrites `<DenseButton>` to a plain `<button className>` and deletes the styling component, so turning it off costs about 2× SSR (0.962 vs 0.479 ms/1k) as the `Yak` wrapper returns with a 0.786 ms library slice. On the Example `compose-6` shown below folding off costs only ~1.3×, because there the perf runtime, not the fold, does the work. Folding applies when the host is a known intrinsic tag or a class-toggle variant; it stops at `styled(Component)` seams, which is why the Example `tabs` shown below keeps a residual wrapper on its `styled(Tabs)` composition."
+      "title": "The css-prop fold is the only path that ignores composition depth",
+      "prose": "Down the composition ladder (the Examples `compose-1`, `compose-3` and `compose-6` shown below) `next-yak-css-9.7` concatenates the whole chain into one class on the plain element and renders at 0.522, 0.517 and 0.517 ms/1k on a payload of 2.67, 2.66 and 2.66 kB gzipped. Everything that merges classes instead pays per level: `bamboo` runs a `cx()` join per level and climbs 0.508 to 1.12 ms/1k, `stylex-layers` runs `styleq` and climbs 0.530 to 1.36, `panda` re-resolves each level's object and reaches 17.8. next-yak's styled API rises only from 0.448 to 0.698 ms/1k once its perf runtime collapses the `Yak → Yak` chain, against the 9.6.0 runtime's 1.17 to 5.07, but it keeps a residual wrapper wherever a styled component wraps another component, which is what costs it 1.77 against `vanilla`'s 0.838 ms/1k on the Example `tabs` shown below."
     },
     {
-      "title": "The css-prop fold is next-yak's fastest shipped path and ties vanilla",
-      "prose": "Where the styled fold hands each composition level its own class down a chain, the css-prop fold concatenates the whole chain into a single className on the plain element. On the Examples `tabs`, `compose-3` and `compose-6` shown below its SSR CPU matches or beats hand-written `vanilla` (0.507 vs 0.508 ms/1k at three levels), and it ships the smallest payload in the run, 2.39 kB gzipped on `tabs`, one class regardless of depth. For hot composed trees it is the path to recommend today; the styled API reaches the same shape only through the perf runtime, which leaves one residual wrapper on composed seams."
+      "title": "A compiler that refuses the slow pattern beats one that falls back to it",
+      "prose": "`bamboo` and `panda` expose the same `css()` API, and on the Example `compose-1` shown below they ship a byte-identical source file: one `css()` object literal inside a component. `bamboo` renders it at 0.508 ms/1k because its Vite plugin replaces the call with the resulting class string; `panda` renders it at 5.14 because `css()` resolves the object on every render, 5.59 ms of component self-time. The Example `btn-variant` shown below repeats the lesson with variants, where `panda` merges conditional objects at render for 13.4 ms/1k while `bamboo`'s compiler rejects that shape outright and forces five static calls joined by `cx()`, landing at 0.647. `panda`'s own `cva` recipe reaches 0.941 from the same CSS, so the fast path exists in both libraries; the difference is whether the compiler lets you off it."
     },
     {
-      "title": "Runtime hashing dominates every library that still does it, and it repeats on the client",
-      "prose": "The libraries that name a class from the styles at render time pay for it every render. On the Example `realistic-button` shown below, `emotion`'s `murmur2` hash is 4.27 ms of its 7.53 ms render, the single most expensive styling function in the run, and `generateAndInjectStyles` is most of `styled-components`' slice. The cost repeats during hydration, when these libraries inject their sheet and force reflow: on the naive dynamic case (the Example `dyn-translate` shown below) `goober` injects 1000 distinct classes and its client mount blows out to 1270 ms. Every extracted lane (next-yak, `StyleX`, `vanilla`) ships zero styling runtime and hydrates as pure JS. That cost lands at render; the codegen tools pay theirs at build instead, where `StyleX` and `Panda` cold-build in 343-548 ms against 69-121 ms for everything else, with next-yak's transform adding only ~40 ms over the runtime libraries."
+      "title": "Runtime hashing costs twice, once per render and again in the browser",
+      "prose": "The libraries that name a class from its content pay on the server and then repeat the work on the client. On the Example `product-grid` shown below, `@emotion/hash` and `@emotion/styled` split most of `emotion`'s 391 ms JS window and its interaction cost reaches 52.6 ms against the static-class lanes' 8.3-11.2. The browser side is worse: `goober` and `styled-components` inject their sheet during hydration, so the Example `tabs` shown below records 2.25-2.33 ms of style recalculation and a 3.5-3.9 ms layout pass inside a span where every extracted lane shows zero, and on the naive dynamic Example `dyn-translate` shown below `goober` mints a thousand distinct classes and its cold mount reaches 1320 ms against a 65.7 ms floor. Extraction is the whole cure, and it is paid for at build time instead — `panda` and `stylex-layers` cold-build in 305-434 ms and `bamboo` in 1990 ms against 72-129 ms for everything else."
     },
     {
-      "title": "Dynamic values are a feature in next-yak, a discipline everywhere else",
-      "prose": "next-yak compiles a dynamic value into a static class plus a CSS custom property automatically. On the Example `dyn-translate` shown below, where each element carries a distinct value and nobody has hand-optimized, the hash libraries regenerate a class per element and their cost explodes (`goober` renders 5.83 ms/1k, 9.7× the css-prop fold). The fair comparison, the Example `dyn-fair` shown below, gives each library its hand-written best practice, a static class with the value on an inline `style`, and the field converges toward `vanilla`. That parity has a price the chart cannot show: the developer performs the split by hand, per component, on every dynamic value, forever, to reach what next-yak's css-var compile ships once as a feature. The naive pattern is what you get when nobody pays that discipline."
+      "title": "Dynamic values are a feature in next-yak and a discipline everywhere else",
+      "prose": "next-yak compiles a dynamic value into a static class plus a CSS custom property automatically, so its numbers are identical on the naive Example `dyn-translate` and the hand-optimized Example `dyn-fair` shown below (1.18 against 1.23 ms/1k) — there was nothing to change. Everyone else sits in one case or the other depending on developer discipline: `goober` renders at 5.98 ms/1k and mounts in 1320 ms with the naive pattern, then at 1.06 ms/1k and 86.1 ms once a person splits the static class from the inline style by hand. That split is a build-time optimization performed manually, per component, on every dynamic value, forever, and the naive case is what the same code costs when nobody pays it. `bamboo` takes the third route and refuses to compile the naive pattern at all, which is why it has no entry in `dyn-translate`."
     },
     {
-      "title": "The variant API you pick can swing a library 16×",
-      "prose": "The Example `btn-variant` shown below isolates how each library expresses variants. `Panda`'s precompiled `cva` recipe joins the fast cluster at 0.853 ms/1k, while its inline `css()` fn re-serializes every variant per element (13.3 ms of component self-time) and is the slowest lane in the case at 13.5 ms/1k, a 16× SSR-throughput swing inside one library. next-yak expresses variants as `$prop` class toggles that inline to a string concat and fold away, so it lands at the static-class floor with `StyleX` and `vanilla`."
+      "title": "Payload separates the extracted lanes from everything else on a real page",
+      "prose": "On the Example `product-grid` shown below, a page of 400 tiles, `next-yak-css-9.7` ships 7.14 kB gzipped and hand-written `vanilla` 7.79, while atomic and utility naming roughly doubles or triples that: `stylex-layers` 13.0 kB, `bamboo` 17.2, `panda` 21.2, `cnfast` 27.7. The mechanism is that atomic systems write every rule twice, once into the sheet and once into the class attribute of every element that uses it, so payload grows with element count rather than with rule count. The Example `tabs` shown below is the extreme: the css-prop fold ships 2.37 kB against `panda`'s 15.1 for identical CSS, and the same fold holds that figure at every composition depth."
     }
   ],
   "libraryHints": [
     {
       "tech": "next-yak-9.7",
-      "hint": "Perf runtime and static folding are on by default; the next lever is teaching the styled fold to chain through `styled(styled(…))` so composed trees reach the css-prop fold's one-class floor."
+      "hint": "Both APIs hold flat under composition now; the open lever is teaching the styled fold through `styled(Component)` seams, worth 1.77 → 0.86 ms/1k on `tabs`."
     },
     {
-      "tech": "styled-components",
-      "hint": "`generateAndInjectStyles` re-hashes and injects a class every render (most of its SSR slice on `realistic-button`); hash the static rule once and ride dynamic values on a CSS variable, as its own `.attrs` path already does."
-    },
-    {
-      "tech": "emotion",
-      "hint": "`murmur2` re-hashes the whole serialized string each render (4.27 of 7.53 ms on `realistic-button`); memoize the hash on the serialized-string identity for static or lightly-dynamic components."
-    },
-    {
-      "tech": "goober",
-      "hint": "The `s` function re-serializes and re-hashes the CSS string per render, and injects a class per distinct value (client mount 1270 ms on `dyn-translate`); key the compile-and-hash cache on the tagged-template identity."
-    },
-    {
-      "tech": "stylex-layers",
-      "hint": "Zero styling runtime on flat JSX; the only render-time function left is `styleq`'s atomic merge under composition. The `@layer` build also trims a little payload on rule-heavy pages over the `:not()` specificity build."
+      "tech": "bamboo",
+      "hint": "Zero styling runtime, but readable class names put the selector text in the markup: `tabs` spends 76.6 of 88.8 ms in react-dom escaping it. Offer hashed class names in production builds."
     },
     {
       "tech": "panda",
-      "hint": "Steer variants to the `cva` recipe over the inline `css()` fn, which re-serializes per element (13.3 ms on `btn-variant`); fold static `css({literal})` call sites to the resolved class at build time."
+      "hint": "`css()` resolves per render wherever a call is not hoisted (`compose-1` 5.59 ms of component self-time from the same source `bamboo` compiles away); fold static call sites to their class string at build time."
+    },
+    {
+      "tech": "stylex-layers",
+      "hint": "Nothing on the render path for flat JSX; `styleq`'s per-element merge is the remaining cost, climbing 0.530 to 1.36 ms/1k from one composition level to six."
+    },
+    {
+      "tech": "styled-components",
+      "hint": "`generateAndInjectStyles` re-hashes and injects per render (4.23 ms of the `realistic-button` slice); hash the static rule once and ride dynamic values on a variable, as its own `.attrs` path already does."
+    },
+    {
+      "tech": "emotion",
+      "hint": "`murmur2` re-hashes the whole serialized string every render (101 of 224 ms of JS on `realistic-button`); memoize the hash on the serialized-string identity for static components."
+    },
+    {
+      "tech": "goober",
+      "hint": "The compile-and-hash runs per render and injects a class per distinct value (`dyn-translate` mounts in 1320 ms); key the cache on the tagged-template identity, not the interpolated result."
     },
     {
       "tech": "tailwind-merge",
-      "hint": "`get` rebuilds and re-looks-up the joined-class key every render (64-70% of its slice); cache on argument identity, or hoist a fully-static merge to a constant."
+      "hint": "The merge rebuilds and re-looks-up the joined-class key every render (1.68 ms of the `realistic-button` slice); cache on argument identity, or hoist a fully static merge to a constant."
     },
     {
       "tech": "cnfast",
-      "hint": "Near-free on repeated class lists; only high-cardinality dynamic classes cost via the cache miss. Split the invariant prefix from the volatile token so the prefix stays a hit."
+      "hint": "Near-free on repeated class lists; only high-cardinality dynamic classes cost, via the cache miss. Split the invariant prefix from the volatile token so the prefix stays a hit."
     }
   ]
 }

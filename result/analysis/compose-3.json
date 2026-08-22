@@ -2,43 +2,43 @@
   "schemaVersion": 1,
   "caseId": "compose-3",
   "provenance": {
-    "gitSha": "eebb767",
-    "runTimestamp": "2026-07-24T21:42:18.271Z",
-    "generatedAt": "2026-07-24T22:15:00.000Z",
-    "model": "claude-opus-4-8[1m]"
+    "gitSha": "f225399",
+    "runTimestamp": "2026-08-22T16:18:37.481Z",
+    "generatedAt": "2026-08-22T16:37:21.429Z",
+    "model": "claude-opus-5[1m]"
   },
-  "headline": "At three levels the styled perf runtime holds its library slice flat at 0.139 ms while the 9.6.0 baseline's climbs to 1.38 ms; the css-prop fold merges all three levels into one class and ties `vanilla`.",
+  "headline": "Three levels split the field by what happens to the class chain: the css-prop fold concatenates it into one class and ties `vanilla`, while every atomic lane pays a merge per level.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
       "higherBetter": true,
-      "winner": "next-yak-css-9.7",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 1971741,
-          "ratioToBaseline": 1.343
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 1969799,
-          "ratioToBaseline": 1.342
+          "value": 1965277,
+          "ratioToBaseline": 1.349
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 1467980,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 1935794,
+          "ratioToBaseline": 1.329
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
+          "value": 1678556,
+          "ratioToBaseline": 1.152
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 1467980
+        "value": 1457017
       },
-      "why": "The css-prop fold concatenates three levels into one className and renders at 0.507 ms/1k, tying `vanilla` (0.508). The styled perf runtime collapses the three `Yak` renders into one construction-time component and holds 0.681 ms/1k, where the 9.6.0 baseline `next-yak` renders a wrapper per level at 2.50 ms/1k, 3.7× slower. `panda`'s inline `css()` runs its serializer three times per element at 9.97 ms/1k.",
-      "confidence": "high"
+      "why": "Three levels ask each library what it does with a chain of classes. The css-prop fold merges the whole chain into a single class on the plain element and ties `vanilla` at 0.517 against 0.509 ms/1k; the styled fold trails at 0.686 because a residual `Yak` survives the `styled(Component)` seam. The atomic lanes cannot merge for free: `stylex-layers` runs `styleq` per element and slides from 0.530 ms/1k at one level to 0.934 here, `bamboo` joins three literals through `cx()` and goes 0.508 to 0.793, and `panda` re-resolves every level's object for 9.72. The 9.6.0 runtime is the counter-example at 2.40 ms/1k, one `Yak` render per level.",
+      "confidence": "low"
     },
     "autocannon": {
       "unit": "req/s",
@@ -48,173 +48,173 @@
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 1544,
-          "ratioToBaseline": 1.242
+          "value": 1541,
+          "ratioToBaseline": 1.297
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 1543,
-          "ratioToBaseline": 1.241
+          "value": 1525,
+          "ratioToBaseline": 1.284
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 1243,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
+          "value": 1353,
+          "ratioToBaseline": 1.139
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 1243
+        "value": 1188
       },
-      "why": "The single-class fold serves 1544 req/s with `vanilla` (1543); the styled perf runtime 1243. The 9.6.0 baseline falls to 379 as three wrappers render per request, `panda`'s css-fn to 86.0.",
-      "confidence": "high"
+      "why": "The concatenated class serves 1541 req/s and `vanilla` 1525. The styled fold's residual wrapper holds it to 1188, and `bamboo`'s three `cx()` joins put it at 828 next to `cnfast`'s 824. `panda` collapses to 85 req/s, re-resolving three merged objects per element on every request.",
+      "confidence": "medium"
     },
     "attribution": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css-9.7",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 0.565,
-          "ratioToBaseline": 0.809
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 0.577,
-          "ratioToBaseline": 0.827
+          "value": 0.623,
+          "ratioToBaseline": 0.789
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 0.698,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 0.626,
+          "ratioToBaseline": 0.792
+        },
+        {
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
+          "value": 0.757,
+          "ratioToBaseline": 0.958
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 0.698
+        "value": 0.79
       },
-      "why": "The css-prop fold renders in 0.565 ms (library 0.101 ms), just under `vanilla` (0.577); the styled perf runtime 0.698 ms with a flat 0.139 ms library slice. The 9.6.0 baseline pays 1.38 ms of library time for three nested `Yak` renders (2.45 ms total); `panda`'s css-fn 10.7 ms of component self-time (12.6 ms).",
-      "confidence": "high"
+      "why": "`next-yak-css-9.7` renders in 0.626 ms with a 0.274 ms library slice, which is `vanilla`'s 0.623 within noise. `panda` puts 12.4 of its 13.3 ms into component self-time. `stylex-layers` shows the atomic merge directly, 0.211 ms of library slice plus 0.349 ms of component self-time where the flat button had none, and `bamboo`'s slice stays at zero while its 0.862 ms goes to react-dom writing a class string that now carries all three levels.",
+      "confidence": "low"
     },
     "hydrate": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css-9.7",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 47.8,
-          "ratioToBaseline": 0.982
-        },
-        {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 48.7,
-          "ratioToBaseline": 1
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 49,
-          "ratioToBaseline": 1.006
+          "value": 48.1,
+          "ratioToBaseline": 0.949
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 49.1,
+          "ratioToBaseline": 0.968
+        },
+        {
+          "tech": "next-yak-9.7-nofold",
+          "label": "next-yak 9.7.0 (styled API) foldStatic: false",
+          "value": 50.5,
+          "ratioToBaseline": 0.996
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 48.7
+        "value": 50.7
       },
-      "why": "The folded paths hydrate with `vanilla` at 47.8-49.0 ms. The css-prop 9.6.0 twin regresses to 91.2 ms here, an artifact of its heavier component tree; the 9.7 css-prop and styled paths hydrate cleanly. Runtime hashers inject and reflow, `emotion` 73.0 ms, `goober` 102 ms, `styled-components` 142 ms.",
-      "confidence": "medium"
+      "why": "Static sheets hydrate as pure JS, 48.1-50.7 ms with no style or layout in the span. `goober` (106 ms) and `styled-components` (103 ms) inject and pay 0.22 ms of recalc plus a layout pass, and `panda` at 94.1 ms re-resolves its objects on the client. Spreads inside the fast cluster reach 49%, so it is a tie.",
+      "confidence": "low"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "stylex-layers",
+      "winner": "next-yak-9.7-nofold",
       "top3": [
         {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 6.4,
-          "ratioToBaseline": 0.842
+          "tech": "next-yak-9.7-nofold",
+          "label": "next-yak 9.7.0 (styled API) foldStatic: false",
+          "value": 6.5,
+          "ratioToBaseline": 0.802
         },
         {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 7.2,
-          "ratioToBaseline": 0.947
-        },
-        {
-          "tech": "tailwind-merge",
-          "label": "tailwind-merge",
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
           "value": 7.3,
-          "ratioToBaseline": 0.961
+          "ratioToBaseline": 0.901
+        },
+        {
+          "tech": "styled-components",
+          "label": "styled-components",
+          "value": 7.4,
+          "ratioToBaseline": 0.914
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 7.6
+        "value": 8.1
       },
-      "why": "Re-rendering a three-level subtree costs ~6.40-7.70 ms across the static-class lanes with `StyleX` in front at 6.40 ms. The 9.6.0 baseline reaches 11.0 ms, `panda`'s css-fn 37.4 ms re-serializing on the interaction.",
-      "confidence": "medium"
+      "why": "Re-rendering three nested components costs 0.40-0.68 ms of JS in every build-time lane, and they span 6.5-8.2 ms, less than the repeat-to-repeat spread. `panda` re-resolves three merged objects and needs 37.2 ms, `goober` 11.1 and `emotion` 9.9. Depth reaches the interaction only where the class is computed at render.",
+      "confidence": "low"
     },
     "mount": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css-9.7",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 28.3,
-          "ratioToBaseline": 0.379
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 70.3,
-          "ratioToBaseline": 0.941
+          "value": 73.7,
+          "ratioToBaseline": 0.933
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 74.7,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 73.9,
+          "ratioToBaseline": 0.935
+        },
+        {
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
+          "value": 78.6,
+          "ratioToBaseline": 0.995
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 74.7
+        "value": 79
       },
-      "why": "The css-prop fold mounts at 28.3 ms, the same outlier it shows at one level and well below the ~70-85 ms cluster; treat it cautiously against its own 70.4 ms at six levels. `vanilla` and the styled perf runtime sit at 70.3-74.7 ms, the hashers 97-109 ms.",
+      "why": "Cold mount puts the concatenated-class lane at `vanilla`'s level, 73.9 against 73.7 ms, with the atomic lanes just behind (`bamboo` 79.6, `stylex-layers` 83.7) as the browser matches more classes per element. `panda` (125 ms), `emotion` (113 ms), `goober` (107 ms) and `styled-components` (101 ms) do their styling before first paint.",
       "confidence": "low"
     },
     "renderTiming": {
       "unit": "recalcs",
       "higherBetter": false,
-      "winner": "cnfast",
+      "winner": "bamboo",
       "top3": [
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "panda",
+          "label": "Panda (css fn)",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
         {
           "tech": "cnfast",
           "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1
-        },
-        {
-          "tech": "goober",
-          "label": "Goober",
           "value": 1,
           "ratioToBaseline": 1
         }
@@ -223,7 +223,7 @@
         "tech": "next-yak-9.7",
         "value": 1
       },
-      "why": "One recalc per lane; composition depth changes the JS render, not the style pass.",
+      "why": "One recalculation and one layout everywhere, so only the recalc cost (0.133-0.186 ms) orders the lanes. Composition changes how many classes an element carries, not how often Chrome recalculates a static sheet.",
       "confidence": "low"
     },
     "payload": {
@@ -235,59 +235,59 @@
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
           "value": 2658,
-          "ratioToBaseline": 0.684
+          "ratioToBaseline": 0.681
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
+          "value": 3022,
+          "ratioToBaseline": 0.774
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 3045,
-          "ratioToBaseline": 0.784
-        },
-        {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 3884,
-          "ratioToBaseline": 1
+          "value": 3044,
+          "ratioToBaseline": 0.78
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 3884
+        "value": 3904
       },
-      "why": "The css-prop fold ships 2.66 kB gzipped, under `vanilla` (3.05 kB); the styled perf runtime 3.88 kB carrying the residual wrapper runtime. `StyleX` 5.75 kB, the hashers 15-16 kB.",
-      "confidence": "high"
+      "why": "One class for the whole chain means payload does not grow with depth: `next-yak-css-9.7` ships 2.66 kB gzipped here against 2.67 at one level. The atomic lanes append each level's classes to the attribute instead, `bamboo` rising 4.94 to 5.33 kB and `stylex-layers` 5.62 to 5.84. `styled-components` (16.5 kB) and `cnfast` (15.1 kB) carry a runtime or a scanned sheet that dwarfs both.",
+      "confidence": "medium"
     },
     "nsweep": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css-9.7",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 2.085,
-          "ratioToBaseline": 0.786
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 2.101,
-          "ratioToBaseline": 0.792
+          "value": 2.093,
+          "ratioToBaseline": 0.748
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 2.652,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 2.112,
+          "ratioToBaseline": 0.754
+        },
+        {
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
+          "value": 2.423,
+          "ratioToBaseline": 0.865
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 2.652
+        "value": 2.8
       },
-      "why": "At 4000 three-level trees the css-prop fold holds 2.09 ms with `vanilla` (2.10); the styled perf runtime 2.65 ms. The 9.6.0 baseline reaches 10.4 ms, `panda`'s css-fn 43.7 ms, the depth tax made linear.",
-      "confidence": "high"
+      "why": "At 4000 three-level instances the concatenated class tracks `vanilla`, 2.11 against 2.09 ms. `bamboo` (3.35 ms) and `stylex-layers` (3.82 ms) carry their per-level merge into the sweep and `panda` reaches 44.5 ms. The 9.6.0 runtime's 9.81 ms is three `Yak` renders per instance multiplied by n.",
+      "confidence": "low"
     }
   },
-  "crossCase": "The middle of the composition ladder (`compose-1`, `compose-6` its siblings). The perf runtime's library slice is flat across all three depths (~0.138-0.139 ms), where the 9.6.0 baseline's climbs 0.460 to 1.38 to 3.65 ms; the css-prop fold ties `vanilla` at every depth by merging the chain into one class."
+  "crossCase": "The middle of the composition ladder (the Examples `compose-1` and `compose-6` are its siblings). The css-prop fold holds `vanilla`'s cost at every depth (0.522, 0.517, 0.517 ms/1k) and a flat 2.66-2.67 kB payload, because the chain collapses into one class name. Depth is what the atomic lanes pay for: `bamboo` climbs 0.508 to 0.793 to 1.12 ms/1k and `stylex-layers` 0.530 to 0.934 to 1.36, since every level brings another merge and another class token."
 }
