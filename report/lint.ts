@@ -12,7 +12,7 @@ const CASES_DIR = join(ROOT, "cases");
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const BUILD_PLUGINS = new Set([null, "yak", "stylex"]);
-const APP_STYLESHEETS = new Set([null, "tailwind", "panda", "stylex"]);
+const APP_STYLESHEETS = new Set([null, "tailwind", "panda", "stylex", "bamboo"]);
 const CSS_KINDS = new Set(["extracted", "atomic", "utility", "runtime", "none"]);
 
 const problems: string[] = [];
