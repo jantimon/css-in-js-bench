@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "caseId": "btn-variant",
   "provenance": {
-    "gitSha": "f225399",
-    "runTimestamp": "2026-08-22T16:18:37.481Z",
-    "generatedAt": "2026-08-22T16:37:21.429Z",
+    "gitSha": "9b28ee4",
+    "runTimestamp": "2026-08-22T18:11:21.671Z",
+    "generatedAt": "2026-08-22T18:28:06.234Z",
     "model": "claude-opus-5[1m]"
   },
-  "headline": "Bamboo's compiler refuses the merge-at-runtime `css()` call that costs `panda` 13.4 ms/1k, so the same Panda-shaped API lands at the static-class floor once variant selection is forced into `cx()` over precompiled literals.",
+  "headline": "Twelve repeated class strings is the case where a cached merger is nearly free, so what remains visible is whether variant selection happens in the compiler or on every render.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
@@ -21,23 +21,23 @@
           "ratioToBaseline": 1
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1546692,
-          "ratioToBaseline": 0.929
-        },
-        {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
           "value": 1488556,
           "ratioToBaseline": 0.894
+        },
+        {
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 1478470,
+          "ratioToBaseline": 0.888
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 1665049
       },
-      "why": "`next-yak-9.7` compiles the variant into `$prop` class toggles that fold to a string concat, so it renders at 0.601 ms/1k. The case's real lesson is `panda` against `bamboo`: both expose the same `css()` API, but `panda` merges the conditional objects at render (13.4 ms/1k, 15.1 ms of component self-time) while `bamboo`'s compiler rejects a conditional inside one `css()` call, forcing five static calls joined by `cx()` that compile to class-string literals, and it renders at 0.647. `panda`'s own precompiled `cva` recipe confirms the mechanism at 0.941 ms/1k, and the hashers sit between at `styled-components` 1.85 and `emotion` 2.81.",
+      "why": "With only about twelve distinct class strings, `cnfast` (0.689 ms/1k) and `tailwind-merge` (0.886) are essentially cache lookups, and `next-yak-9.7` (0.601) compiles the variant into `$prop` class toggles that fold to a string concatenation. `panda` at 1.57 ms/1k merges the conditional objects on every render, 1.03 ms of component self-time and 29.2 ms inside its own package, while `bamboo` at 0.719 ships the same `css()` API and cannot express that shape at all: its compiler rejects a conditional inside one call, forcing five static calls joined by `cx()` that compile to class-string literals. `panda`'s own precompiled `cva` recipe confirms the mechanism from inside the same library at 0.789 ms/1k. Spreads here reach 19%, so read the clusters and not the order.",
       "confidence": "low"
     },
     "autocannon": {
@@ -68,39 +68,39 @@
         "tech": "next-yak-9.7",
         "value": 1535
       },
-      "why": "The same split holds under load: `next-yak-9.7` serves 1535 req/s and `bamboo` 976 against `panda`'s 72, which re-merges the variant objects on every request. `panda`'s `cva` recipe recovers to 752 req/s from identical CSS. `emotion` (339) and `styled-components` (516) pay their hash per request rather than per variant.",
+      "why": "`next-yak-9.7` serves 1,540 req/s and `vanilla` 1,390. `bamboo` at 980 and `panda`'s recipe at 879 pay in class-attribute bytes, and `panda`'s `css()` build at 510 pays in per-request merging on top. `emotion` (339) and `styled-components` (516) re-derive the variant's class on every request rather than once per variant.",
       "confidence": "medium"
     },
     "attribution": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "next-yak-9.7",
       "top3": [
         {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 0.691,
-          "ratioToBaseline": 0.772
+          "tech": "next-yak-9.7",
+          "label": "next-yak 9.7.0 (styled API)",
+          "value": 0.6,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 0.661,
+          "ratioToBaseline": 1.1
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 0.695,
-          "ratioToBaseline": 0.777
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 0.695,
-          "ratioToBaseline": 0.777
+          "value": 0.666,
+          "ratioToBaseline": 1.11
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 0.895
+        "value": 0.6
       },
-      "why": "Where the class string is decided at build time the render is react-dom and little else: `vanilla`, `next-yak-css-9.7` and `stylex-layers` land at 0.691-0.695 ms with a library slice at or near zero. `panda` puts 15.1 of its 15.8 ms into component self-time, 428 ms of a 450 ms JS window inside its own package, resolving merged objects to atomic classes per element. `bamboo` runs the identical API at 0.729 ms with a 0.013 ms library slice, the whole difference being that its `cx()` joins literals the compiler already produced.",
-      "confidence": "low"
+      "why": "Where the class string is decided at build time the render is react-dom and little else: `next-yak-9.7` 0.600 ms with a 0.259 ms library slice, `next-yak-css-9.7` 0.666, `stylex-layers` 0.694 with none. `panda` puts 1.03 of its 1.47 ms into component self-time resolving merged objects to atomic classes, and its `cva` recipe halves that to 0.488 from identical CSS. `bamboo`'s 1.74 ms is the odd figure in the case: its library slice is zero and its JS window is only 32.3 ms, but 19.7 ms of the profile is garbage collection, which the wall-clock microbench does not show.",
+      "confidence": "medium"
     },
     "hydrate": {
       "unit": "ms",
@@ -114,23 +114,23 @@
           "ratioToBaseline": 1
         },
         {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 49,
+          "ratioToBaseline": 1.09
+        },
+        {
           "tech": "stylex",
           "label": "StyleX without CSS layers (:not() specificity hack)",
           "value": 49.1,
-          "ratioToBaseline": 1.096
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 49.1,
-          "ratioToBaseline": 1.096
+          "ratioToBaseline": 1.1
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 44.8
       },
-      "why": "The variant button hydrates as pure JS wherever the sheet is a file, 44.8-52.1 ms for the folded, StyleX and `bamboo` builds, with 0 ms of style and layout inside the span. `panda`'s `css()` re-resolves the variants on the client and lands at 105 ms, while `goober` (97.5 ms) and `styled-components` (102 ms) inject and pay 0.21 ms of recalc plus a 1.2-1.6 ms layout inside the span. Spreads inside the fast cluster reach 45%, so its internal order carries no signal.",
+      "why": "The variant button hydrates as pure JS wherever the sheet is a file, 44.8-58.4 ms for the folded, atomic and recipe builds with zero style and zero layout inside the span. `goober` (97.5 ms) and `styled-components` (102 ms) inject and pay 0.20-0.22 ms of recalculation plus a 2.3-3.6 ms layout. Spreads inside the fast cluster reach 45%, so its internal order carries no signal.",
       "confidence": "medium"
     },
     "inp": {
@@ -151,17 +151,17 @@
           "ratioToBaseline": 0.932
         },
         {
-          "tech": "next-yak-css-9.7-nofold",
-          "label": "next-yak css-prop 9.7.0 foldStatic: false",
-          "value": 7.3,
-          "ratioToBaseline": 0.986
+          "tech": "panda-recipe",
+          "label": "Panda (recipe)",
+          "value": 7.1,
+          "ratioToBaseline": 0.959
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 7.4
       },
-      "why": "Toggling the variant re-renders one button, and every lane that decided its class at build time does the toggle as a string swap: 6.9-8.1 ms across them, one measurement. `panda` re-runs the merge on the interaction and needs 48.0 ms, the only lane where changing a variant costs real work. `goober` shows a 2.13 ms JS slice against the cluster's 0.4-0.7 and is still invisible in the frame.",
+      "why": "Toggling the variant re-renders one button, and every lane that decided its class at build time does the toggle as a string swap: 6.9-8.1 ms across all of them, one measurement wide. `panda` at 7.6 ms now sits inside that cluster; `emotion` at 12.3 ms is the only lane where changing a variant costs measurable work, re-hashing the new rule set.",
       "confidence": "low"
     },
     "mount": {
@@ -179,20 +179,20 @@
           "tech": "stylex",
           "label": "StyleX without CSS layers (:not() specificity hack)",
           "value": 78.3,
-          "ratioToBaseline": 1.037
+          "ratioToBaseline": 1.04
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
           "value": 78.4,
-          "ratioToBaseline": 1.038
+          "ratioToBaseline": 1.04
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 75.5
       },
-      "why": "Cold mount is one sheet parse plus first paint, 75.5-79.1 ms for the build-time lanes. `panda` does its render-time merge before that paint and reaches 133 ms, `emotion` 106 and `styled-components` 93.2. `bamboo` mounts at 80.5 ms, inside the floor cluster, because its work already happened during the build.",
+      "why": "Cold mount is one sheet parse plus first paint, 75.5-79.7 ms for the build-time lanes, `bamboo` at 79.7 among them because its work already happened during the build. `emotion` (106 ms), `styled-components` (93.2) and `goober` (92.8) build the sheet first; `goober`'s 16.6 ms layout against the cluster's 6.1-7.0 shows the browser waiting on it.",
       "confidence": "low"
     },
     "renderTiming": {
@@ -213,8 +213,8 @@
           "ratioToBaseline": 1
         },
         {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
+          "tech": "tailwind-merge",
+          "label": "tailwind-merge",
           "value": 1,
           "ratioToBaseline": 1
         }
@@ -223,7 +223,7 @@
         "tech": "next-yak-9.7",
         "value": 1
       },
-      "why": "One style recalculation and one layout per lane, so the counts tie and only the recalc cost (0.119-0.465 ms) separates them. A variant toggle changes which class an element carries, not how often Chrome recalculates a static sheet.",
+      "why": "One style recalculation and one layout per lane, so the counts tie and only recalc cost separates them, 0.124-0.228 ms. A variant toggle changes which class an element carries, not how often Chrome has to recalculate a static sheet.",
       "confidence": "low"
     },
     "payload": {
@@ -254,7 +254,7 @@
         "tech": "next-yak-9.7",
         "value": 4494
       },
-      "why": "The css-prop fold ships 3.39 kB gzipped, below `vanilla`'s 3.79 kB, because five variant rules collapse into numbered classes on one element. `bamboo` ships 6.69 kB and `panda`'s recipe 5.79, while `panda`'s `css()` build adds its resolver for 8.76 kB. The utility lanes carry a scanned sheet whatever the page uses, `cnfast` 16.1 kB and `tailwind-merge` 15.1 kB.",
+      "why": "The css-prop fold ships 3.39 kB gzipped, below `vanilla`'s 3.79, because five variant rules collapse into numbered classes on one element. `bamboo` ships 6.73 kB and `panda`'s recipe 6.91, while `panda`'s `css()` build adds its resolver for 9.80 kB. The utility lanes carry a scanned sheet whatever the page uses, `cnfast` 16.1 kB and `tailwind-merge` 15.1.",
       "confidence": "medium"
     },
     "nsweep": {
@@ -278,14 +278,14 @@
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
           "value": 2.308,
-          "ratioToBaseline": 1.129
+          "ratioToBaseline": 1.13
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 2.044
       },
-      "why": "At 4000 buttons the class-toggle concat holds 2.04 ms and `bamboo`'s literal join 2.45, both linear in n. `panda` multiplies its per-element merge by n and reaches 52.3 ms, 21× `bamboo` on the same API. `emotion` (11.3 ms) and `styled-components` (7.03 ms) scale their hash the same way.",
+      "why": "At 4,000 buttons the class-toggle concatenation holds 2.04 ms and `bamboo`'s literal join 2.43, both linear in n. `panda` reaches 5.49 ms and its recipe 2.68, the same library separated only by whether the variant was resolved during the build. `emotion` (11.3 ms) and `goober` (7.80) scale their hash the same way.",
       "confidence": "medium"
     }
   }

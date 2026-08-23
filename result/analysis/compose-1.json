@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "caseId": "compose-1",
   "provenance": {
-    "gitSha": "f225399",
-    "runTimestamp": "2026-08-22T16:18:37.481Z",
-    "generatedAt": "2026-08-22T16:37:21.429Z",
+    "gitSha": "9b28ee4",
+    "runTimestamp": "2026-08-22T18:11:21.671Z",
+    "generatedAt": "2026-08-22T18:28:06.234Z",
     "model": "claude-opus-5[1m]"
   },
-  "headline": "One `css()` call in a component body is the whole gap between `bamboo` at 0.508 ms/1k and `panda` at 5.14 on a byte-identical source file: one compiles the call away, the other resolves it per render.",
+  "headline": "At depth one there is no chain to collapse, so the case reads as a clean control: identical source costs `bamboo` 0.553 ms/1k and `panda` 1.18, the difference being whether `css()` survives to run.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
@@ -27,17 +27,17 @@
           "ratioToBaseline": 0.891
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1967698,
-          "ratioToBaseline": 0.881
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 1916932,
+          "ratioToBaseline": 0.858
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 2233808
       },
-      "why": "With a single level there is nothing to compose, so the case measures what each library does per element. `next-yak-9.7` folds its wrapper away and renders at 0.448 ms/1k, ahead of `vanilla`'s 0.502. `bamboo` and `panda` ship the same source file, one `css()` object literal inside the component, and land 10.1× apart: `bamboo` at 0.508 because its Vite plugin replaces the call with the resulting class string, `panda` at 5.14 because `css()` resolves the object to atomic classes on every render, 5.59 ms of component self-time. Depth is not the variable here, build-time evaluation is.",
+      "why": "One styled component carrying base styles, nothing wrapped. `next-yak-9.7` folds it to a plain element and renders at 0.448 ms/1k, ahead of `vanilla`'s 0.502 because the emitted class is shorter than the hand-written one. `bamboo` and `panda` ship a byte-identical source file, one `css()` object literal inside a component, and land 2.1× apart: `bamboo` at 0.553 because its Vite plugin replaces the call with the resulting class string, `panda` at 1.18 because `css()` resolves the object on every render, 0.518 ms of component self-time. Depth is not the variable here; compilation is.",
       "confidence": "medium"
     },
     "autocannon": {
@@ -68,7 +68,7 @@
         "tech": "next-yak-9.7",
         "value": 1751
       },
-      "why": "`next-yak-9.7` serves 1751 req/s, `vanilla` 1562 and `bamboo` 1345, all bounded by writing markup. `panda` answers 161 req/s from the same source, re-resolving its `css()` call per element per request. `goober` (979) and `emotion` (435) pay a hash instead.",
+      "why": "`next-yak-9.7` 1,750 req/s, `vanilla` 1,560, `next-yak-css-9.7` 1,540. `bamboo` at 1,330 serves the same source `panda` serves at 522, and `panda-props` at 504 resolves a style prop per element. `emotion` at 435 re-hashes a thousand buttons per request.",
       "confidence": "medium"
     },
     "attribution": {
@@ -79,28 +79,28 @@
         {
           "tech": "next-yak-9.7",
           "label": "next-yak 9.7.0 (styled API)",
-          "value": 0.609,
+          "value": 0.589,
           "ratioToBaseline": 1
         },
         {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 0.624,
-          "ratioToBaseline": 1.025
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 0.639,
+          "ratioToBaseline": 1.08
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 0.631,
-          "ratioToBaseline": 1.036
+          "value": 0.641,
+          "ratioToBaseline": 1.09
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 0.609
+        "value": 0.589
       },
-      "why": "The folded lane renders in 0.609 ms with a 0.255 ms library slice, and `stylex`, `next-yak-css-9.7` and `bamboo` follow within 0.035 ms of it, none with a styling package on the hot path. `panda` spends 5.59 of its 6.10 ms in component self-time on the same JSX. `emotion` splits the other way, 1.15 ms of library time against 0.710 ms of React, and `styled-components` 0.784 ms.",
-      "confidence": "low"
+      "why": "`next-yak-9.7` costs 0.589 ms with a 0.246 ms library slice; `vanilla`, `bamboo` and `stylex-layers` report no library time at all and pay 0.22-0.28 ms of component self-time. `panda` spends 0.518 of its 0.980 ms in component self-time on the same JSX `bamboo` compiles away, 13.9 ms of a 26.3 ms JS window inside its own package. `emotion` splits the other way, 1.17 ms of library against 0.338 of component, since the hashing happens inside the library rather than in the case's code.",
+      "confidence": "medium"
     },
     "hydrate": {
       "unit": "ms",
@@ -117,7 +117,7 @@
           "tech": "stylex",
           "label": "StyleX without CSS layers (:not() specificity hack)",
           "value": 47.8,
-          "ratioToBaseline": 1.044
+          "ratioToBaseline": 1.04
         },
         {
           "tech": "bamboo",
@@ -130,14 +130,20 @@
         "tech": "next-yak-9.7",
         "value": 45.8
       },
-      "why": "Hydration is pure JS for every static-sheet lane, 45.8-49.7 ms with 0 ms of style and layout in the span. `goober` and `styled-components` inject during hydration and record 0.19-0.20 ms of recalc plus a layout pass, landing at 100 and 105 ms. Spreads in the fast cluster run to 50%, so its order is a tie.",
+      "why": "45.8-53.6 ms of pure JS in every extracted and atomic lane, no style and no layout in the span. `goober` (100 ms) and `styled-components` (105 ms) inject during hydration, 0.19-0.20 ms of recalculation plus a small layout pass. Spreads inside the fast cluster reach 52%, so it is a tie rather than a ranking.",
       "confidence": "low"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "panda-props",
       "top3": [
+        {
+          "tech": "panda-props",
+          "label": "Panda (style props)",
+          "value": 6.6,
+          "ratioToBaseline": 0.846
+        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
@@ -149,19 +155,13 @@
           "label": "next-yak 9.6.0",
           "value": 7.1,
           "ratioToBaseline": 0.91
-        },
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 7.3,
-          "ratioToBaseline": 0.936
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 7.8
       },
-      "why": "Re-rendering one element costs 0.38-0.78 ms of JS in every lane except `panda`, which re-resolves its `css()` call for 1.12 ms and lands at 22.7 ms, the only shipped lane an interaction reaches. Everything else falls between 6.7 and 8.0 ms, inside the noise of a 33 ms frame.",
+      "why": "Pressing one button costs under 0.8 ms of span JS in every lane, and the whole field lands between 6.6 and 9.2 ms. At depth one with a low-cardinality class list there is nothing for any of these libraries to recompute.",
       "confidence": "low"
     },
     "mount": {
@@ -182,39 +182,39 @@
           "ratioToBaseline": 1
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 72.8,
-          "ratioToBaseline": 1.011
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
+          "value": 73.8,
+          "ratioToBaseline": 1.02
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 72
       },
-      "why": "Cold mount separates lanes by how much sheet the browser parses and how much JS runs before paint. The build-time lanes cluster at 70.6-74.3 ms, while `emotion` (111 ms), `styled-components` (102 ms) and `goober` (101 ms) build their sheet first. `panda` at 102 ms resolves its `css()` call for every element before that first paint.",
+      "why": "70.6-90.6 ms across the lanes that ship a sheet, with spreads up to 39% inside the fast half. `emotion` (111 ms), `styled-components` (102) and `goober` (101) build their sheet before first paint, which is the only separation the measurement supports.",
       "confidence": "low"
     },
     "renderTiming": {
       "unit": "recalcs",
       "higherBetter": false,
-      "winner": "bamboo",
+      "winner": "next-yak-css",
       "top3": [
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
+        {
+          "tech": "panda",
+          "label": "Panda (css fn)",
+          "value": 1,
+          "ratioToBaseline": 1
+        },
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1
-        },
-        {
-          "tech": "next-yak-css-9.7-nofold",
-          "label": "next-yak css-prop 9.7.0 foldStatic: false",
           "value": 1,
           "ratioToBaseline": 1
         }
@@ -223,7 +223,7 @@
         "tech": "next-yak-9.7",
         "value": 1
       },
-      "why": "One recalculation and one layout per lane, with the recalc costing 0.129-0.179 ms. A single-level tree gives the browser nothing to differentiate.",
+      "why": "One recalculation, one layout, two paints everywhere; counts tie exactly. Recalc costs 0.128-0.189 ms and the ordering inside that range is a single sample.",
       "confidence": "low"
     },
     "payload": {
@@ -254,8 +254,8 @@
         "tech": "next-yak-9.7",
         "value": 3787
       },
-      "why": "The css-prop fold ships 2.67 kB gzipped and `vanilla` 2.70. Atomic naming costs bytes twice, in the sheet and in the markup, so `bamboo` reaches 4.94 kB and `stylex-layers` 5.62, and `panda` adds its resolver for 7.05 kB. `cnfast` (14.8 kB) and `tailwind-merge` (13.8 kB) ship a scanned utility sheet regardless of what the page uses.",
-      "confidence": "low"
+      "why": "`next-yak-css-9.7` ships 2.67 kB gzipped with no styling JS at all, beside `vanilla`'s 2.70. The runtime lanes carry their compiler whatever the page contains, `emotion` 12.9 kB of JS and `styled-components` 13.4, and the atomic lanes carry their names in the markup, `bamboo` 2.91 kB of HTML inside 4.97 kB total against `panda`'s 3.16 inside 8.10.",
+      "confidence": "medium"
     },
     "nsweep": {
       "unit": "ms",
@@ -272,22 +272,22 @@
           "tech": "stylex-layers",
           "label": "StyleX",
           "value": 2.057,
-          "ratioToBaseline": 1.115
+          "ratioToBaseline": 1.11
         },
         {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 2.102,
-          "ratioToBaseline": 1.139
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 2.081,
+          "ratioToBaseline": 1.13
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 1.845
       },
-      "why": "At 4000 instances the folded lane holds 1.85 ms and the rest of the build-time field 2.06-2.16, all linear in n. `panda` reaches 22.2 ms, its per-element `css()` resolution multiplied by n, and `emotion` 8.70. `bamboo` stays at 2.16 ms running the source `panda` runs at 22.2.",
+      "why": "`next-yak-9.7` holds 1.84 ms at n=4,000 and `stylex-layers`, `bamboo` and `vanilla` follow at 2.06-2.10, all linear. `panda` reaches 4.91 ms and the 9.6.0 runtime 4.88, the two lanes that render something per element; `emotion` at 8.70 ms is the steepest.",
       "confidence": "medium"
     }
   },
-  "crossCase": "`compose-1` is the control of the composition ladder (the Examples `compose-3` and `compose-6` below). It fixes depth at one so the ladder's later gaps can be read as depth cost: the css-prop fold holds 0.522, 0.517 and 0.517 ms/1k across the three, the styled fold 0.448 to 0.686 to 0.698, while `bamboo` climbs 0.508 to 0.793 to 1.12 and `stylex-layers` 0.530 to 0.934 to 1.36 as each level adds a merge."
+  "crossCase": "This is the depth-1 control for the Examples `compose-3` and `compose-6` shown below, which wrap the same button two and five more times. Following one lane down the ladder is the fastest way to read the case family: `next-yak-css-9.7` goes 0.522, 0.517, 0.517 ms/1k and does not move, `bamboo` 0.553, 0.805, 1.13 as it runs one `cx()` join per level, `stylex-layers` 0.530, 0.934, 1.36 through `styleq`, and `panda` 1.18, 2.24, 3.47 re-resolving each level's object."
 }

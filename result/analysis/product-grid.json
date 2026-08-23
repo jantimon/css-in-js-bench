@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "caseId": "product-grid",
   "provenance": {
-    "gitSha": "f225399",
-    "runTimestamp": "2026-08-22T16:18:37.481Z",
-    "generatedAt": "2026-08-22T16:37:21.429Z",
+    "gitSha": "9b28ee4",
+    "runTimestamp": "2026-08-22T18:11:21.671Z",
+    "generatedAt": "2026-08-22T18:28:06.234Z",
     "model": "claude-opus-5[1m]"
   },
-  "headline": "On a whole page of 400 tiles the ordering is set by two costs that have nothing to do with each other: per-render hashing, which puts `emotion` at 2.46 ms/1k, and class-attribute bytes, which put zero-runtime `bamboo` at 0.512 against `vanilla`'s 0.319.",
+  "headline": "On a whole page every build-time lane reports a library slice of roughly zero, and what then separates them is how many bytes of class attribute react-dom has to write per tile.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
@@ -18,26 +18,26 @@
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
           "value": 231884,
-          "ratioToBaseline": 2.161
+          "ratioToBaseline": 2.16
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
           "value": 224110,
-          "ratioToBaseline": 2.089
+          "ratioToBaseline": 2.09
         },
         {
           "tech": "stylex-layers",
           "label": "StyleX",
           "value": 212950,
-          "ratioToBaseline": 1.985
+          "ratioToBaseline": 1.98
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 107283
       },
-      "why": "The closest thing to a real page: 400 tiles mixing static, variant, dynamic and composed styling. `vanilla` and the css-prop fold lead at 0.319 and 0.331 ms/1k with nothing on the render path, `stylex-layers` at 0.348. `emotion` is 7.7× the leader at 2.46, with `@emotion/hash` (85.6 ms) and `@emotion/styled` (85.1 ms) splitting most of a 391 ms JS window, and `goober` and `styled-components` follow at 1.45 and 1.41. `bamboo` at 0.512 does no styling work at all, its own package costing 8.04 ms of a 97.2 ms window, and pays in react-dom instead (87.0 ms) writing 230 atomic class tokens across the two-tile snapshot where `vanilla` writes 28.",
+      "why": "Once the class strings are decided during the build the tile is react-dom and nothing else: `vanilla` renders 400 tiles at 0.319 ms/1k and `next-yak-css-9.7` at 0.331 with a 0.141 ms library slice, its rules folded into numbered classes on the plain elements. Of the remaining cost the biggest single piece is per-instance string work, `tailwind-merge` re-running the roughly eight `cn()` calls per tile for 1.52 ms of library slice (39.9 ms inside its own package) and `emotion` re-serializing and re-hashing every tile, 87.9 ms of `@emotion/hash` plus 83.2 ms of `@emotion/styled` in a 410 ms JS window. `panda` (0.558) and `bamboo` (0.513) do no styling work at all and still land four to five times off `vanilla`, because their readable atomic names make the class attribute the largest thing on the page.",
       "confidence": "low"
     },
     "autocannon": {
@@ -49,13 +49,13 @@
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
           "value": 249,
-          "ratioToBaseline": 1.117
+          "ratioToBaseline": 1.12
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
           "value": 247,
-          "ratioToBaseline": 1.108
+          "ratioToBaseline": 1.11
         },
         {
           "tech": "next-yak-9.7",
@@ -68,7 +68,7 @@
         "tech": "next-yak-9.7",
         "value": 223
       },
-      "why": "A full page per request compresses the field: 249 req/s for the css-prop fold, 247 for `vanilla`, 223 for the styled fold. `bamboo` (117), `panda` (101) and the utility lanes (108-123) serve roughly half that, and the difference is response bytes. `emotion` at 69 req/s is the floor.",
+      "why": "Under real HTTP the response body joins the render cost, which pulls the atomic lanes down further than the microbench does: `next-yak-css-9.7` answers 249 req/s on 7.14 kB while `bamboo` (116) and `panda` (100) write 13.8 and 15.9 kB of markup into every response. `emotion` at 69 req/s re-hashes 400 tiles per request rather than per deploy, and `panda-props` at 51 resolves a style prop per element on top of that.",
       "confidence": "low"
     },
     "attribution": {
@@ -79,28 +79,28 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 2.104,
-          "ratioToBaseline": 0.816
+          "value": 2.202,
+          "ratioToBaseline": 0.914
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 2.246,
-          "ratioToBaseline": 0.872
+          "value": 2.285,
+          "ratioToBaseline": 0.949
         },
         {
           "tech": "next-yak-9.7",
           "label": "next-yak 9.7.0 (styled API)",
-          "value": 2.577,
+          "value": 2.408,
           "ratioToBaseline": 1
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 2.577
+        "value": 2.408
       },
-      "why": "`vanilla` renders a tile in 2.10 ms and the css-prop fold in 2.25 with a 0.298 ms library slice. `emotion` spends 7.80 of its 13.6 ms inside its own packages and `goober` 5.99 of 8.70. `bamboo` and `panda` report a zero library slice and still cost 3.57 ms each, all of it React: 87.0 and 91.1 ms of react-dom in a JS window of about 98 ms, which is what long atomic class names cost when a page carries 400 of them.",
-      "confidence": "medium"
+      "why": "The library column is the wrong place to look here. `panda` and `bamboo` report a library slice of exactly 0 ms and still cost 3.65 and 3.60 ms, of which 3.30 and 3.23 ms is React: react-dom burns 89.0 and 85.6 ms of their roughly 100 ms JS windows escaping and writing their class attributes. `next-yak-css-9.7` lands at 2.29 ms with 0.141 ms of library time because one numbered class per element is all react-dom has to write. The runtime lanes still lose on their own work, `emotion` putting 7.82 ms into the library and 2.24 into component self-time, `goober` 5.55 ms with 160 ms inside its own package, and `panda-props` 10.2 ms of component self-time from 288 ms of style-prop resolution.",
+      "confidence": "low"
     },
     "hydrate": {
       "unit": "ms",
@@ -110,14 +110,14 @@
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 59.6,
-          "ratioToBaseline": 0.918
+          "value": 59.2,
+          "ratioToBaseline": 0.912
         },
         {
           "tech": "panda",
           "label": "Panda (css fn)",
-          "value": 59.8,
-          "ratioToBaseline": 0.921
+          "value": 59.4,
+          "ratioToBaseline": 0.915
         },
         {
           "tech": "next-yak-css-9.7",
@@ -130,7 +130,7 @@
         "tech": "next-yak-9.7",
         "value": 64.9
       },
-      "why": "The static-sheet lanes hydrate at 59.6-64.9 ms with no style, layout or paint inside the span. `goober` (267 ms) and `styled-components` (258 ms) inject 400 tiles' worth of rules during hydration and record a 6.6-6.8 ms layout pass on top of 0.6-1.6 ms of recalc, the largest browser cost in any hydration span here, while `emotion` reaches 136 ms. The top of the fast cluster spans 2%, a tie.",
+      "why": "Wherever the sheet is a file, hydrating 400 tiles is pure JS: 59.2-64.9 ms for `bamboo`, `panda`, the folded lanes and `stylex-layers`, with zero style and zero layout inside the span. `styled-components` (258 ms) and `goober` (267 ms) build the sheet during hydration instead and their spans carry 1.08 and 0.716 ms of style recalculation plus a 5.74 and 6.90 ms layout pass. `emotion` (136 ms) injects more cheaply but still re-serializes each tile on the client.",
       "confidence": "low"
     },
     "inp": {
@@ -161,7 +161,7 @@
         "tech": "next-yak-9.7",
         "value": 11.2
       },
-      "why": "Toggling a wishlist re-renders one tile. The build-time lanes need 8.3-11.2 ms and under 1.2 ms of JS. `emotion` re-serializes the tile for 52.6 ms, `goober` 34.2 and `styled-components` 28.3, the only lanes where an interaction on a real page becomes visible. `panda` hoists its calls here and stays fast at 10.5 ms.",
+      "why": "Toggling one tile re-renders one subtree, and every lane whose class was decided at build time does it as a string swap in under 1 ms of JS, landing at 8.3-10.5 ms. `emotion` re-hashes the affected tiles for 2.07 ms of span JS and reaches 52.6 ms, `panda-props` re-resolves its style props for 2.36 ms and reaches 44.0, and `goober` adds 0.774 ms of style recalculation on top because it injects a new rule.",
       "confidence": "low"
     },
     "mount": {
@@ -184,15 +184,15 @@
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 137.4,
-          "ratioToBaseline": 0.96
+          "value": 137.6,
+          "ratioToBaseline": 0.962
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
         "value": 143.1
       },
-      "why": "Mounting 400 tiles costs 135-153 ms for every lane whose sheet is a file, `bamboo` (137 ms) and `panda` (140 ms) included. `emotion` (253 ms), `goober` (224 ms) and `styled-components` (220 ms) build the sheet before first paint. Inside the static-sheet group the top three sit within 1.5%.",
+      "why": "Cold mount is one sheet parse plus first paint, 135-154 ms for every lane that ships a static sheet, `bamboo` (138 ms) and `panda` (141 ms) included. `styled-components` reaches 220 ms with a 28.0 ms layout pass, against 7.54-12.2 ms elsewhere, because it builds the sheet before the first paint can happen; `emotion` (253 ms) and `goober` (224 ms) pay the same way.",
       "confidence": "low"
     },
     "renderTiming": {
@@ -223,7 +223,7 @@
         "tech": "next-yak-9.7",
         "value": 1
       },
-      "why": "Counts tie at one recalculation and one layout for every lane, so the ordering falls to the recalc's own cost, and that inverts the SSR result: `goober` (0.259 ms) and `styled-components` (0.273 ms) recalculate fastest because their sheets carry only the rules the page used, while `bamboo` (1.16 ms) and `cnfast` (0.956 ms) hand the selector matcher hundreds of atomic and utility classes per tile. No lane forces a synchronous layout.",
+      "why": "One style recalculation and one layout per lane, so the counts tie and only their cost separates anything. The one number worth reading is `styled-components`' 28.0 ms layout against 7.54-12.2 ms everywhere else, the browser laying out the grid after the injected sheet lands rather than before it.",
       "confidence": "low"
     },
     "payload": {
@@ -254,7 +254,7 @@
         "tech": "next-yak-9.7",
         "value": 8241
       },
-      "why": "A real page is where payload separates: the css-prop fold ships 7.14 kB gzipped and `vanilla` 7.79. Atomic and utility naming roughly doubles that, `stylex-layers` 13.0 kB, `bamboo` 17.2 kB, `panda` 21.2 kB, `cnfast` 27.7 kB. `goober` at 11.2 kB is the cheapest runtime lane because it ships no sheet at all, only the code that builds one.",
+      "why": "The css-prop fold ships 7.14 kB gzipped for the whole page and hand-written `vanilla` 7.79, because both put every rule in the sheet once and one short class per element. Atomic and utility naming writes each rule twice, once into the sheet and once into the class attribute of every tile that uses it, so `bamboo` carries 13.8 kB of markup inside 17.3 kB total, `panda` 15.9 inside 22.2 and `cnfast` 14.3 inside 27.7. `goober` at 11.2 kB is the cheapest runtime lane only because it ships no sheet, just the code that will build one.",
       "confidence": "medium"
     },
     "nsweep": {
@@ -285,8 +285,8 @@
         "tech": "next-yak-9.7",
         "value": 23.563
       },
-      "why": "Scaling the page to 4000 tiles holds `vanilla` at 18.0 ms and the css-prop fold at 18.7. `bamboo` (33.8 ms) and `panda` (34.3 ms) grow with the markup they emit per tile and `cnfast` reaches 27.7. `emotion` climbs to 140 ms and `goober` to 85.4, their per-render hash multiplied by 4000 tiles.",
-      "confidence": "low"
+      "why": "The build-time lanes are linear and stay linear: 18.0 ms for `vanilla` and 18.7 for `next-yak-css-9.7` at 4,000 tiles. Everything that works per instance multiplies that work by n, `emotion` reaching 140 ms on its hash and `panda-props` 149 ms on its style-prop resolution, roughly eight times the floor.",
+      "confidence": "medium"
     }
   }
 }
