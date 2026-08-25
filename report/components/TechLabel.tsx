@@ -7,6 +7,7 @@ export function logoFor(tech: string): string | null {
   if (tech.startsWith("next-yak")) return "assets/logos/next-yak.avif";
   if (tech === "tailwind-merge" || tech === "cnfast") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
+  if (tech === "bamboo") return "assets/logos/bamboo.png";
   if (tech === "stylex" || tech === "stylex-layers") return "assets/logos/stylex.avif";
   if (tech === "emotion") return "assets/logos/emotion.avif";
   if (tech === "goober") return "assets/logos/goober.avif";
@@ -31,6 +32,8 @@ export const TECH_ALIASES: Record<string, string> = {
   Goober: "goober",
   panda: "panda",
   Panda: "panda",
+  bamboo: "bamboo",
+  Bamboo: "bamboo",
   vanilla: "vanilla",
 };
 

@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "caseId": "multifile-composition",
   "provenance": {
-    "gitSha": "eebb767",
-    "runTimestamp": "2026-07-24T21:42:18.271Z",
-    "generatedAt": "2026-07-24T22:15:00.000Z",
-    "model": "claude-opus-4-8[1m]"
+    "gitSha": "9b28ee4",
+    "runTimestamp": "2026-08-22T18:11:21.671Z",
+    "generatedAt": "2026-08-22T18:28:06.234Z",
+    "model": "claude-opus-5[1m]"
   },
-  "headline": "Splitting the styled primitives across modules costs the styled perf runtime little; the css-prop fold has no `styled(...)` wrapper to lose across the boundary and still ties `vanilla` on payload and SSR.",
+  "headline": "Moving the styled primitives behind a module boundary costs the compiled lanes a few percent and nothing else, so per-module compilation survives the way design systems actually ship components.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
@@ -17,28 +17,28 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 151089,
-          "ratioToBaseline": 1.787
+          "value": 154992,
+          "ratioToBaseline": 1.77
         },
         {
           "tech": "stylex-layers",
           "label": "StyleX",
-          "value": 139077,
-          "ratioToBaseline": 1.645
+          "value": 142886,
+          "ratioToBaseline": 1.63
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 136669,
-          "ratioToBaseline": 1.616
+          "value": 139023,
+          "ratioToBaseline": 1.59
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 84569
+        "value": 87638
       },
-      "why": "With the primitives imported rather than local, the css-prop fold still concatenates the chain to one class and renders at 0.915 ms/1k, near `vanilla` (0.827) and `StyleX` (0.899). The styled perf runtime renders at 1.48 ms/1k with a 0.558 ms library slice. The hashers trail, `styled-components` 2.87 ms/1k, `emotion` 5.88.",
-      "confidence": "high"
+      "why": "The workload is byte-identical to `tabs` in DOM and CSS, so the ordering is too: `vanilla` at 0.806 ms/1k, `stylex-layers` 0.875 and `next-yak-css-9.7` 0.899, all of them rendering plain elements with classes that were resolved during the build. `bamboo` (2.17) and `panda` (2.41) again report no styling work and lose in react-dom, 75.9 and 89.5 ms of their JS windows. Nothing here depends on file layout for the runtime libraries: `emotion` (5.93) and `styled-components` (3.93) match their `tabs` figures to within a few percent.",
+      "confidence": "medium"
     },
     "autocannon": {
       "unit": "req/s",
@@ -48,28 +48,28 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 718,
-          "ratioToBaseline": 1.666
+          "value": 719,
+          "ratioToBaseline": 1.65
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 634,
-          "ratioToBaseline": 1.471
+          "value": 637,
+          "ratioToBaseline": 1.46
         },
         {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 524,
-          "ratioToBaseline": 1.216
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
+          "value": 512,
+          "ratioToBaseline": 1.18
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 431
+        "value": 435
       },
-      "why": "The single-class fold serves 634 req/s against `vanilla`'s 718; the styled perf runtime's per-primitive wrappers hold it to 431. `StyleX` reaches 524, the runtime hashers far less, `emotion` 135 req/s.",
-      "confidence": "high"
+      "why": "`vanilla` 719 req/s and `next-yak-css-9.7` 637 on 2.37-2.69 kB, then the atomic and utility lanes at 191-248 on kilobyte-scale class attributes, then the hashing lanes. Every figure is within a few percent of the `tabs` twin, which is the finding: the module boundary does not change what is served.",
+      "confidence": "medium"
     },
     "attribution": {
       "unit": "ms",
@@ -79,28 +79,28 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 1.227,
-          "ratioToBaseline": 0.582
+          "value": 1.367,
+          "ratioToBaseline": 0.661
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 1.252,
-          "ratioToBaseline": 0.593
+          "value": 1.408,
+          "ratioToBaseline": 0.681
         },
         {
           "tech": "stylex-layers",
           "label": "StyleX",
-          "value": 1.375,
-          "ratioToBaseline": 0.652
+          "value": 1.423,
+          "ratioToBaseline": 0.688
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 2.11
+        "value": 2.068
       },
-      "why": "The css-prop fold renders in 1.25 ms with a 0.156 ms library slice, just over `vanilla` (1.23 ms). The styled perf runtime pays 0.558 ms of library time for the imported wrappers and reaches 2.11 ms. `emotion` burns 4.37 ms of 7.30 ms in the hash, `styled-components` 1.81 ms in `generateAndInjectStyles`.",
-      "confidence": "high"
+      "why": "`vanilla` (1.37 ms) and `next-yak-css-9.7` (1.41, with 0.256 ms of library time) sit at the react-dom floor, and `stylex-layers` joins them at 1.42 with no library slice and 0.351 ms of component self-time merging static class constants. `bamboo` at 3.04 ms and `panda` at 3.64 report zero library time and spend 2.80 and 3.23 ms in React writing their names. next-yak's styled API costs 2.07 ms here with a 0.673 ms library slice against 2.21 ms in the single-file twin, so the imported primitives cost it nothing on the server.",
+      "confidence": "low"
     },
     "hydrate": {
       "unit": "ms",
@@ -110,58 +110,58 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 46.5,
-          "ratioToBaseline": 0.872
+          "value": 48.1,
+          "ratioToBaseline": 0.86
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 46.8,
-          "ratioToBaseline": 0.878
+          "value": 48.5,
+          "ratioToBaseline": 0.868
         },
         {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 47.7,
-          "ratioToBaseline": 0.895
+          "tech": "stylex",
+          "label": "StyleX without CSS layers (:not() specificity hack)",
+          "value": 49.9,
+          "ratioToBaseline": 0.893
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 53.3
+        "value": 55.9
       },
-      "why": "The css-prop fold hydrates with `vanilla` at 46.5-46.8 ms; the styled perf runtime's wrappers cost it 53.3 ms. The runtime hashers inject and reflow, `emotion` 98.2 ms, `goober` 192 ms, `styled-components` 195 ms.",
-      "confidence": "medium"
+      "why": "48.1-63.6 ms of pure JS for every lane with a static sheet, zero style and zero layout in the span. `goober` (200 ms) and `styled-components` (202 ms) inject during hydration, 2.26 and 2.25 ms of recalculation plus a 3.5 ms layout, and present 18 frames instead of one.",
+      "confidence": "low"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "tailwind-merge",
+      "winner": "next-yak-css",
       "top3": [
         {
-          "tech": "tailwind-merge",
-          "label": "tailwind-merge",
-          "value": 6.9,
-          "ratioToBaseline": 0.945
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
+          "value": 6.8,
+          "ratioToBaseline": 0.895
         },
         {
-          "tech": "panda",
-          "label": "Panda (css fn)",
-          "value": 7.2,
-          "ratioToBaseline": 0.986
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 7,
+          "ratioToBaseline": 0.921
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
+          "tech": "next-yak-css-9.7-nofold",
+          "label": "next-yak css-prop 9.7.0 foldStatic: false",
           "value": 7.3,
-          "ratioToBaseline": 1
+          "ratioToBaseline": 0.961
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 7.3
+        "value": 7.6
       },
-      "why": "A tab select re-renders a small subtree in ~6.90-7.70 ms across the static-class lanes, a near tie. The hashers re-touch their sheet, `goober` 15.8 ms, `styled-components` 15.9 ms, `emotion` 27.2 ms.",
+      "why": "One tab switch, under 1.1 ms of span JS in every static-class lane, a 6.8-7.8 ms cluster that is one measurement wide. `emotion` at 28.1 ms spends 0.845 ms of the span inside `@emotion/hash`, and `panda-props` at 27.1 re-resolves style props for the group that changed.",
       "confidence": "low"
     },
     "mount": {
@@ -172,49 +172,49 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 91.7,
-          "ratioToBaseline": 0.908
+          "value": 95.6,
+          "ratioToBaseline": 0.914
         },
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 92.2,
-          "ratioToBaseline": 0.913
+          "value": 97.4,
+          "ratioToBaseline": 0.931
         },
         {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 92.6,
-          "ratioToBaseline": 0.917
+          "tech": "stylex",
+          "label": "StyleX without CSS layers (:not() specificity hack)",
+          "value": 97.6,
+          "ratioToBaseline": 0.933
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 101
+        "value": 104.6
       },
-      "why": "Cold mount parses one static sheet, so `vanilla`, the css-prop fold and `StyleX` land at 91.7-95.9 ms with the styled perf runtime at 101 ms. The runtime libraries add first-inject, `goober` 193 ms, `styled-components` 199 ms, `emotion` 224 ms.",
-      "confidence": "medium"
+      "why": "95.6-113 ms for everything that ships a sheet. `emotion` (232 ms), `styled-components` (209) and `goober` (207) build theirs before first paint. `panda` mounts at 102 ms because its `css()` calls sit at module scope and resolve once at import.",
+      "confidence": "low"
     },
     "renderTiming": {
       "unit": "recalcs",
       "higherBetter": false,
-      "winner": "cnfast",
+      "winner": "next-yak-css-9.7",
       "top3": [
         {
-          "tech": "cnfast",
-          "label": "cnfast",
+          "tech": "next-yak-css-9.7",
+          "label": "next-yak css-prop 9.7.0",
           "value": 1,
           "ratioToBaseline": 1
         },
         {
-          "tech": "emotion",
-          "label": "Emotion",
+          "tech": "next-yak",
+          "label": "next-yak 9.6.0",
           "value": 1,
           "ratioToBaseline": 1
         },
         {
-          "tech": "goober",
-          "label": "Goober",
+          "tech": "next-yak-9.7-nofold",
+          "label": "next-yak 9.7.0 (styled API) foldStatic: false",
           "value": 1,
           "ratioToBaseline": 1
         }
@@ -223,7 +223,7 @@
         "tech": "next-yak-9.7",
         "value": 1
       },
-      "why": "One recalc for every lane; the module boundary changes the build graph, not the browser's style pass.",
+      "why": "Counts tie at one recalculation everywhere, and the same three injecting lanes run two layouts and present 18 frames. Their recalculation costs 1.65-1.83 ms against the 0.848-0.993 ms of every lane that loads a finished sheet.",
       "confidence": "low"
     },
     "payload": {
@@ -234,60 +234,60 @@
         {
           "tech": "next-yak-css-9.7",
           "label": "next-yak css-prop 9.7.0",
-          "value": 2389,
-          "ratioToBaseline": 0.691
+          "value": 2367,
+          "ratioToBaseline": 0.684
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 2724,
-          "ratioToBaseline": 0.788
+          "value": 2690,
+          "ratioToBaseline": 0.777
         },
         {
-          "tech": "next-yak-9.7",
-          "label": "next-yak 9.7.0 (styled API)",
-          "value": 3455,
-          "ratioToBaseline": 1
+          "tech": "next-yak-css",
+          "label": "next-yak css-prop 9.6.0",
+          "value": 2721,
+          "ratioToBaseline": 0.786
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 3455
+        "value": 3461
       },
-      "why": "The css-prop fold ships 2.39 kB gzipped, under `vanilla` (2.72 kB), unchanged from single-file `tabs` because folding the chain does not depend on where the primitives are declared. The styled perf runtime carries 3.46 kB. The hashers are 4.4-6.3× larger, `styled-components` 15.9 kB, `cnfast` 21.9 kB.",
-      "confidence": "high"
+      "why": "Byte-for-byte the `tabs` figures: 2.37 kB for the css-prop fold, 16.1 kB for `panda`, 22.0 for `cnfast`. The module boundary changes what the compiler can see, not what it emits, and the emitted CSS and markup are identical in both cases.",
+      "confidence": "medium"
     },
     "nsweep": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "vanilla",
+      "winner": "stylex",
       "top3": [
+        {
+          "tech": "stylex",
+          "label": "StyleX without CSS layers (:not() specificity hack)",
+          "value": 31.566,
+          "ratioToBaseline": 0.448
+        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 30.426,
-          "ratioToBaseline": 0.435
+          "value": 31.716,
+          "ratioToBaseline": 0.45
         },
         {
           "tech": "stylex-layers",
           "label": "StyleX",
-          "value": 31.872,
-          "ratioToBaseline": 0.456
-        },
-        {
-          "tech": "next-yak-css-9.7",
-          "label": "next-yak css-prop 9.7.0",
-          "value": 35.595,
-          "ratioToBaseline": 0.509
+          "value": 32.689,
+          "ratioToBaseline": 0.464
         }
       ],
       "baseline": {
         "tech": "next-yak-9.7",
-        "value": 69.903
+        "value": 70.482
       },
-      "why": "At 4000 groups the css-prop fold holds at 35.6 ms near `vanilla` (30.4) and `StyleX` (31.9), while the styled perf runtime's imported wrappers compound to 69.9 ms. The css-prop fold sits a little above its `tabs` figure (32.9 ms) but keeps the flat-class curve where the styled path cannot.",
-      "confidence": "high"
+      "why": "At 4,000 groups `stylex` (31.6 ms) and `vanilla` (31.7) lead and `next-yak-css-9.7` follows at 36.0. That last figure is the whole cost of the boundary: 33.5 ms for the same workload written in one file. `panda` (121 ms), `styled-components` (168) and `emotion` (194) scale with n regardless of where the code lives.",
+      "confidence": "low"
     }
   },
-  "crossCase": "`multifile-composition` is the split-module twin of `tabs` above. Importing the styled primitives nudges the styled perf runtime from 1.45 to 1.48 ms/1k SSR; the css-prop fold concatenates classes without a `styled(...)` wrapper to resolve across the boundary, so it barely moves (0.842 to 0.915) and its payload is identical at 2.39 kB."
+  "crossCase": "Against its single-file twin, the Example `tabs` shown above, the module boundary costs `next-yak-css-9.7` 0.858 to 0.899 ms/1k on the microbench and 33.5 to 36.0 ms at n=4,000, roughly 5-8%, with byte-identical 2.37 kB payloads. next-yak's styled API moves 64.3 to 70.5 ms on the same sweep. Per-module compilation cannot follow a styled component across the import, so a runtime wrapper survives where it would otherwise fold; what the numbers say is that the surviving wrapper is cheap, not that the boundary is invisible."
 }
