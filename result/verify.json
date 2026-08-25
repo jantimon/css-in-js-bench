@@ -1,6 +1,6 @@
 {
-  "ok": true,
-  "generatedAt": "2026-08-22T18:11:52.189Z",
+  "ok": false,
+  "generatedAt": "2026-08-25T03:48:34.773Z",
   "reports": [
     {
       "caseId": "btn-variant",
@@ -8,6 +8,22 @@
       "notes": [
         "✓ 18 techs · 2 elements · attrs clean",
         "✓ pixels: 18 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "button-variants",
+      "ok": true,
+      "notes": [
+        "✓ 17 techs · 2 elements · attrs clean",
+        "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "button-variants-nested",
+      "ok": true,
+      "notes": [
+        "✓ 14 techs · 2 elements · attrs clean",
+        "✓ pixels: 14 techs match styled-components"
       ]
     },
     {
@@ -20,18 +36,18 @@
     },
     {
       "caseId": "compose-3",
-      "ok": true,
+      "ok": false,
       "notes": [
         "✓ 17 techs · 2 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✗ pixels next-yak-css: 62.43% differ from styled-components (1520×208 vs 1520×268) → verify/compose-3__next-yak-css__diff.png"
       ]
     },
     {
       "caseId": "compose-6",
-      "ok": true,
+      "ok": false,
       "notes": [
         "✓ 17 techs · 2 elements · attrs clean",
-        "✓ pixels: 17 techs match styled-components"
+        "✗ pixels next-yak-css: 62.40% differ from styled-components (1520×208 vs 1520×268) → verify/compose-6__next-yak-css__diff.png"
       ]
     },
     {
@@ -64,6 +80,15 @@
       "notes": [
         "✓ 17 techs · 16 elements · attrs clean",
         "✓ pixels: 17 techs match styled-components"
+      ]
+    },
+    {
+      "caseId": "multifile-shop",
+      "ok": false,
+      "notes": [
+        "✓ 17 techs · 27 elements · attrs clean",
+        "✗ pixels stylex: 3.61% differ from styled-components (1520×1460 vs 1520×1456) → verify/multifile-shop__stylex__diff.png",
+        "✗ pixels stylex-layers: 3.61% differ from styled-components (1520×1460 vs 1520×1456) → verify/multifile-shop__stylex-layers__diff.png"
       ]
     },
     {
