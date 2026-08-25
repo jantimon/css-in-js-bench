@@ -18,12 +18,12 @@ const styles = stylex.create({
     l5: { borderLeftWidth: "5px", borderLeftStyle: "solid", borderLeftColor: "hsl(265 70% 50%)", paddingLeft: "10px" },
 });
 
-const L0 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <button {...stylex.props(styles.l0, ...(xs || []))}>{children}</button>;
-const L1 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L0 xs={[styles.l1, ...(xs || [])]}>{children}</L0>;
-const L2 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L1 xs={[styles.l2, ...(xs || [])]}>{children}</L1>;
-const L3 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L2 xs={[styles.l3, ...(xs || [])]}>{children}</L2>;
-const L4 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L3 xs={[styles.l4, ...(xs || [])]}>{children}</L3>;
-const L5 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L4 xs={[styles.l5, ...(xs || [])]}>{children}</L4>;
+const L0 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <button {...stylex.props(styles.l0, xs)}>{children}</button>;
+const L1 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L0 xs={[styles.l1, xs]}>{children}</L0>;
+const L2 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L1 xs={[styles.l2, xs]}>{children}</L1>;
+const L3 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L2 xs={[styles.l3, xs]}>{children}</L2>;
+const L4 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L3 xs={[styles.l4, xs]}>{children}</L3>;
+const L5 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L4 xs={[styles.l5, xs]}>{children}</L4>;
 const ComposedButton = L5;
 
 export default (i: number) => <ComposedButton>{i}</ComposedButton>;
