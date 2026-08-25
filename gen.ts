@@ -450,6 +450,20 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
   }
 }
 
+// The displayed source for a cell. A single-file case is its index.tsx verbatim (the
+// invariant: benchmarked source === displayed source). A MULTI-FILE case is every source
+// file in the case folder, index.tsx last so the page JSX reads after the primitives it
+// uses, each behind a `// ── file ──` banner. Without this the report shows a multi-file
+// case as a page of bare JSX with every style invisible.
+function caseSource(entry: string): string {
+  const dir = dirname(entry);
+  const files = readdirSync(dir)
+    .filter((f) => /\.tsx?$/.test(f))
+    .sort((a, b) => Number(a === "index.tsx") - Number(b === "index.tsx") || a.localeCompare(b));
+  if (files.length === 1) return readFileSync(entry, "utf8");
+  return files.map((f) => `// \u2500\u2500 ${f} \u2500\u2500\n${readFileSync(join(dir, f), "utf8").trimEnd()}\n`).join("\n");
+}
+
 // ---- main ----------------------------------------------------------------------
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -499,7 +513,7 @@ async function main() {
     // Snapshots always run, off the microbench build (the SSR { html, css } path).
     for (const cell of techCells) {
       const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
-      snapshots[`${cell.caseId}/${tech}`] = { tsx: readFileSync(cell.entry, "utf8"), html, css };
+      snapshots[`${cell.caseId}/${tech}`] = { tsx: caseSource(cell.entry), html, css };
     }
 
     for (const measurement of measurements) {
