@@ -7,7 +7,7 @@ import { defineConfig } from "@bamboocss/dev";
 // at build time; `bamboo cssgen` extracts the same rules from the same files.
 export default defineConfig({
   preflight: false, // apples-to-apples with Tailwind (preflight also off there)
-  include: ["./case/**/*.tsx"],
+  include: ["./case/**/*.{ts,tsx}"],
   exclude: [],
   theme: { extend: {} },
   // Match the Panda lane's conditions so the two atomic compilers emit the same

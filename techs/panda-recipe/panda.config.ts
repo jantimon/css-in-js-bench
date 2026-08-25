@@ -6,7 +6,7 @@ import { defineConfig } from "@pandacss/dev";
 // (the cost the bench measures); `panda cssgen` extracts the rules from the same files.
 export default defineConfig({
   preflight: false, // apples-to-apples with Tailwind (preflight also off there)
-  include: ["./case/**/*.tsx"],
+  include: ["./case/**/*.{ts,tsx}"],
   exclude: [],
   theme: { extend: {} },
   jsxFramework: "react",
