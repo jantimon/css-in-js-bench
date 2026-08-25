@@ -31,28 +31,37 @@ function extractedSheet(): string {
 }
 
 // StyleX atomic rules are FLAT (one declaration per rule), with `:not(#\#)` specificity
-// hacks and @media-wrapped variants. Match every leaf rule, key it by the FIRST atomic
-// class in its selector, accumulate ALL of that class's rules (base + pseudo + @media).
+// hacks and @media-wrapped variants. Match every leaf rule and key it under EVERY atomic
+// class its selector names, accumulating all of that class's rules (base + pseudo +
+// @media). StyleX groups identical declarations that came from different create() calls
+// into one comma selector (`.a.a, .b.b { … }`), which happens as soon as two modules
+// declare the same style; keying on the first class alone silently drops the rule for
+// every later class, so a render using only the second gets no CSS. cssFor dedupes by
+// rule text, so double-keying never double-emits.
 let ruleMap: Map<string, string> | null = null;
 function rules(): Map<string, string> {
   if (ruleMap) return ruleMap;
   ruleMap = new Map();
   for (const m of extractedSheet().matchAll(/((?:\.[A-Za-z0-9_-]+|:[A-Za-z-]+(?:\([^)]*\))?|[\s,>+~*]|\[[^\]]*\])+)\{([^{}]*)\}/g)) {
-    const cls = m[1].match(/\.([A-Za-z0-9_-]+)/);
-    if (cls) ruleMap.set(cls[1], (ruleMap.get(cls[1]) ?? "") + m[0]);
+    for (const cls of new Set([...m[1].matchAll(/\.([A-Za-z0-9_-]+)/g)].map((c) => c[1])))
+      ruleMap.set(cls, (ruleMap.get(cls) ?? "") + m[0]);
   }
   return ruleMap;
 }
 function cssFor(html: string): string {
   const map = rules();
   const seen = new Set<string>();
+  const emitted = new Set<string>(); // comma-shared rules are keyed under every class they name
   let css = "";
   for (const m of html.matchAll(/class="([^"]*)"/g))
     for (const t of m[1].split(/\s+/))
       if (t && !seen.has(t)) {
         seen.add(t);
-        const rule = map.get(t);
-        if (rule) css += rule;
+        for (const rule of map.get(t)?.match(/[^{}]+\{[^{}]*\}/g) ?? [])
+          if (!emitted.has(rule)) {
+            emitted.add(rule);
+            css += rule;
+          }
       }
   return css.trim();
 }

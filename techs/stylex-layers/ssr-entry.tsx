@@ -39,7 +39,12 @@ function extractedSheet(): string {
 // A leaf StyleX rule tagged with the @layer it sits under (null for the unlayered tier).
 interface LeafRule {
   layer: string | null;
-  cls: string | null; // FIRST atomic class in the selector — the slice key
+  // EVERY distinct atomic class the selector names — all of them are slice keys. StyleX
+  // groups identical declarations that came from different create() calls into one
+  // comma selector (`.xcbqznd.xcbqznd, .x13fgddh.x13fgddh { … }`), which happens as soon
+  // as two modules declare the same style. Keying on the first class alone silently drops
+  // the rule for every later class, so a render using only the second gets no CSS.
+  classes: string[];
   text: string; // the leaf rule itself, `selector{decls}`, WITHOUT any @layer/@media wrapper
 }
 
@@ -84,8 +89,8 @@ function walk(css: string, layer: string | null, out: LeafRule[]): void {
     } else if (prelude.startsWith("@media") || prelude.startsWith("@supports") || prelude.startsWith("@container")) {
       walk(body, layer, out);
     } else if (!prelude.startsWith("@")) {
-      const cls = prelude.match(/\.([A-Za-z0-9_-]+)/);
-      out.push({ layer, cls: cls ? cls[1] : null, text: `${prelude}{${body}}`.trim() });
+      const classes = [...new Set([...prelude.matchAll(/\.([A-Za-z0-9_-]+)/g)].map((m) => m[1]))];
+      out.push({ layer, classes, text: `${prelude}{${body}}`.trim() });
     }
     i = k + 1;
   }
@@ -106,8 +111,7 @@ function rules(): { byClass: Map<string, LeafRule[]>; layers: string[] } {
       seenLayer.add(key);
       layerSeq.push(key);
     }
-    if (!leaf.cls) continue;
-    (classMap.get(leaf.cls) ?? classMap.set(leaf.cls, []).get(leaf.cls)!).push(leaf);
+    for (const cls of leaf.classes) (classMap.get(cls) ?? classMap.set(cls, []).get(cls)!).push(leaf);
   }
   return { byClass: classMap, layers: layerSeq };
 }
@@ -124,11 +128,14 @@ function cssFor(html: string): string {
   const { byClass, layers } = rules();
   const buckets = new Map<string, string[]>();
   const seen = new Set<string>();
+  const emitted = new Set<LeafRule>(); // a comma-shared rule is keyed under every class it names
   for (const m of html.matchAll(/class="([^"]*)"/g))
     for (const t of m[1].split(/\s+/))
       if (t && !seen.has(t)) {
         seen.add(t);
         for (const leaf of byClass.get(t) ?? []) {
+          if (emitted.has(leaf)) continue;
+          emitted.add(leaf);
           const key = leaf.layer ?? "";
           (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(leaf.text);
         }
