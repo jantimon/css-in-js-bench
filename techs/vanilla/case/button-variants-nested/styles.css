@@ -1,0 +1,30 @@
+/* Author-written CSS for the ghost-primary button ladder — the ceiling every lane
+   compiles toward. Returned verbatim as the `css` half of renderCase() (§6.1); the
+   vanilla SSR entry imports it ?raw. Three flat classes on one element, later rules
+   winning, which is what the wrapper chains and the merges all resolve to. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: #d1d5db;
+  color: #374151;
+}
+.btn-ghost-primary {
+  border-color: #2563eb;
+  color: #2563eb;
+}
