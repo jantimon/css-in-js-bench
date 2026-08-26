@@ -1,17 +1,16 @@
 {
   "name": "next-yak",
-  "description": "next-yak 9.6.0",
+  "description": "next-yak 9.7.0 (styled API)",
   "private": true,
   "type": "module",
   "bench": {
-    "color": "#a78bfa",
+    "color": "#7c3aed",
     "buildPlugin": "yak",
     "appStylesheet": null,
-    "cssKind": "extracted",
-    "defaultOff": true
+    "cssKind": "extracted"
   },
   "dependencies": {
-    "next-yak": "^9.6.0",
+    "next-yak": "9.7.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }

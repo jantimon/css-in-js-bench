@@ -1,13 +1,14 @@
 {
-  "name": "next-yak-9.7",
-  "description": "next-yak 9.7.0 (styled API)",
+  "name": "next-yak-nofold",
+  "description": "next-yak 9.7.0 (styled API) foldStatic: false",
   "private": true,
   "type": "module",
   "bench": {
-    "color": "#7c3aed",
+    "color": "#4c1d95",
     "buildPlugin": "yak",
     "appStylesheet": null,
-    "cssKind": "extracted"
+    "cssKind": "extracted",
+    "defaultOff": true
   },
   "dependencies": {
     "next-yak": "9.7.0",

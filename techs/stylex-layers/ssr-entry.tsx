@@ -45,17 +45,17 @@ interface LeafRule {
   // as two modules declare the same style. Keying on the first class alone silently drops
   // the rule for every later class, so a render using only the second gets no CSS.
   classes: string[];
-  text: string; // the leaf rule itself, `selector{decls}`, WITHOUT any @layer/@media wrapper
+  text: string; // the rule with its @media/@container wrappers re-applied, but no @layer
 }
 
 // Brace-aware walk over the nested layers sheet, in source order. Preludes are read up to the
 // next `{` or `;` (parens counted, so complex @media conditions don't split). `@layer name { … }`
-// recurses with that layer; conditional groups (@media/@supports/@container) recurse KEEPING the
-// current layer and DROP their own wrapper (parity with the plain lane, which never carried @media
-// context into the slice); other at-rules (@property, @keyframes, `@layer name;` order statements)
-// carry no atomic class and are skipped; a style rule becomes one LeafRule keyed by its first class.
+// recurses with that layer; conditional groups (@media/@supports/@container) recurse with their
+// prelude pushed onto the wrapper stack, so the slice keeps the condition — without it a
+// tablet-band rule would apply on a desktop viewport; other at-rules (@property, @keyframes,
+// `@layer name;` order statements) carry no atomic class and are skipped.
 let leaves: LeafRule[] | null = null;
-function walk(css: string, layer: string | null, out: LeafRule[]): void {
+function walk(css: string, layer: string | null, wrappers: string[], out: LeafRule[]): void {
   const n = css.length;
   let i = 0;
   while (i < n) {
@@ -85,61 +85,55 @@ function walk(css: string, layer: string | null, out: LeafRule[]): void {
     }
     const body = css.slice(j + 1, k);
     if (prelude.startsWith("@layer")) {
-      walk(body, prelude.slice("@layer".length).trim(), out);
+      walk(body, prelude.slice("@layer".length).trim(), wrappers, out);
     } else if (prelude.startsWith("@media") || prelude.startsWith("@supports") || prelude.startsWith("@container")) {
-      walk(body, layer, out);
+      walk(body, layer, [...wrappers, prelude], out);
     } else if (!prelude.startsWith("@")) {
       const classes = [...new Set([...prelude.matchAll(/\.([A-Za-z0-9_-]+)/g)].map((m) => m[1]))];
-      out.push({ layer, classes, text: `${prelude}{${body}}`.trim() });
+      const open = wrappers.map((w) => `${w}{`).join("");
+      out.push({ layer, classes, text: `${open}${prelude}{${body.trim()}}${"}".repeat(wrappers.length)}` });
     }
     i = k + 1;
   }
 }
-// Leaves indexed by their key class, plus the layers in sheet (priority) order.
-let classMap: Map<string, LeafRule[]> | null = null;
-let layerSeq: string[] | null = null; // "" is the unlayered tier; ascending priority order
-function rules(): { byClass: Map<string, LeafRule[]>; layers: string[] } {
-  if (classMap && layerSeq) return { byClass: classMap, layers: layerSeq };
-  const parsed: LeafRule[] = [];
-  walk(extractedSheet(), null, parsed);
-  classMap = new Map();
-  layerSeq = [];
-  const seenLayer = new Set<string>();
-  for (const leaf of parsed) {
-    const key = leaf.layer ?? "";
-    if (!seenLayer.has(key)) {
-      seenLayer.add(key);
-      layerSeq.push(key);
+
+// The layers in sheet (priority) order; "" is the unlayered tier.
+let layerSeq: string[] | null = null;
+function rules(): { parsed: LeafRule[]; layers: string[] } {
+  if (!leaves || !layerSeq) {
+    const parsed: LeafRule[] = [];
+    walk(extractedSheet(), null, [], parsed);
+    const seq: string[] = [];
+    const seen = new Set<string>();
+    for (const leaf of parsed) {
+      const key = leaf.layer ?? "";
+      if (!seen.has(key)) {
+        seen.add(key);
+        seq.push(key);
+      }
     }
-    for (const cls of leaf.classes) (classMap.get(cls) ?? classMap.set(cls, []).get(cls)!).push(leaf);
+    leaves = parsed;
+    layerSeq = seq;
   }
-  return { byClass: classMap, layers: layerSeq };
+  return { parsed: leaves, layers: layerSeq };
 }
 
-// Slice: pick the leaf rules whose key class the render used and re-emit them grouped by @layer.
-// Two cascade keys must match the plain (:not-hack) lane so both render pixel-identically: (1) LAYER
-// PRECEDENCE — emit layers in sheet (priority) order, so the highest-priority layer comes last and
-// wins, mirroring the plain lane's escalating `:not(#\#)` specificity; (2) SOURCE-ORDER TIEBREAK
-// within a layer — walk the render's classes in HTML-appearance order (exactly what the plain lane's
-// slice does), so when two equal-specificity rules set the same property the same one lands last.
-// Ordering within a layer by raw sheet order instead would flip such ties (e.g. product-grid's title
-// stacks a 15px @media and a 16px @container font-size in one layer — HTML order keeps 15px last).
+// Slice: every leaf rule naming a class this render used, re-emitted grouped by @layer. Two cascade
+// keys must match the plain (:not-hack) lane so both render pixel-identically: LAYER PRECEDENCE —
+// emit layers in sheet (priority) order, so the highest-priority layer comes last and wins, mirroring
+// the plain lane's escalating `:not(#\#)` specificity; and SOURCE ORDER within a layer, which is the
+// tiebreak when two equal-specificity conditional rules set the same property (the title's @media
+// 15px and @container 16px — the sheet puts @container last, so 16px wins).
 function cssFor(html: string): string {
-  const { byClass, layers } = rules();
+  const { parsed, layers } = rules();
+  const used = new Set<string>();
+  for (const m of html.matchAll(/class="([^"]*)"/g)) for (const t of m[1].split(/\s+/)) if (t) used.add(t);
   const buckets = new Map<string, string[]>();
-  const seen = new Set<string>();
-  const emitted = new Set<LeafRule>(); // a comma-shared rule is keyed under every class it names
-  for (const m of html.matchAll(/class="([^"]*)"/g))
-    for (const t of m[1].split(/\s+/))
-      if (t && !seen.has(t)) {
-        seen.add(t);
-        for (const leaf of byClass.get(t) ?? []) {
-          if (emitted.has(leaf)) continue;
-          emitted.add(leaf);
-          const key = leaf.layer ?? "";
-          (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(leaf.text);
-        }
-      }
+  for (const leaf of parsed) {
+    if (!leaf.classes.some((c) => used.has(c))) continue;
+    const key = leaf.layer ?? "";
+    (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(leaf.text);
+  }
   let css = "";
   for (const key of layers) {
     const texts = buckets.get(key);

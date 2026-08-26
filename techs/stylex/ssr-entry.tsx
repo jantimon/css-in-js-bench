@@ -30,40 +30,82 @@ function extractedSheet(): string {
   return sheet;
 }
 
-// StyleX atomic rules are FLAT (one declaration per rule), with `:not(#\#)` specificity
-// hacks and @media-wrapped variants. Match every leaf rule and key it under EVERY atomic
-// class its selector names, accumulating all of that class's rules (base + pseudo +
-// @media). StyleX groups identical declarations that came from different create() calls
-// into one comma selector (`.a.a, .b.b { … }`), which happens as soon as two modules
-// declare the same style; keying on the first class alone silently drops the rule for
-// every later class, so a render using only the second gets no CSS. cssFor dedupes by
-// rule text, so double-keying never double-emits.
-let ruleMap: Map<string, string> | null = null;
-function rules(): Map<string, string> {
-  if (ruleMap) return ruleMap;
-  ruleMap = new Map();
-  for (const m of extractedSheet().matchAll(/((?:\.[A-Za-z0-9_-]+|:[A-Za-z-]+(?:\([^)]*\))?|[\s,>+~*]|\[[^\]]*\])+)\{([^{}]*)\}/g)) {
-    for (const cls of new Set([...m[1].matchAll(/\.([A-Za-z0-9_-]+)/g)].map((c) => c[1])))
-      ruleMap.set(cls, (ruleMap.get(cls) ?? "") + m[0]);
-  }
-  return ruleMap;
+// StyleX atomic rules are FLAT (one declaration per rule) with `:not(#\#)` specificity hacks, and
+// conditional variants nested under @media/@container. A slice has to keep those wrappers: without
+// them the tablet-band title rule applies on a desktop viewport and competes with the desktop one at
+// equal specificity. It also has to emit in SHEET order, because that is the tiebreak StyleX leans on
+// when two conditional rules set the same property — the title's @media 15px and @container 16px are
+// equal-specificity, and the sheet puts @container last, so 16px wins, which is what every other lane
+// renders. Each rule is keyed under EVERY atomic class its selector names: StyleX groups identical
+// declarations from different create() calls into one comma selector (`.a.a, .b.b { … }`), so keying
+// on the first class alone drops the rule for a render that uses only the second.
+interface LeafRule {
+  classes: string[];
+  text: string; // the rule with its @media/@container wrappers re-applied
 }
+
+// Brace-aware walk over the sheet, in source order. A prelude runs to the next `{` or `;` (parens
+// counted, so complex conditions don't split). Conditional groups recurse with their prelude pushed
+// onto the wrapper stack; other at-rules (@property) carry no atomic class and are skipped.
+function walk(css: string, wrappers: string[], out: LeafRule[]): void {
+  const n = css.length;
+  let i = 0;
+  while (i < n) {
+    while (i < n && /\s/.test(css[i])) i++;
+    if (i >= n) break;
+    let j = i;
+    let paren = 0;
+    while (j < n) {
+      const c = css[j];
+      if (c === "(") paren++;
+      else if (c === ")") paren--;
+      else if (paren === 0 && (c === "{" || c === ";")) break;
+      j++;
+    }
+    const prelude = css.slice(i, j).trim();
+    if (j >= n) break;
+    if (css[j] === ";") {
+      i = j + 1; // statement with no block — nothing to slice
+      continue;
+    }
+    let depth = 0;
+    let k = j;
+    for (; k < n; k++) {
+      if (css[k] === "{") depth++;
+      else if (css[k] === "}" && --depth === 0) break;
+    }
+    const body = css.slice(j + 1, k);
+    if (prelude.startsWith("@media") || prelude.startsWith("@supports") || prelude.startsWith("@container")) {
+      walk(body, [...wrappers, prelude], out);
+    } else if (!prelude.startsWith("@")) {
+      const classes = [...new Set([...prelude.matchAll(/\.([A-Za-z0-9_-]+)/g)].map((m) => m[1]))];
+      const open = wrappers.map((w) => `${w}{`).join("");
+      out.push({ classes, text: `${open}${prelude}{${body.trim()}}${"}".repeat(wrappers.length)}` });
+    }
+    i = k + 1;
+  }
+}
+
+let leaves: LeafRule[] | null = null;
+function rules(): LeafRule[] {
+  if (!leaves) {
+    const parsed: LeafRule[] = [];
+    walk(extractedSheet(), [], parsed);
+    leaves = parsed;
+  }
+  return leaves;
+}
+
+// Slice: every leaf rule naming a class this render used, in sheet order. Walking the leaves rather
+// than the render's classes keeps the cascade and emits each rule once, comma-shared ones included.
 function cssFor(html: string): string {
-  const map = rules();
-  const seen = new Set<string>();
-  const emitted = new Set<string>(); // comma-shared rules are keyed under every class they name
-  let css = "";
-  for (const m of html.matchAll(/class="([^"]*)"/g))
-    for (const t of m[1].split(/\s+/))
-      if (t && !seen.has(t)) {
-        seen.add(t);
-        for (const rule of map.get(t)?.match(/[^{}]+\{[^{}]*\}/g) ?? [])
-          if (!emitted.has(rule)) {
-            emitted.add(rule);
-            css += rule;
-          }
-      }
-  return css.trim();
+  const used = new Set<string>();
+  for (const m of html.matchAll(/class="([^"]*)"/g)) for (const t of m[1].split(/\s+/)) if (t) used.add(t);
+  return rules()
+    .filter((leaf) => leaf.classes.some((c) => used.has(c)))
+    .map((leaf) => leaf.text)
+    .join("\n")
+    .trim();
 }
 
 function renderInstances(caseId: string, n: number): string {
