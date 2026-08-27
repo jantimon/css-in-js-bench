@@ -1,6 +1,6 @@
 {
   "name": "next-yak",
-  "description": "next-yak 9.7.0 (styled API)",
+  "description": "next-yak (styled API)",
   "private": true,
   "type": "module",
   "bench": {

@@ -1,6 +1,6 @@
 {
   "name": "next-yak-nofold",
-  "description": "next-yak 9.7.0 (styled API) foldStatic: false",
+  "description": "next-yak (styled API) foldStatic: false",
   "private": true,
   "type": "module",
   "bench": {

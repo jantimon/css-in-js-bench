@@ -27,8 +27,8 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
      rank by ms at the largest n.
 2. `winner` = the best lane's dirname. `top3` = the three best lanes (fewer if fewer exist),
    with the exact reduced value and `ratioToBaseline = value / the baseline lane's value`
-   (raw quotient, never inverted). The baseline lane is the current default next-yak lane —
-   the 9.7 styled lane (`next-yak-9.7`) — or null if it has no data in this case.
+   (raw quotient, never inverted). The baseline lane is the default next-yak lane
+   (`next-yak`), or null if it has no data in this case.
 3. `why` must name the MECHANISM, grounded in the numbers — not restate the ranking. Use the
    WPD data: SSR CPU attribution (react vs lib vs component self-time, byPackage), span
    slices (js/style/layout/paint/gc/idle), blame counts (style-recalcs, forced layouts), and
@@ -89,11 +89,11 @@ Also write `result/analysis/study.json` per the `StudyAnalysis` type in
 - `findings`: 4-6 verdicts `{ title, prose }`, mechanism-forward, management-summary voice
   (see rule 3's AUDIENCE paragraph — introduce each case as "the Example `<caseId>` shown
   below", backtick identifiers).
-- `libraryHints`: one entry per LIBRARY (not per lane), each under ~140 chars — use the
-  current default next-yak lane's dirname for the next-yak entry.
+- `libraryHints`: one entry per LIBRARY (not per lane), each under ~140 chars — use
+  `next-yak` as the dirname for the next-yak entry.
 - DEFAULT-OFF LANES (`bench.defaultOff` in techs/*/package.json — check which lanes carry
   it): never make them the subject of a finding or a hint. They are diagnostic variants
-  (e.g. the 9.6.0 pair, the foldStatic:false pair), extreme outliers (e.g. panda-props),
+  (e.g. the foldStatic:false pair), extreme outliers (e.g. panda-props),
   or the hand-written ceiling (vanilla — not a real CSS-in-JS technique) hidden from the
   default view; the panel tells the cross-library story with shipped defaults. Citing one
   inside a finding as evidence ("with folding disabled the same case costs …", "ties

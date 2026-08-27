@@ -1,6 +1,6 @@
 {
   "name": "next-yak-css-nofold",
-  "description": "next-yak css-prop 9.7.0 foldStatic: false",
+  "description": "next-yak (css prop) foldStatic: false",
   "private": true,
   "type": "module",
   "bench": {

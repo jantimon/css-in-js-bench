@@ -1,6 +1,6 @@
 {
   "name": "next-yak-css",
-  "description": "next-yak css-prop 9.7.0",
+  "description": "next-yak (css prop)",
   "private": true,
   "type": "module",
   "bench": {
