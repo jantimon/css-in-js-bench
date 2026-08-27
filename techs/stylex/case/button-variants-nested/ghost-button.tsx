@@ -12,5 +12,5 @@ const styles = stylex.create({
 });
 
 export const GhostButton = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => (
-  <Button xs={[styles.ghost, ...(xs ?? [])]}>{children}</Button>
+  <Button xs={[styles.ghost, xs]}>{children}</Button>
 );
