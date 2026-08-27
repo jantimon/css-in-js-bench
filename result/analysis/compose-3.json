@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "compose-3",
   "provenance": {
-    "gitSha": "bb3990f",
-    "runTimestamp": "2026-08-27T09:41:02.201Z",
-    "generatedAt": "2026-08-27T09:41:50Z",
+    "gitSha": "9427081",
+    "runTimestamp": "2026-08-27T10:59:35.495Z",
+    "generatedAt": "2026-08-27T11:00:26Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "next-yak concatenates the three-level chain into one `__yak_button` at build time and leads the field, while the css prop keeps a merge at every level and finishes below hand-written vanilla.",

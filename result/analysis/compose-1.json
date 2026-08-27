@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "compose-1",
   "provenance": {
-    "gitSha": "bb3990f",
-    "runTimestamp": "2026-08-27T09:41:02.201Z",
-    "generatedAt": "2026-08-27T09:41:50Z",
+    "gitSha": "9427081",
+    "runTimestamp": "2026-08-27T10:59:35.495Z",
+    "generatedAt": "2026-08-27T11:00:26Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "At depth one there is no chain to collapse, so the case prices each library's floor cost per element: next-yak compiles to a bare tagged element and leads, while the runtime lanes already give up 2 to 4× before any wrapping begins.",
