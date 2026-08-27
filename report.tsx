@@ -744,11 +744,15 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-main{flex:1;min-width:0;display:flex;flex-direction:column}
 /* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
    active, so the first lane's row stays visible and the editor still works. */
-.ed-tabs{display:none;background:#11161d;border-bottom:1px solid #21262d;overflow-x:auto;overflow-y:hidden}
+.ed-tabs{display:none;gap:10px;background:#0d1117;border-bottom:1px solid #21262d;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.ed-tabs::-webkit-scrollbar{display:none}
 .ed-tabs-first{display:flex}
 .editor.ed-js .ed-tabs-first:not(.active){display:none}
 .editor.ed-js .ed-tabs.active{display:flex}
-.ed-div{flex:0 0 1px;align-self:stretch;margin:6px 12px;background:#30363d}
+/* Each group is its own bar; the gap between bars does the grouping, so the row keeps a
+   single line weight — thin separators inside a bar, nothing between them. */
+.ed-group{display:flex;background:#11161d}
+.ed-group .ed-tab:last-child{border-right:0}
 .ed-gen::before{content:"→ ";color:#6e7681}
 .ed-tab{background:none;border:0;border-right:1px solid #21262d;color:#8b949e;padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
 .ed-tab:hover{color:#c9d1d9}

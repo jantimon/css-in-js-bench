@@ -11,9 +11,11 @@ export interface EditorLane {
 
 // A simplified code-editor view of one case (§7): a left sidebar listing every lane (the
 // "file list") × a tab row for that lane's artifacts. The row runs
-// `preview │ index.tsx … │ → output.html → output.css` — the rendered screenshot first,
-// then the authored files, then the generated pair behind an arrow, so an authored
-// styles.css can't be mistaken for a generated output.css two tabs away.
+// `preview | index.tsx … | → output.html → output.css` as three separate bars with a gap
+// between them — the rendered screenshot first, then the authored files, then the generated
+// pair behind an arrow, so an authored styles.css can't be mistaken for a generated
+// output.css two tabs away. Grouping by gap rather than by a rule keeps one line weight in
+// the row: thin separators inside a bar, empty space between bars.
 //
 // File sets differ per lane (goober carries a setup.ts, StyleX a tokens.stylex.ts, vanilla
 // a styles.css), so EVERY lane's tabs are rendered and CSS hides all but the active lane's.
@@ -48,24 +50,26 @@ export function Editor({ caseId, lanes }: { caseId: string; lanes: EditorLane[] 
         {lanes.map((l, i) => (
           <div key={l.tech} className={i === 0 ? "ed-tabs ed-tabs-first" : "ed-tabs"} data-tabs-lane={l.tech}>
             {l.preview ? (
-              <>
+              <div className="ed-group">
                 <button type="button" className="ed-tab" data-art="preview">
                   preview
                 </button>
-                <span className="ed-div" aria-hidden="true" />
-              </>
+              </div>
             ) : null}
-            {l.files.map((f) => (
-              <button key={f} type="button" className="ed-tab" data-art={`src-${f}`} data-stem={f.slice(0, f.lastIndexOf("."))}>
-                {f}
-              </button>
-            ))}
-            <span className="ed-div" aria-hidden="true" />
-            {GENERATED.map((g) => (
-              <button key={g.art} type="button" className="ed-tab ed-gen" data-art={g.art}>
-                {g.file}
-              </button>
-            ))}
+            <div className="ed-group">
+              {l.files.map((f) => (
+                <button key={f} type="button" className="ed-tab" data-art={`src-${f}`} data-stem={f.slice(0, f.lastIndexOf("."))}>
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div className="ed-group">
+              {GENERATED.map((g) => (
+                <button key={g.art} type="button" className="ed-tab ed-gen" data-art={g.art}>
+                  {g.file}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
         {/* With JS off the preview <img> never gets a src, so the frame falls back to the entry file. */}

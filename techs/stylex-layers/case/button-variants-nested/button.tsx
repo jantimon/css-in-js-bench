@@ -24,5 +24,5 @@ const styles = stylex.create({
 
 // Levels above hand their styles down; base goes first so later levels win.
 export const Button = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => (
-  <button {...stylex.props(styles.base, xs))}>{children}</button>
+  <button {...stylex.props(styles.base, xs)}>{children}</button>
 );
