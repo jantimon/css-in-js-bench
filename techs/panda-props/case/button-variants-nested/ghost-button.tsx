@@ -10,5 +10,5 @@ const ghost = css.raw({
 });
 
 export const GhostButton = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => (
-  <Button xs={[ghost, ...(xs ?? [])]}>{children}</Button>
+  <Button xs={[ghost, xs]}>{children}</Button>
 );

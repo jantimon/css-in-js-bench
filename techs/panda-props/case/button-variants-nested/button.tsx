@@ -24,5 +24,5 @@ const base = css.raw({
 // Levels above hand their raw style objects down; the leaf merges the list, later
 // entries winning — the same order the styled() chains resolve in.
 export const Button = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => (
-  <styled.button css={[base, ...(xs ?? [])]}>{children}</styled.button>
+  <styled.button css={[base, xs]}>{children}</styled.button>
 );
