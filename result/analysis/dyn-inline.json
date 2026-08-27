@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "dyn-inline",
   "provenance": {
-    "gitSha": "6833ad1",
-    "runTimestamp": "2026-08-26T23:42:47.593Z",
-    "generatedAt": "2026-08-27T04:14:54Z",
+    "gitSha": "bb3990f",
+    "runTimestamp": "2026-08-27T09:41:02.201Z",
+    "generatedAt": "2026-08-27T09:41:50Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "With every lane on a plain inline style, next-yak included, only the element-level fold is left to measure: next-yak leads at 1.65M renders/s and its own no-fold lane costs 1.55×.",

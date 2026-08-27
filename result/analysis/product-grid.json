@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "product-grid",
   "provenance": {
-    "gitSha": "6833ad1",
-    "runTimestamp": "2026-08-26T23:42:47.593Z",
-    "generatedAt": "2026-08-27T04:05:30Z",
+    "gitSha": "bb3990f",
+    "runTimestamp": "2026-08-27T09:41:02.201Z",
+    "generatedAt": "2026-08-27T09:41:50Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "The heaviest page in the suite sorts lanes by how much of the styling library survives the build: folding leaves next-yak 0.616 ms of lib self-time per render, while Emotion spends 8.10 ms of its 14.3 ms there.",

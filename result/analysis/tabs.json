@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "tabs",
   "provenance": {
-    "gitSha": "6833ad1",
-    "runTimestamp": "2026-08-26T23:42:47.593Z",
-    "generatedAt": "2026-08-27T04:13:06Z",
+    "gitSha": "bb3990f",
+    "runTimestamp": "2026-08-27T09:41:02.201Z",
+    "generatedAt": "2026-08-27T09:41:50Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "A full design-system Tabs is where a dynamic prop closure blocks folding: `styled(TabInternal)` keeps its runtime call, and next-yak's styled lane runs at 0.55× of its own css-prop sibling.",

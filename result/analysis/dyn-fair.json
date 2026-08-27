@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "dyn-fair",
   "provenance": {
-    "gitSha": "6833ad1",
-    "runTimestamp": "2026-08-26T23:42:47.593Z",
-    "generatedAt": "2026-08-27T04:14:54Z",
+    "gitSha": "bb3990f",
+    "runTimestamp": "2026-08-27T09:41:02.201Z",
+    "generatedAt": "2026-08-27T09:41:50Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "With every lane on its own best practice the field converges near 1.6M renders/s, and next-yak's automatic CSS-variable path costs about 2× against the inline style the other lanes write by hand.",

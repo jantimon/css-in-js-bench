@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "provenance": {
-    "gitSha": "6833ad1",
-    "runTimestamp": "2026-08-26T23:42:47.593Z",
-    "generatedAt": "2026-08-27T04:16:21Z",
+    "gitSha": "bb3990f",
+    "runTimestamp": "2026-08-27T09:41:02.201Z",
+    "generatedAt": "2026-08-27T09:41:50Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "Where a style gets resolved decides nearly everything: the lanes that finish at build time run 2 to 8× the runtime libraries, and the one thing that reliably switches the compiler off is a module boundary between a styled component and the JSX that uses it.",
