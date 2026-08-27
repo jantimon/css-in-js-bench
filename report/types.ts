@@ -64,9 +64,21 @@ export interface SsrModule {
   renderHtml?: RenderHtmlFn;
 }
 
-/** The three displayed artifacts for one cell (§7). */
+/** Source extensions a case folder may hold, mapped to the Shiki grammar that highlights
+ * them — `.ts` rides the tsx grammar (a superset), so no extra grammar has to be loaded.
+ * Adding a file type is one entry here; anything not listed stops the build in gen.ts,
+ * because a lane dropping a new kind of file should be a decision rather than a blank tab. */
+export const SOURCE_EXT = { ".ts": "tsx", ".tsx": "tsx", ".css": "css" } as const;
+
+/** One authored file of a case, shown as its own tab (§7). */
+export interface SourceFile {
+  name: string;
+  code: string;
+}
+
+/** The displayed artifacts for one cell (§7): every authored file, plus the generated pair. */
 export interface Snapshot {
-  tsx: string;
+  files: SourceFile[];
   html: string;
   css: string;
 }

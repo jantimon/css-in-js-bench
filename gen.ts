@@ -22,7 +22,8 @@ import { gzipSync } from "node:zlib";
 import { createServer } from "node:http";
 import autocannon from "autocannon";
 import { chromium, type Browser } from "@playwright/test";
-import type { CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SsrModule } from "./report/types.ts";
+import type { CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
+import { SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
@@ -450,26 +451,40 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
   }
 }
 
-// The displayed source for a cell. A single-file case is its index.tsx verbatim (the
-// invariant: benchmarked source === displayed source). A MULTI-FILE case is every source
-// file in the case folder, index.tsx last so the page JSX reads after the primitives it
-// uses, each behind a `// ── file ──` banner. Without this the report shows a multi-file
-// case as a page of bare JSX with every style invisible.
-function caseSource(entry: string): string {
+// Every authored file of a cell, verbatim (the invariant: benchmarked source === displayed
+// source). index.tsx leads because it is the entry, the rest follow alphabetically, and the
+// report gives each one its own tab — so a five-file case reads as five files rather than
+// one blob. An extension outside SOURCE_EXT is an error, not a skipped file.
+function caseSource(entry: string): SourceFile[] {
   const dir = dirname(entry);
-  const files = readdirSync(dir)
-    .filter((f) => /\.tsx?$/.test(f))
-    .sort((a, b) => Number(a === "index.tsx") - Number(b === "index.tsx") || a.localeCompare(b));
-  if (files.length === 1) return readFileSync(entry, "utf8");
-  return files.map((f) => `// \u2500\u2500 ${f} \u2500\u2500\n${readFileSync(join(dir, f), "utf8").trimEnd()}\n`).join("\n");
+  const files = readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => d.name);
+  for (const f of files) {
+    const ext = f.slice(f.lastIndexOf("."));
+    if (!(ext in SOURCE_EXT)) {
+      console.error(`${join(dir, f)}: unknown source extension "${ext}" — add it to SOURCE_EXT in report/types.ts (known: ${Object.keys(SOURCE_EXT).join(", ")})`);
+      process.exit(1);
+    }
+  }
+  return files
+    .sort((a, b) => Number(b === "index.tsx") - Number(a === "index.tsx") || a.localeCompare(b))
+    .map((name) => ({ name, code: readFileSync(join(dir, name), "utf8") }));
 }
 
 // ---- main ----------------------------------------------------------------------
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const measurements = (args.measure ? (args.measure.split(",").map((s) => s.trim()) as Measurement[]) : DEFAULT_MEASUREMENTS).filter((m) =>
-    ALL_MEASUREMENTS.includes(m),
-  );
+  // Validate rather than filter: a silently dropped typo measures nothing, still rewrites
+  // the snapshots, and prints "measurements:" with an empty list, which reads as success.
+  // `none` is the documented way to ask for exactly that — snapshots only, no measurement.
+  const requested = args.measure ? args.measure.split(",").map((s) => s.trim()).filter(Boolean) : DEFAULT_MEASUREMENTS;
+  const unknown = requested.filter((m) => m !== "none" && !ALL_MEASUREMENTS.includes(m as Measurement));
+  if (unknown.length) {
+    console.error(`unknown --measure: ${unknown.join(", ")}\nvalid: ${ALL_MEASUREMENTS.join(", ")}, none (snapshots only)`);
+    process.exit(1);
+  }
+  const measurements = requested.filter((m): m is Measurement => ALL_MEASUREMENTS.includes(m as Measurement));
   const { techs, cases, cells } = discover(args);
   if (!cells.length) {
     console.error("no cells matched (techs/<t>/case/<c>/index.tsx). Check --tech/--case globs.");
@@ -513,7 +528,7 @@ async function main() {
     // Snapshots always run, off the microbench build (the SSR { html, css } path).
     for (const cell of techCells) {
       const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
-      snapshots[`${cell.caseId}/${tech}`] = { tsx: caseSource(cell.entry), html, css };
+      snapshots[`${cell.caseId}/${tech}`] = { files: caseSource(cell.entry), html, css };
     }
 
     for (const measurement of measurements) {

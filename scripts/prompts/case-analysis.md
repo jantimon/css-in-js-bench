@@ -12,7 +12,8 @@ You are analyzing a CSS-in-JS benchmark. Work from these inputs only:
   values the charts show (microbench renders/s, autocannon req/s, SSR CPU attribution,
   hydrate/inp/mount timings + WPD span slices, render-timing counts/ms, payload bytes, nsweep).
 - `result/meta.json` — gitSha, timestamp, host, node.
-- `result/snapshot.json` — per-cell source TSX, emitted HTML and CSS. Use it to explain
+- `result/snapshot.json` — per cell, every authored source file (`files: [{name, code}]`),
+  the emitted HTML and the emitted CSS. Use it to explain
   mechanisms (what the lane actually ships and does), not to re-measure.
 - Raw samples in `result/measurement-*.json` if you need spreads to judge confidence.
 
