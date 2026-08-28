@@ -4,7 +4,7 @@
 // earlier (lead with the most realistic, whole-screen cases).
 export const CASE_PRIORITY: Record<string, number> = {
   "product-grid": 100,
-  // the product-grid A/B: the same page split across five modules, so no fold sees both a
+  // the product-grid A/B: the same page split across modules, so no fold sees both a
   // declaration and its use site.
   "multifile-shop": 95,
   "realistic-button": 90,

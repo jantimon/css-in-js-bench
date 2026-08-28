@@ -289,5 +289,5 @@
       "confidence": "high"
     }
   },
-  "crossCase": "The Example `multifile-shop` shown below renders this exact page from five modules instead of one, with the DOM, the CSS and the 400 products byte-identical and verified pixel-identical. The lanes that resolve styles at render do not move. `next-yak` falls from 185,000 to 105,000 renders/s, because its fold cannot cross a module boundary."
+  "crossCase": "The Example `multifile-shop` shown below renders this exact page from separate modules instead of one, with the DOM, the CSS and the 400 products byte-identical and verified pixel-identical. The lanes that resolve styles at render do not move. `next-yak` falls from 185,000 to 105,000 renders/s, because its fold cannot cross a module boundary."
 }

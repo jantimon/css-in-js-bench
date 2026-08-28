@@ -10,7 +10,7 @@
   "findings": [
     {
       "title": "A module boundary switches off next-yak's compiler, unless what you export is styles rather than components",
-      "prose": "The Example `multifile-shop` shown below is the Example `product-grid` re-laid-out across five files, byte-identical in DOM and CSS and verified pixel-identical. `next-yak` falls from 185,000 to 105,000 renders/s and lands beside its own `foldStatic: false` lane at 103,000, because `fold_jsx_usages` rewrites a declaration and its use site only when both live in one module. The css prop is untouched, 231,000 against 223,000, since it folds where it is written and inlines an imported fragment at build time. The Example `multifile-composition` shows which boundary is free: move a component and its JSX together and folding still sees both."
+      "prose": "The Example `multifile-shop` shown below is the Example `product-grid` re-laid-out across separate modules, byte-identical in DOM and CSS and verified pixel-identical. `next-yak` falls from 185,000 to 105,000 renders/s and lands beside its own `foldStatic: false` lane at 103,000, because `fold_jsx_usages` rewrites a declaration and its use site only when both live in one module. The css prop is untouched, 231,000 against 223,000, since it folds where it is written and inlines an imported fragment at build time. The Example `multifile-composition` shows which boundary is free: move a component and its JSX together and folding still sees both."
     },
     {
       "title": "Composition depth is free only where the chain collapses at build time",

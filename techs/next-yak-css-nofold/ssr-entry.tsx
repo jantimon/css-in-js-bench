@@ -59,7 +59,7 @@ function cssFor(html: string): string {
 
 function renderInstances(caseId: string, n: number): string {
   const mod = renders[`./case/${caseId}/index.tsx`];
-  if (!mod) throw new Error(`next-yak-css-9.7-nofold: no case/${caseId}/index.tsx`);
+  if (!mod) throw new Error(`next-yak-css-nofold: no case/${caseId}/index.tsx`);
   const render = mod.default;
   const children = Array.from({ length: n }, (_, i) => createElement(Fragment, { key: i }, render(i)));
   return renderToString(createElement(Fragment, null, children));

@@ -454,11 +454,12 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
 // Every authored file of a cell, verbatim (the invariant: benchmarked source === displayed
 // source). index.tsx leads because it is the entry, the rest follow alphabetically, and the
 // report gives each one its own tab — so a five-file case reads as five files rather than
-// one blob. An extension outside SOURCE_EXT is an error, not a skipped file.
+// one blob. Dotfiles are not authored source and drop out; any other extension outside
+// SOURCE_EXT is an error, not a skipped file.
 function caseSource(entry: string): SourceFile[] {
   const dir = dirname(entry);
   const files = readdirSync(dir, { withFileTypes: true })
-    .filter((d) => d.isFile())
+    .filter((d) => d.isFile() && !d.name.startsWith("."))
     .map((d) => d.name);
   for (const f of files) {
     const ext = f.slice(f.lastIndexOf("."));

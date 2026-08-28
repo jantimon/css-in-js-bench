@@ -7,7 +7,7 @@
     "generatedAt": "2026-08-28T00:48:22Z",
     "model": "claude-opus-5[1m]"
   },
-  "headline": "Splitting the same page across five modules costs next-yak's styled API its entire build-time fold and lands it on the lane that never folds, while the css prop resolves imported fragments at build time and holds its position.",
+  "headline": "Splitting the same page across modules costs next-yak's styled API its entire build-time fold and lands it on the lane that never folds, while the css prop resolves imported fragments at build time and holds its position.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
