@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "button-variants-nested",
   "provenance": {
-    "gitSha": "9427081",
-    "runTimestamp": "2026-08-27T10:59:35.495Z",
-    "generatedAt": "2026-08-27T11:00:26Z",
+    "gitSha": "5fdc9c1",
+    "runTimestamp": "2026-08-28T00:44:33.935Z",
+    "generatedAt": "2026-08-28T00:50:18Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "Exporting the same three modules as JSX components instead of style values costs every lane, hand-written vanilla included, and costs next-yak its fold outright: a styled component cannot be folded across a module boundary.",
@@ -17,27 +17,27 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 1394457,
-          "ratioToBaseline": 1.1748890371763374
+          "value": 1353867,
+          "ratioToBaseline": 1.059739485122661
         },
         {
           "tech": "cnfast",
           "label": "cnfast",
-          "value": 1344462,
-          "ratioToBaseline": 1.132766133842903
+          "value": 1288037,
+          "ratioToBaseline": 1.0082110482040973
         },
         {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 1336602,
-          "ratioToBaseline": 1.1261437512006227
+          "tech": "next-yak",
+          "label": "next-yak (styled API)",
+          "value": 1277547,
+          "ratioToBaseline": 1.0
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 1186884
+        "value": 1277547
       },
-      "why": "The declarations, the three modules and the rendered element are identical to the Example `button-variants` shown above; only the API changes. Every lane pays for that. `vanilla` falls from 1.79M to 1.39M renders/s purely for the two extra React components in the tree, which prices an unfoldable component API before any library is involved. `next-yak` falls further, from 2.12M to 1.19M, because `styled(Button)` declared in another module leaves `fold_jsx_usages` nothing to rewrite, and it ends up indistinguishable from its own `foldStatic: false` lane, whose spread overlaps it in both runs. The atomic lanes give up least, `stylex` from 1.35M to 1.05M, since they were already merging at render.",
+      "why": "The declarations, the three modules and the rendered element are identical to the Example `button-variants` shown above; only the API changes. Every lane pays for that. `vanilla` falls from 1.78M to 1.35M renders/s purely for the two extra React components in the tree, which prices an unfoldable component API before any library is involved. `next-yak` falls further, from 2.23M to 1.28M, because `styled(Button)` declared in another module leaves `fold_jsx_usages` nothing to rewrite, and it ends up level with its own `foldStatic: false` lane at 1.25M. The atomic lanes give up least, `stylex` from 1.27M to 1.02M, since they were already merging at render.",
       "confidence": "high"
     },
     "autocannon": {
@@ -48,27 +48,27 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 1143,
+          "value": 1146,
           "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1125,
-          "ratioToBaseline": 0.984251968503937
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 1113,
-          "ratioToBaseline": 0.973753280839895
+          "value": 1018,
+          "ratioToBaseline": 0.8883071553228621
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 1012,
+          "ratioToBaseline": 0.8830715532286213
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 1143
+        "value": 1146
       },
-      "why": "`next-yak` at 1,143 req/s, `vanilla` at 1,125 and `next-yak-nofold` at 1,113 finish within 3% of each other, which is the shape of a case where nobody folds. `styled-components` at 685 req/s fares relatively better here than on the value form, since a component API is the shape it was designed around.",
+      "why": "`next-yak` at 1,146 req/s, `next-yak-nofold` at 1,018 and `vanilla` at 1,012 finish inside 13% of each other, which is the shape of a case where nobody folds. `styled-components` at 676 req/s fares relatively better here than on the value form, since a component API is the shape it was designed around.",
       "confidence": "high"
     },
     "attribution": {
@@ -79,92 +79,30 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 0.75,
-          "ratioToBaseline": 0.797872340425532
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 0.813,
-          "ratioToBaseline": 0.8648936170212765
+          "value": 0.803,
+          "ratioToBaseline": 0.9114642451759365
         },
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 0.856,
-          "ratioToBaseline": 0.9106382978723404
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 0.94
-      },
-      "why": "`vanilla` posts the lowest total at 0.750 ms, with 0.309 ms of component self-time for the three nested functions and no library at all. `next-yak` needs 0.940 ms, 0.409 ms of it lib self-time inside the `Yak` wrappers folding would have removed, and `next-yak-nofold` records 0.369 ms in that same slice, which confirms nothing folded. `emotion` at 2.93 ms and `goober` at 1.86 ms stay dominated by their serializers.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
+          "value": 0.815,
+          "ratioToBaseline": 0.9250851305334846
+        },
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 46,
+          "value": 0.881,
           "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 46.4,
-          "ratioToBaseline": 1.008695652173913
-        },
-        {
-          "tech": "panda",
-          "label": "Panda (css fn)",
-          "value": 46.7,
-          "ratioToBaseline": 1.0152173913043478
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 46
+        "value": 0.881
       },
-      "why": "The compile-time lanes group between 46.0 ms and 49.6 ms while the sheet-building lanes trail at 139 ms for `goober` and 115 ms for `emotion`. Component depth costs almost nothing on this axis, because hydration matches markup that already exists rather than creating it.",
-      "confidence": "medium"
+      "why": "`vanilla` posts the lowest total at 0.803 ms, with 0.285 ms of component self-time for the three nested functions and no library at all. `next-yak` needs 0.881 ms, 0.381 ms of it lib self-time inside the `Yak` wrappers folding would have removed, and `next-yak-nofold` records 0.361 ms in that same slice, which confirms nothing folded. `emotion` at 2.94 ms and `goober` at 2.00 ms stay dominated by their serializers.",
+      "confidence": "high"
     },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "stylex-layers",
-      "top3": [
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 6.5,
-          "ratioToBaseline": 0.8333333333333334
-        },
-        {
-          "tech": "tailwind-merge",
-          "label": "tailwind-merge",
-          "value": 6.8,
-          "ratioToBaseline": 0.8717948717948718
-        },
-        {
-          "tech": "panda-props",
-          "label": "Panda (style props)",
-          "value": 7.1,
-          "ratioToBaseline": 0.9102564102564102
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.8
-      },
-      "why": "Eleven lanes answer a single click between 6.5 ms and 7.8 ms, indistinguishable at this spread. Only `goober` at 11.0 ms and `emotion` at 10.2 ms separate from the group.",
-      "confidence": "low"
-    },
-    "mount": {
+    "hydrate": {
       "unit": "ms",
       "higherBetter": false,
       "winner": "next-yak-nofold",
@@ -172,27 +110,89 @@
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
+          "value": 46.1,
+          "ratioToBaseline": 0.5209039548022599
+        },
+        {
+          "tech": "panda",
+          "label": "Panda (css fn)",
+          "value": 47.3,
+          "ratioToBaseline": 0.5344632768361581
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 47.8,
+          "ratioToBaseline": 0.5401129943502825
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 88.5
+      },
+      "why": "Bimodal, like its sibling case: `next-yak` reads 88.5 ms here and 46.5 ms in the previous battery, with samples between 44.1 ms and 93.8 ms. The ordering inside the leading group is noise. `next-yak-nofold` at 46.1 ms, `panda` at 47.3 ms and `bamboo` at 47.8 ms are the modes that recur.",
+      "confidence": "low"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "panda-props",
+      "top3": [
+        {
+          "tech": "panda-props",
+          "label": "Panda (style props)",
+          "value": 7,
+          "ratioToBaseline": 0.9589041095890412
+        },
+        {
+          "tech": "next-yak",
+          "label": "next-yak (styled API)",
+          "value": 7.3,
+          "ratioToBaseline": 1.0
+        },
+        {
+          "tech": "styled-components",
+          "label": "styled-components",
+          "value": 7.3,
+          "ratioToBaseline": 1.0
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 7.3
+      },
+      "why": "Eleven lanes answer a single click between 7.0 ms and 8.0 ms, indistinguishable at this spread. Only `goober` at 11.1 ms and `emotion` at 10.6 ms separate from the group.",
+      "confidence": "low"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak",
+      "top3": [
+        {
+          "tech": "next-yak",
+          "label": "next-yak (styled API)",
           "value": 71.5,
-          "ratioToBaseline": 0.9794520547945206
+          "ratioToBaseline": 1.0
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
           "value": 72.1,
-          "ratioToBaseline": 0.9876712328767122
+          "ratioToBaseline": 1.0083916083916082
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 72.4,
-          "ratioToBaseline": 0.9917808219178083
+          "tech": "next-yak-nofold",
+          "label": "next-yak (styled API) foldStatic: false",
+          "value": 73.1,
+          "ratioToBaseline": 1.0223776223776222
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 73
+        "value": 71.5
       },
-      "why": "Cold mount compresses twelve lanes into 71.5 ms through 86.9 ms, with `next-yak-nofold` at 71.5 ms and `next-yak` at 73.0 ms tied inside their spreads. Extra fibers cost render time, and layout is what dominates a mount.",
+      "why": "Cold mount compresses eleven lanes into 71.5 ms through 88.0 ms, with `next-yak` at 71.5 ms and `next-yak-nofold` at 73.1 ms tied inside their spreads — and `next-yak` no longer has the 25 ms mount it posts on the value form, because there is a component chain to construct here. Extra fibers cost render time, and layout is what dominates a mount.",
       "confidence": "medium"
     },
     "renderTiming": {
@@ -223,7 +223,7 @@
         "tech": "next-yak",
         "value": 1
       },
-      "why": "One style recalculation per lane, costing 0.129 ms to 0.183 ms. The API shape changes what React does, not what the style engine has to match.",
+      "why": "One style recalculation per lane, costing 0.134 ms to 0.182 ms. The API shape changes what React does, not what the style engine has to match.",
       "confidence": "low"
     },
     "payload": {
@@ -265,27 +265,27 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 2.879,
+          "value": 3.015,
           "ratioToBaseline": 1.0
         },
         {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 2.928,
-          "ratioToBaseline": 1.0170197985411602
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 3.129,
+          "ratioToBaseline": 1.0378109452736317
         },
         {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 2.961,
-          "ratioToBaseline": 1.0284821118443903
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 3.135,
+          "ratioToBaseline": 1.0398009950248754
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 2.879
+        "value": 3.015
       },
-      "why": "`next-yak` at 2.88 ms and `next-yak-nofold` at 2.93 ms trace the same line, which states the case as plainly as it can be stated: folding that cannot cross a module boundary is worth nothing at any size. `vanilla` at 3.10 ms sits just behind them, `emotion` at 10.6 ms sets the far end.",
+      "why": "`next-yak` at 3.02 ms and `next-yak-nofold` at 3.14 ms trace the same line, which states the case as plainly as it can be stated: folding that cannot cross a module boundary is worth nothing at any size. `vanilla` at 3.13 ms sits with them, `emotion` at 10.8 ms sets the far end.",
       "confidence": "high"
     }
   },

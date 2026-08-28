@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "caseId": "product-grid",
   "provenance": {
-    "gitSha": "9427081",
-    "runTimestamp": "2026-08-27T10:59:35.495Z",
-    "generatedAt": "2026-08-27T11:00:26Z",
+    "gitSha": "5fdc9c1",
+    "runTimestamp": "2026-08-28T00:44:33.935Z",
+    "generatedAt": "2026-08-28T00:48:22Z",
     "model": "claude-opus-5[1m]"
   },
-  "headline": "The heaviest page in the suite sorts lanes by how much of the styling library survives the build: folding leaves next-yak 0.616 ms of lib self-time per render, while Emotion spends 8.10 ms of its 14.3 ms there.",
+  "headline": "The heaviest page in the suite sorts lanes by how much of the styling library survives the build: folding leaves next-yak 0.548 ms of lib self-time per render, while Emotion spends 7.79 ms of its 13.9 ms there.",
   "measurements": {
     "microbench": {
       "unit": "renders/s",
@@ -17,89 +17,89 @@
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 247844,
-          "ratioToBaseline": 1.224658806787299
+          "value": 237618,
+          "ratioToBaseline": 1.282051558740059
         },
         {
           "tech": "next-yak-css",
           "label": "next-yak (css prop)",
-          "value": 240042,
-          "ratioToBaseline": 1.1861071855636482
+          "value": 230925,
+          "ratioToBaseline": 1.2459399380604503
         },
         {
           "tech": "stylex-layers",
           "label": "StyleX",
-          "value": 215126,
-          "ratioToBaseline": 1.0629910365751218
+          "value": 212469,
+          "ratioToBaseline": 1.1463618607762946
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 202378
+        "value": 185342
       },
-      "why": "All fifteen lanes render the same 27-element tile 400 times, so the order is set by whatever still runs per instance. `vanilla` reads hand-written class names off a static sheet and marks the ceiling at 248,000 renders/s; `next-yak-css` reaches 97% of it because the css prop compiles each element down to a literal `className`, the discount toggle included, and leaves 0.000 ms of library work in the render path. React's own element creation is then almost the whole remaining cost, 1.91 ms of a 2.11 ms render. At the far end `emotion` hashes and serializes every instance's rules while rendering, and `panda-props` re-resolves a style object per prop, which lands as 10.0 ms of component self-time rather than library time.",
+      "why": "All fifteen lanes render the same 27-element tile 400 times, so the order is set by whatever still runs per instance. `vanilla` reads hand-written class names off a static sheet and marks the ceiling at 238,000 renders/s; `next-yak-css` reaches 97% of it because the css prop compiles each element down to a literal `className`, the discount toggle included, and leaves 0.000 ms of library work in the render path. React's own element creation is then almost the whole remaining cost, 2.03 ms of a 2.16 ms render. At the far end `emotion` hashes and serializes every instance's rules while rendering, and `panda-props` re-resolves a style object per prop, which lands as 13.4 ms of component self-time rather than library time.",
       "confidence": "high"
     },
     "autocannon": {
       "unit": "req/s",
       "higherBetter": true,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 266,
-          "ratioToBaseline": 1.1271186440677967
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 263,
-          "ratioToBaseline": 1.1144067796610169
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 236,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 236
-      },
-      "why": "Serving the page over HTTP compresses the field, since every lane writes a similar response body and the CSS travels inside it. `vanilla` and `next-yak-css` finish 3 req/s apart at the top, and `next-yak` gives up 27 req/s of that for the `Yak` wrapper it calls per element. The runtime lanes lose more than their SSR CPU alone predicts, `styled-components` at 103 req/s and `emotion` at 70, because per-instance serialization runs inside the request while the socket waits.",
-      "confidence": "high"
-    },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
       "winner": "next-yak-css",
       "top3": [
         {
           "tech": "next-yak-css",
           "label": "next-yak (css prop)",
-          "value": 2.109,
-          "ratioToBaseline": 0.8704085843995047
+          "value": 253,
+          "ratioToBaseline": 1.0765957446808512
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 2.178,
-          "ratioToBaseline": 0.8988856789104416
+          "value": 238,
+          "ratioToBaseline": 1.0127659574468084
         },
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 2.423,
+          "value": 235,
           "ratioToBaseline": 1.0
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 2.423
+        "value": 235
       },
-      "why": "React sets the floor near 1.9 ms for 400 tiles, and the lanes that reach it are the ones with nothing of the library left at render: `next-yak-css` and `vanilla` both record 0.000 ms of lib self-time. The two styled lanes differ only in folding, 0.616 ms of lib time against 1.575 ms without it, and that gap is the runtime `Yak` wrapper. Runtime libraries book the same work in the lib slice instead, `styled-components` at 5.12 ms and `goober` at 6.13 ms, while `panda-props` moves it into the component at 10.0 ms.",
+      "why": "Serving the page over HTTP compresses the field, since every lane writes a similar response body and the CSS travels inside it. `next-yak-css` at 253 req/s, `vanilla` at 238 and `next-yak` at 235 finish within 8% of each other. The runtime lanes lose more than their SSR CPU alone predicts, `styled-components` at 93 req/s and `emotion` at 73, because per-instance serialization runs inside the request while the socket waits.",
+      "confidence": "medium"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 2.13,
+          "ratioToBaseline": 0.8506389776357827
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 2.161,
+          "ratioToBaseline": 0.8630191693290735
+        },
+        {
+          "tech": "next-yak",
+          "label": "next-yak (styled API)",
+          "value": 2.504,
+          "ratioToBaseline": 1.0
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 2.504
+      },
+      "why": "React sets the floor near 2.0 ms for 400 tiles, and the lanes that reach it are the ones with nothing of the library left at render: `vanilla` at 2.13 ms and `next-yak-css` at 2.16 ms both record 0.000 ms of lib self-time. The two styled lanes differ only in folding, 0.548 ms of lib time against 1.61 ms without it, and that gap is the runtime `Yak` wrapper. Runtime libraries book the same work in the lib slice instead, `styled-components` at 5.66 ms and `goober` at 5.93 ms, while `panda-props` moves it into the component at 13.4 ms.",
       "confidence": "high"
     },
     "hydrate": {
@@ -110,89 +110,89 @@
         {
           "tech": "panda",
           "label": "Panda (css fn)",
-          "value": 54.3,
-          "ratioToBaseline": 0.9110738255033556
+          "value": 55.2,
+          "ratioToBaseline": 0.9277310924369748
         },
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 55.2,
-          "ratioToBaseline": 0.9261744966442953
+          "value": 55.9,
+          "ratioToBaseline": 0.9394957983193277
         },
         {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 55.9,
-          "ratioToBaseline": 0.9379194630872483
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 56,
+          "ratioToBaseline": 0.9411764705882353
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 59.6
+        "value": 59.5
       },
-      "why": "Hydration walks markup that already exists, so the styling library barely participates: eleven of fifteen lanes land between 54.3 ms and 69.1 ms, and react-dom accounts for 6.39 ms of Bamboo's 7.46 ms JS slice. The exceptions are the lanes that rebuild their stylesheet in the client before React can attach, `styled-components` at 239 ms and `goober` at 243 ms, roughly four times the rest of the field.",
+      "why": "Hydration walks markup that already exists, so the styling library barely participates: eleven of fifteen lanes land between 55.2 ms and 69.9 ms. The exceptions are the lanes that rebuild their stylesheet in the client before React can attach, `styled-components` at 240 ms and `goober` at 248 ms, roughly four times the rest of the field.",
       "confidence": "medium"
     },
     "inp": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css",
+      "winner": "cnfast",
       "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 7.7,
-          "ratioToBaseline": 0.8191489361702128
-        },
         {
           "tech": "cnfast",
           "label": "cnfast",
-          "value": 8.1,
-          "ratioToBaseline": 0.8617021276595744
+          "value": 8.5,
+          "ratioToBaseline": 0.8252427184466019
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 8.5,
+          "ratioToBaseline": 0.8252427184466019
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 8.2,
-          "ratioToBaseline": 0.8723404255319148
+          "value": 8.5,
+          "ratioToBaseline": 0.8252427184466019
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 9.4
+        "value": 10.3
       },
-      "why": "Toggling one wishlist button touches a single element, so what matters is how much re-derivation that click sets off. `next-yak-css` answers in 7.7 ms because the toggle is a class swap the compiler already resolved into the element. `next-yak-nofold` needs 18.1 ms for the identical click with folding off, and the runtime lanes need 26.2 ms to 47.4 ms because the click re-enters their serializer.",
+      "why": "Toggling one wishlist button touches a single element, so what matters is how much re-derivation that click sets off. `cnfast`, `next-yak-css` and `vanilla` all answer in 8.5 ms, because the toggle is a class swap resolved before render. `next-yak-nofold` needs 18.4 ms for the identical click with folding off, and the runtime lanes need 26.9 ms to 46.2 ms because the click re-enters their serializer.",
       "confidence": "high"
     },
     "mount": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak-css",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 123.9,
-          "ratioToBaseline": 0.9567567567567568
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 124.9,
-          "ratioToBaseline": 0.9644787644787646
+          "value": 124.8,
+          "ratioToBaseline": 0.9504950495049503
         },
         {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 127.8,
-          "ratioToBaseline": 0.9868725868725868
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 125.9,
+          "ratioToBaseline": 0.9588728103579588
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 127.5,
+          "ratioToBaseline": 0.971058644325971
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 129.5
+        "value": 131.3
       },
-      "why": "A cold mount pays parse, style and layout on top of render, which flattens the spread: twelve lanes fall between 124 ms and 142 ms, `next-yak-css` at 124 ms and `next-yak` at 130 ms among them. Layout dominates that time and is identical everywhere, because every lane produces the same DOM. Only the lanes that also construct their sheet during mount break away, `emotion` at 231 ms.",
+      "why": "A cold mount pays parse, style and layout on top of render, which flattens the spread: eleven lanes fall between 125 ms and 144 ms, `vanilla` at 125 ms and `next-yak` at 131 ms among them. Layout dominates that time and is identical everywhere, because every lane produces the same DOM. Only the lanes that also construct their sheet during mount break away, `emotion` at 233 ms.",
       "confidence": "medium"
     },
     "renderTiming": {
@@ -223,7 +223,7 @@
         "tech": "next-yak",
         "value": 1
       },
-      "why": "Every lane triggers exactly one style recalculation, which is what a complete sheet before first paint and an identical DOM should produce. The cost of that single recalc ranges from 0.257 ms to 0.759 ms and does not track the render ranking, so at this DOM size the axis confirms parity rather than separating the lanes.",
+      "why": "Every lane triggers exactly one style recalculation, which is what a complete sheet before first paint and an identical DOM should produce. The cost of that single recalc ranges from 0.245 ms to 0.806 ms and does not track the render ranking, so at this DOM size the axis confirms parity rather than separating the lanes.",
       "confidence": "low"
     },
     "payload": {
@@ -265,29 +265,29 @@
         {
           "tech": "next-yak-css",
           "label": "next-yak (css prop)",
-          "value": 17.591,
-          "ratioToBaseline": 0.8252099263498617
+          "value": 18.276,
+          "ratioToBaseline": 0.8328472475391907
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 18.246,
-          "ratioToBaseline": 0.8559365764413378
+          "value": 18.352,
+          "ratioToBaseline": 0.8363106088224572
         },
         {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 20.203,
-          "ratioToBaseline": 0.9477412393864052
+          "tech": "next-yak",
+          "label": "next-yak (styled API)",
+          "value": 21.944,
+          "ratioToBaseline": 1.0
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 21.317
+        "value": 21.944
       },
-      "why": "Scaling to 4,000 tiles multiplies whatever each lane does per instance. `next-yak-css` holds a straight line to 17.6 ms because its per-element cost is a string computed at build time. `next-yak` reaches 21.3 ms and `next-yak-nofold` 41.1 ms, so folding is worth 1.93× at this size. The runtime lanes bend upward instead, `emotion` at 134 ms, the point where per-instance serialization stops being a constant factor and starts setting the slope.",
+      "why": "Scaling to 4,000 tiles multiplies whatever each lane does per instance. `next-yak-css` holds a straight line to 18.3 ms because its per-element cost is a string computed at build time. `next-yak` reaches 21.9 ms and `next-yak-nofold` 40.9 ms, so folding is worth 1.87× at this size. The runtime lanes bend upward instead, `emotion` at 135 ms, the point where per-instance serialization stops being a constant factor and starts setting the slope.",
       "confidence": "high"
     }
   },
-  "crossCase": "The Example `multifile-shop` shown below renders this exact page from five modules instead of one, with the DOM, the CSS and the 400 products byte-identical and verified pixel-identical. The lanes that resolve styles at render do not move. `next-yak` falls from 202,000 to 110,000 renders/s, because its fold cannot cross a module boundary."
+  "crossCase": "The Example `multifile-shop` shown below renders this exact page from five modules instead of one, with the DOM, the CSS and the 400 products byte-identical and verified pixel-identical. The lanes that resolve styles at render do not move. `next-yak` falls from 185,000 to 105,000 renders/s, because its fold cannot cross a module boundary."
 }

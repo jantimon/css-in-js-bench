@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "caseId": "compose-6",
   "provenance": {
-    "gitSha": "9427081",
-    "runTimestamp": "2026-08-27T10:59:35.495Z",
-    "generatedAt": "2026-08-27T11:00:26Z",
+    "gitSha": "5fdc9c1",
+    "runTimestamp": "2026-08-28T00:44:33.935Z",
+    "generatedAt": "2026-08-28T00:51:07Z",
     "model": "claude-opus-5[1m]"
   },
   "headline": "Six levels cost next-yak nothing over three, because the whole chain compiles to one `__yak_button` holding six classes in a single string, while every lane that merges at render pays six times.",
@@ -17,27 +17,27 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 1493467,
+          "value": 1475925,
           "ratioToBaseline": 1.0
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 1203852,
-          "ratioToBaseline": 0.8060787416126369
+          "value": 1181392,
+          "ratioToBaseline": 0.8004417568643393
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 921517,
-          "ratioToBaseline": 0.6170320469083013
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 919188,
+          "ratioToBaseline": 0.6227877432796382
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 1493467
+        "value": 1475925
       },
-      "why": "Five wrappers over a base button, each adding one declaration. `next-yak` compiles all six levels to `__yak_button(\"yRGSbEH yRGSbEH1 … yRGSbEH5\")`, one component and one class string, and renders at 1.49M renders/s, the same figure it posts at depth three. `next-yak-nofold` at 1.20M keeps all six wrappers and shows exactly what the fold removes. Hand-written `vanilla` at 919,000 now sits below both yak lanes, because six React functions and six string joins are not free even with no library involved. `next-yak-css` at 615,000 runs `mergeCssProp` six times, and `panda` at 268,000 re-resolves six style objects per instance.",
+      "why": "Five wrappers over a base button, each adding one declaration. `next-yak` compiles all six levels to `__yak_button(\"yRGSbEH yRGSbEH1 … yRGSbEH5\")`, one component and one class string, and renders at 1.48M renders/s, the same figure it posts at depth three. `next-yak-nofold` at 1.18M keeps all six wrappers and shows exactly what the fold removes. Hand-written `vanilla` at 919,000 now sits below both yak lanes, because six React functions and six string joins are not free even with no library involved. `next-yak-css` at 600,000 runs `mergeCssProp` six times, and `panda` at 310,000 re-resolves six style objects per instance.",
       "confidence": "high"
     },
     "autocannon": {
@@ -48,27 +48,27 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 1179,
+          "value": 1206,
           "ratioToBaseline": 1.0
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 989,
-          "ratioToBaseline": 0.8388464800678541
+          "value": 980,
+          "ratioToBaseline": 0.8126036484245439
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 828,
-          "ratioToBaseline": 0.7022900763358778
+          "value": 840,
+          "ratioToBaseline": 0.6965174129353234
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 1179
+        "value": 1206
       },
-      "why": "`next-yak` at 1,179 req/s barely moves from its depth-three figure while `vanilla` falls to 828 and `panda` to 196. Depth under load is where the compile-time and render-time strategies separate most plainly.",
+      "why": "`next-yak` at 1,206 req/s barely moves from its depth-three figure while `vanilla` falls to 840 and `panda` to 191. Depth under load is where the compile-time and render-time strategies separate most plainly.",
       "confidence": "high"
     },
     "attribution": {
@@ -79,59 +79,59 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 0.798,
+          "value": 0.808,
           "ratioToBaseline": 1.0
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 1.064,
-          "ratioToBaseline": 1.3333333333333333
+          "value": 0.886,
+          "ratioToBaseline": 1.0965346534653464
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 1.086,
-          "ratioToBaseline": 1.3609022556390977
+          "value": 1.239,
+          "ratioToBaseline": 1.5334158415841583
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 0.798
+        "value": 0.808
       },
-      "why": "`next-yak` totals 0.798 ms, indistinguishable from the 0.806 ms it spends at depth three, with 0.356 ms of lib self-time inside the single folded wrapper. `vanilla` needs 1.09 ms, 0.365 ms of it component self-time spread over six functions. `next-yak-css` reaches 2.00 ms and `panda` 3.60 ms, both paying once per level.",
+      "why": "`next-yak` totals 0.808 ms, indistinguishable from the 0.797 ms it spends at depth three, with 0.402 ms of lib self-time inside the single folded wrapper. `vanilla` needs 1.24 ms, 0.395 ms of it component self-time spread over six functions and 0.844 ms in React itself. `next-yak-css` reaches 2.84 ms and `goober` 4.85 ms, both paying once per level.",
       "confidence": "high"
     },
     "hydrate": {
       "unit": "ms",
       "higherBetter": false,
-      "winner": "next-yak",
+      "winner": "vanilla",
       "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 46.8,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 48.2,
-          "ratioToBaseline": 1.02991452991453
-        },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 49,
-          "ratioToBaseline": 1.047008547008547
+          "value": 49.5,
+          "ratioToBaseline": 0.561861520998865
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 49.6,
+          "ratioToBaseline": 0.5629965947786607
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 53.9,
+          "ratioToBaseline": 0.6118047673098752
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 46.8
+        "value": 88.1
       },
-      "why": "`next-yak` hydrates a six-level chain in 46.8 ms, as fast as it hydrates one level, because the client only ever sees a single component. `next-yak-css` at 53.0 ms carries its per-level merge into hydration, while `emotion` at 115 ms and `goober` at 107 ms rebuild sheets before React attaches.",
-      "confidence": "medium"
+      "why": "Hydration on the compose cases is bimodal, with modes near 45 ms and 90 ms that swap between batteries, so the ordering inside the leading group is noise rather than mechanism. `vanilla` at 49.5 ms and `bamboo` at 49.6 ms hold the fast mode; `next-yak` reads 88.1 ms here against 46.6 ms previously. `styled-components` at 96.2 ms and `goober` at 107 ms sit high in both.",
+      "confidence": "low"
     },
     "inp": {
       "unit": "ms",
@@ -141,28 +141,28 @@
         {
           "tech": "bamboo",
           "label": "Bamboo",
-          "value": 6.2,
-          "ratioToBaseline": 0.8051948051948052
+          "value": 7,
+          "ratioToBaseline": 0.9210526315789475
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 6.9,
-          "ratioToBaseline": 0.8961038961038962
+          "value": 7.1,
+          "ratioToBaseline": 0.9342105263157895
         },
         {
           "tech": "cnfast",
           "label": "cnfast",
-          "value": 7.1,
-          "ratioToBaseline": 0.922077922077922
+          "value": 7.2,
+          "ratioToBaseline": 0.9473684210526316
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 7.7
+        "value": 7.6
       },
-      "why": "Eleven lanes answer one click between 6.2 ms and 8.6 ms. `goober` at 19.8 ms and `panda` at 13.0 ms are the exceptions, both re-deriving the full six-level chain on the component that was clicked.",
-      "confidence": "medium"
+      "why": "Eight lanes answer one click between 7.0 ms and 8.0 ms. `goober` at 23.1 ms, `panda` at 14.8 ms and `emotion` at 11.2 ms are the exceptions, all re-deriving the full six-level chain on the component that was clicked.",
+      "confidence": "high"
     },
     "mount": {
       "unit": "ms",
@@ -172,27 +172,27 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 71.5,
+          "value": 71.4,
           "ratioToBaseline": 1.0
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 72.9,
-          "ratioToBaseline": 1.0195804195804197
+          "value": 73.2,
+          "ratioToBaseline": 1.0252100840336134
         },
         {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 75.4,
-          "ratioToBaseline": 1.0545454545454547
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 75.5,
+          "ratioToBaseline": 1.057422969187675
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 71.5
+        "value": 71.4
       },
-      "why": "`next-yak` leads at 71.5 ms in a band running to 89.1 ms for twelve lanes. Six levels add render work, and mount is dominated by parse and layout, so the ordering compresses against what the microbench shows.",
+      "why": "`next-yak` leads at 71.4 ms in a band running to 89.4 ms for twelve lanes. Six levels add render work, and mount is dominated by parse and layout, so the ordering compresses against what the microbench shows.",
       "confidence": "medium"
     },
     "renderTiming": {
@@ -223,7 +223,7 @@
         "tech": "next-yak",
         "value": 1
       },
-      "why": "One style recalculation per lane, 0.126 ms to 0.185 ms. Six levels of composition still produce one element and the same matching work.",
+      "why": "One style recalculation per lane, 0.129 ms to 0.188 ms. Six levels of composition still produce one element and the same matching work.",
       "confidence": "low"
     },
     "payload": {
@@ -265,29 +265,29 @@
         {
           "tech": "next-yak",
           "label": "next-yak (styled API)",
-          "value": 2.559,
+          "value": 2.842,
           "ratioToBaseline": 1.0
         },
         {
           "tech": "next-yak-nofold",
           "label": "next-yak (styled API) foldStatic: false",
-          "value": 3.171,
-          "ratioToBaseline": 1.2391559202813598
+          "value": 3.223,
+          "ratioToBaseline": 1.134060520760028
         },
         {
           "tech": "vanilla",
           "label": "vanilla (hand-written ceiling)",
-          "value": 4.025,
-          "ratioToBaseline": 1.5728800312622118
+          "value": 4.219,
+          "ratioToBaseline": 1.4845179451090782
         }
       ],
       "baseline": {
         "tech": "next-yak",
-        "value": 2.559
+        "value": 2.842
       },
-      "why": "`next-yak` at 2.56 ms at the largest size repeats its depth-three figure, while `next-yak-nofold` needs 3.17 ms and `vanilla` 4.03 ms. Per-level work sets the slope, and a folded chain has no per-level work to set one with.",
+      "why": "`next-yak` at 2.84 ms at the largest size is close to its depth-three figure, while `next-yak-nofold` needs 3.22 ms and `vanilla` 4.22 ms. Per-level work sets the slope, and a folded chain has no per-level work to set one with.",
       "confidence": "high"
     }
   },
-  "crossCase": "The deep end of the trio, with the Examples `compose-1` and `compose-3`. `next-yak` costs 2.27M, 1.45M and 1.49M renders/s across the three depths, so everything after the first wrapper is free and the chain concatenates into one component whatever its depth. Every other lane pays per level, most steeply `panda` at 1.11M, 514,000 and 268,000."
+  "crossCase": "The deep end of the trio, with the Examples `compose-1` and `compose-3`. `next-yak` costs 2.24M, 1.40M and 1.48M renders/s across the three depths, so everything after the first wrapper is free and the chain concatenates into one component whatever its depth. Every other lane pays per level, most steeply `panda` at 1.12M, 540,000 and 310,000."
 }
