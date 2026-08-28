@@ -123,30 +123,6 @@ importers:
   techs/next-yak:
     dependencies:
       next-yak:
-        specifier: ^9.6.0
-        version: 9.6.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
-      react:
-        specifier: catalog:dev
-        version: 19.2.7
-      react-dom:
-        specifier: catalog:dev
-        version: 19.2.7(react@19.2.7)
-
-  techs/next-yak-9.7:
-    dependencies:
-      next-yak:
-        specifier: 9.7.0
-        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
-      react:
-        specifier: catalog:dev
-        version: 19.2.7
-      react-dom:
-        specifier: catalog:dev
-        version: 19.2.7(react@19.2.7)
-
-  techs/next-yak-9.7-nofold:
-    dependencies:
-      next-yak:
         specifier: 9.7.0
         version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
       react:
@@ -159,8 +135,8 @@ importers:
   techs/next-yak-css:
     dependencies:
       next-yak:
-        specifier: ^9.6.0
-        version: 9.6.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+        specifier: 9.7.0
+        version: 9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
       react:
         specifier: catalog:dev
         version: 19.2.7
@@ -168,7 +144,7 @@ importers:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
 
-  techs/next-yak-css-9.7:
+  techs/next-yak-css-nofold:
     dependencies:
       next-yak:
         specifier: 9.7.0
@@ -180,7 +156,7 @@ importers:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
 
-  techs/next-yak-css-9.7-nofold:
+  techs/next-yak-nofold:
     dependencies:
       next-yak:
         specifier: 9.7.0
@@ -368,11 +344,6 @@ packages:
   '@babel/helpers@7.29.7':
     resolution: {integrity: sha512-1k2lAGRMfHTcwuNYcCNUmaUffmQv8KWMfh2iJUUeRlwlwH4FdNG7mfPI10NPfLHJFThE4Tyr4mv7kTNZOiPuBg==}
     engines: {node: '>=6.9.0'}
-
-  '@babel/parser@7.29.7':
-    resolution: {integrity: sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
 
   '@babel/parser@7.29.8':
     resolution: {integrity: sha512-E8lTAYNB1KW+FH+VGJuZM1ioAx2E6oVlvQFRrf5P8ZZmsiJXYAD9vTFV7yyEURNzgh1dFqMZuO6tUwcARbqFCA==}
@@ -2319,26 +2290,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  next-yak@9.6.0:
-    resolution: {integrity: sha512-yzontVmloVDTEiy2NHcaV9A03EPtEMFKn1eam6VoHK5WIzceNa3JB/+Yf7zth3G4GQeYnhPu2128Sl/BqnXFSQ==}
-    peerDependencies:
-      '@rsbuild/core': '>=2.0.0'
-      '@types/react': '>=19'
-      next: '>=16.1.0'
-      react: '>=19.0.0'
-      vite: '>=7.0.0'
-    peerDependenciesMeta:
-      '@rsbuild/core':
-        optional: true
-      '@types/react':
-        optional: true
-      next:
-        optional: true
-      react:
-        optional: true
-      vite:
-        optional: true
-
   next-yak@9.7.0:
     resolution: {integrity: sha512-fbcHZKtp7DLDKvykkVb48FlzqLfQYL3wAj1uI4/VCEK0k6qiJMJSHDxAKLWmgZ6t2khP7j9tSwD3nI1dFIgoXg==}
     peerDependencies:
@@ -2973,9 +2924,6 @@ packages:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
 
-  yak-swc@9.6.0:
-    resolution: {integrity: sha512-RTlLiahwJ30MoIY3p7iOeNJjbjPRz364FF1KqGKtIuLJPfC3wnWsFQAnPrPY0W1qH/fp06IA7iyDPd2xq5fcSg==}
-
   yak-swc@9.7.0:
     resolution: {integrity: sha512-AZZ+mm1jK054/sW8Rb9HKkTbpw6GNpZ+/Hw+K8CjiNRDdGRPJbOTAic1AsAGjBWP/qhIE9LdWx5sjzMtYAxM8Q==}
 
@@ -3030,7 +2978,7 @@ snapshots:
       '@babel/helper-compilation-targets': 7.29.7
       '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
       '@babel/helpers': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
       '@babel/types': 7.29.7
@@ -3045,7 +2993,7 @@ snapshots:
 
   '@babel/generator@7.29.7':
     dependencies:
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/types': 7.29.7
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
@@ -3094,10 +3042,6 @@ snapshots:
       '@babel/template': 7.29.7
       '@babel/types': 7.29.7
 
-  '@babel/parser@7.29.7':
-    dependencies:
-      '@babel/types': 7.29.7
-
   '@babel/parser@7.29.8':
     dependencies:
       '@babel/types': 7.29.8
@@ -3126,7 +3070,7 @@ snapshots:
   '@babel/template@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/types': 7.29.7
 
   '@babel/traverse@7.29.7':
@@ -3134,7 +3078,7 @@ snapshots:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
       '@babel/helper-globals': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
       '@babel/types': 7.29.7
       debug: 4.4.3
@@ -4952,17 +4896,6 @@ snapshots:
 
   nanoid@3.3.18: {}
 
-  next-yak@9.6.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
-    dependencies:
-      '@babel/parser': 8.0.0
-      '@swc/core': 1.15.43
-      yak-swc: 9.6.0
-    optionalDependencies:
-      react: 19.2.7
-      vite: 8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)
-    transitivePeerDependencies:
-      - '@swc/helpers'
-
   next-yak@9.7.0(react@19.2.7)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4)):
     dependencies:
       '@babel/parser': 8.0.0
@@ -5579,10 +5512,6 @@ snapshots:
       object-keys: 0.4.0
 
   y18n@5.0.8: {}
-
-  yak-swc@9.6.0:
-    dependencies:
-      '@swc/counter': 0.1.3
 
   yak-swc@9.7.0:
     dependencies:

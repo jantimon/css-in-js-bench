@@ -261,7 +261,12 @@ async function main() {
     // tab can show that lane's output inline — one image, switched with the selected lane.
     const editorLanes: EditorLane[] = usedTechs
       .filter((t) => snaps[`${caseId}/${t}`])
-      .map((t) => ({ tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0] }));
+      .map((t) => ({
+        tech: t,
+        label: techs[t].label,
+        preview: shots[`${caseId}/${t}`]?.[0],
+        files: snaps[`${caseId}/${t}`].files.map((f) => f.name),
+      }));
     return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes, analysis: analyses[caseId] ?? null };
   });
 
@@ -737,7 +742,18 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-file.active{background:#21262d;color:#e6edf3}
 .ed-file.tech-off{display:none}
 .ed-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.ed-tabs{display:flex;background:#11161d;border-bottom:1px solid #21262d;overflow:auto}
+/* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
+   active, so the first lane's row stays visible and the editor still works. */
+.ed-tabs{display:none;gap:10px;background:#0d1117;border-bottom:1px solid #21262d;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.ed-tabs::-webkit-scrollbar{display:none}
+.ed-tabs-first{display:flex}
+.editor.ed-js .ed-tabs-first:not(.active){display:none}
+.editor.ed-js .ed-tabs.active{display:flex}
+/* Each group is its own bar; the gap between bars does the grouping, so the row keeps a
+   single line weight — thin separators inside a bar, nothing between them. */
+.ed-group{display:flex;background:#11161d}
+.ed-group .ed-tab:last-child{border-right:0}
+.ed-gen::before{content:"→ ";color:#6e7681}
 .ed-tab{background:none;border:0;border-right:1px solid #21262d;color:#8b949e;padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
 .ed-tab:hover{color:#c9d1d9}
 .ed-tab.active{background:#0d1117;color:#e6edf3;box-shadow:inset 0 -2px 0 #1f6feb}
@@ -788,10 +804,13 @@ a.mono:hover{text-decoration:underline}
 
 const CONTROLLER = `
 for (const ed of document.querySelectorAll('[data-ed]')) {
+  ed.classList.add('ed-js');
   const frame = ed.querySelector('.ed-frame');
   const shot = ed.querySelector('.ed-shot');
   const apply = () => {
     for (const b of ed.querySelectorAll('.ed-file')) b.classList.toggle('active', b.dataset.lane===ed.dataset.lane);
+    // every lane's tab row is in the DOM; show only the active lane's
+    for (const row of ed.querySelectorAll('.ed-tabs')) row.classList.toggle('active', row.dataset.tabsLane===ed.dataset.lane);
     for (const b of ed.querySelectorAll('.ed-tab')) b.classList.toggle('active', b.dataset.art===ed.dataset.art);
     const preview = ed.dataset.art==='preview';
     ed.classList.toggle('ed-show-shot', preview);
@@ -805,7 +824,19 @@ for (const ed of document.querySelectorAll('[data-ed]')) {
       if (frame.getAttribute('src')!==src) frame.setAttribute('src', src);
     }
   };
-  for (const b of ed.querySelectorAll('.ed-file')) b.onclick = () => { ed.dataset.lane = b.dataset.lane; apply(); };
+  // Switching lane keeps the file you were reading. Names differ by extension across lanes
+  // (next-yak text.tsx vs StyleX text.ts), so match on the stem; anything unmatched falls
+  // back to the entry file. preview and the generated pair exist everywhere, so they stick.
+  const keepArt = (lane) => {
+    const art = ed.dataset.art;
+    if (!art.startsWith('src-')) return art;
+    const row = ed.querySelector('.ed-tabs[data-tabs-lane="'+lane+'"]');
+    const tabs = [...row.querySelectorAll('.ed-tab[data-stem]')];
+    if (tabs.some(t => t.dataset.art===art)) return art;
+    const stem = ed.querySelector('.ed-tab[data-art="'+art+'"]')?.dataset.stem;
+    return tabs.find(t => t.dataset.stem===stem)?.dataset.art || 'src-index.tsx';
+  };
+  for (const b of ed.querySelectorAll('.ed-file')) b.onclick = () => { ed.dataset.art = keepArt(b.dataset.lane); ed.dataset.lane = b.dataset.lane; apply(); };
   for (const b of ed.querySelectorAll('.ed-tab')) b.onclick = () => { ed.dataset.art = b.dataset.art; apply(); };
   apply();
 }

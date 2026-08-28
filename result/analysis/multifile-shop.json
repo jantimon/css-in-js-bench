@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "caseId": "multifile-shop",
+  "provenance": {
+    "gitSha": "5fdc9c1",
+    "runTimestamp": "2026-08-28T00:44:33.935Z",
+    "generatedAt": "2026-08-28T00:48:22Z",
+    "model": "claude-opus-5[1m]"
+  },
+  "headline": "Splitting the same page across modules costs next-yak's styled API its entire build-time fold and lands it on the lane that never folds, while the css prop resolves imported fragments at build time and holds its position.",
+  "measurements": {
+    "microbench": {
+      "unit": "renders/s",
+      "higherBetter": true,
+      "winner": "vanilla",
+      "top3": [
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 227731,
+          "ratioToBaseline": 2.1655461625507555
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 223204,
+          "ratioToBaseline": 2.122497884196613
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 175734,
+          "ratioToBaseline": 1.6710947975009747
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 105161
+      },
+      "why": "The tile, the DOM, the CSS and the 400 products are byte-identical to the Example `product-grid`; only the file layout changes, which leaves folding as the variable. `next-yak` now declares its primitives in `layout.tsx`, `controls.tsx` and `text.tsx` while the JSX using them lives in `index.tsx`, so `fold_jsx_usages` never sees a declaration and its use site in one module. Every primitive stays a runtime `Yak` wrapper, lib self-time rises from 0.548 ms to 1.73 ms, and the lane lands at 105,000 renders/s against 103,000 for `next-yak-nofold`, which had no fold to lose. `next-yak-css` keeps 0.000 ms of lib time because the css prop folds on the element where it is written and inlines an imported fragment at build time. StyleX pays a smaller version of the same bill, its `props()` call going from 0.121 ms to 0.661 ms once `stylex.create` sits behind an import.",
+      "confidence": "high"
+    },
+    "autocannon": {
+      "unit": "req/s",
+      "higherBetter": true,
+      "winner": "next-yak-css",
+      "top3": [
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 261,
+          "ratioToBaseline": 1.5818181818181818
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 227,
+          "ratioToBaseline": 1.3757575757575757
+        },
+        {
+          "tech": "next-yak-css-nofold",
+          "label": "next-yak (css prop) foldStatic: false",
+          "value": 206,
+          "ratioToBaseline": 1.2484848484848485
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 165
+      },
+      "why": "Throughput falls from 235 req/s to 165 for `next-yak`, a 30% cut for a change that moved no CSS and no markup. `next-yak-css` holds at 261 req/s, above its own single-file figure. The runtime lanes stay flat within noise, which is the control the case needs: they never had a build-time optimization to lose, so any movement there would mean the port leaked something.",
+      "confidence": "high"
+    },
+    "attribution": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css",
+      "top3": [
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 2.12,
+          "ratioToBaseline": 0.5177045177045178
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 2.159,
+          "ratioToBaseline": 0.5272283272283272
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 2.71,
+          "ratioToBaseline": 0.6617826617826618
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 4.095
+      },
+      "why": "`next-yak-css` at 2.12 ms and `vanilla` at 2.16 ms hold the floor they set on the single-file page, so a module boundary costs nothing to anything that resolves at build time wherever the source lives. `next-yak` climbs to 4.10 ms from 2.50 ms and the entire increase is lib self-time, 1.73 ms against 0.548 ms. Both StyleX lanes gain about 0.6 ms in the same slice for the same reason.",
+      "confidence": "high"
+    },
+    "hydrate": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "panda",
+      "top3": [
+        {
+          "tech": "panda",
+          "label": "Panda (css fn)",
+          "value": 55.3,
+          "ratioToBaseline": 0.7945402298850575
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 55.8,
+          "ratioToBaseline": 0.8017241379310345
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 55.9,
+          "ratioToBaseline": 0.80316091954023
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 69.6
+      },
+      "why": "Hydration re-runs the render on the client and inherits the loss: `next-yak` needs 69.6 ms against 59.5 ms on the single-file page, while `next-yak-css` stays at 55.8 ms. The lanes that rebuild a sheet during hydration are unchanged at 236 ms and 249 ms, because their cost never depended on file layout.",
+      "confidence": "medium"
+    },
+    "inp": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 8.4,
+          "ratioToBaseline": 0.38009049773755654
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 8.8,
+          "ratioToBaseline": 0.3981900452488688
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 8.9,
+          "ratioToBaseline": 0.40271493212669685
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 22.1
+      },
+      "why": "Interaction carries the largest relative cost of the split. The wishlist toggle takes 22.1 ms in `next-yak` against 10.3 ms on the single-file page, because the click now re-renders through runtime wrappers instead of swapping a class string the compiler already resolved. `next-yak-css` answers in 8.9 ms either way. This is the axis a user feels directly, and it more than doubles.",
+      "confidence": "high"
+    },
+    "mount": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "vanilla",
+      "top3": [
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 124.5,
+          "ratioToBaseline": 0.8742977528089887
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 125.4,
+          "ratioToBaseline": 0.8806179775280899
+        },
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 128.3,
+          "ratioToBaseline": 0.9009831460674158
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 142.4
+      },
+      "why": "Cold mount absorbs the split better than interaction does, since parse and layout are identical across lanes and dominate the measurement: `next-yak` moves from 131 ms to 142 ms. The rest of the ordering matches the single-file page, `vanilla` at 125 ms and the runtime lanes above 200 ms.",
+      "confidence": "medium"
+    },
+    "renderTiming": {
+      "unit": "style recalcs",
+      "higherBetter": false,
+      "winner": "bamboo",
+      "top3": [
+        {
+          "tech": "bamboo",
+          "label": "Bamboo",
+          "value": 1,
+          "ratioToBaseline": 1.0
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 1,
+          "ratioToBaseline": 1.0
+        },
+        {
+          "tech": "emotion",
+          "label": "Emotion",
+          "value": 1,
+          "ratioToBaseline": 1.0
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 1
+      },
+      "why": "One style recalculation per lane, identical to the single-file page, with the sub-millisecond costs inside the same 0.247 ms to 0.813 ms band. Splitting the source changes what runs during render, not what the engine has to match afterwards.",
+      "confidence": "low"
+    },
+    "payload": {
+      "unit": "gz B",
+      "higherBetter": false,
+      "winner": "next-yak-css-nofold",
+      "top3": [
+        {
+          "tech": "next-yak-css-nofold",
+          "label": "next-yak (css prop) foldStatic: false",
+          "value": 7460,
+          "ratioToBaseline": 0.885459940652819
+        },
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 7479,
+          "ratioToBaseline": 0.8877151335311573
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 7790,
+          "ratioToBaseline": 0.9246290801186944
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 8425
+      },
+      "why": "The split is nearly free on the wire, which settles the obvious worry that fragments shared by three modules would be emitted three times. `next-yak` ships 932 gz B of CSS against 918 B on the single-file page and 8,425 B in total against 8,291 B, so `focusRing` and `minTargetSize` reach `controls.tsx`, `text.tsx` and `button.tsx` and are written once. Every lane's JS is byte-identical to the single-file case, since file layout does not change what the library ships.",
+      "confidence": "high"
+    },
+    "nsweep": {
+      "unit": "ms",
+      "higherBetter": false,
+      "winner": "next-yak-css",
+      "top3": [
+        {
+          "tech": "next-yak-css",
+          "label": "next-yak (css prop)",
+          "value": 18.032,
+          "ratioToBaseline": 0.4322976601457614
+        },
+        {
+          "tech": "vanilla",
+          "label": "vanilla (hand-written ceiling)",
+          "value": 18.826,
+          "ratioToBaseline": 0.45133294975067123
+        },
+        {
+          "tech": "cnfast",
+          "label": "cnfast",
+          "value": 25.101,
+          "ratioToBaseline": 0.6017692750287686
+        }
+      ],
+      "baseline": {
+        "tech": "next-yak",
+        "value": 41.712
+      },
+      "why": "At 4,000 tiles the split costs `next-yak` 41.7 ms against 21.9 ms on the single-file page, and it now tracks `next-yak-nofold` at 41.5 ms. Per-element wrapper work sets a slope rather than an offset, so the penalty grows with the size of the page.",
+      "confidence": "high"
+    }
+  },
+  "crossCase": "This is the Example `product-grid` shown above with nothing changed but the file layout: same DOM, same CSS, same 400 products, verified pixel-identical, which is what makes the module boundary the only variable. Read it against the Example `multifile-composition`, which moves the styled primitives and their JSX use sites together into one imported module and therefore keeps folding. Moving a whole component across a file is free; shipping primitives for another module to use is not."
+}

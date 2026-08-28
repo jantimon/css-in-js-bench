@@ -77,10 +77,10 @@ raw emitted output. Since every lane renders identically, the preview is the sam
 for all of them
 
 Every lane is built in production mode (React's prod runtime). The next-yak lanes all use
-published npm packages, in two API flavours (styled and css-prop) across three build
-settings: `next-yak` / `next-yak-css` on 9.6.0, `next-yak-9.7` / `next-yak-css-9.7` on
-9.7.0 (which folds static styles at build time by default), and `next-yak-9.7-nofold` /
-`next-yak-css-9.7-nofold` on 9.7.0 with `foldStatic: false` to keep the runtime path
+published npm packages, in two API flavours (styled and css-prop) across two build
+settings: `next-yak` / `next-yak-css`, which fold static styles at build time, and
+`next-yak-nofold` / `next-yak-css-nofold`, which set `foldStatic: false` to keep the
+runtime path
 
 The report is `BENCHMARK.html` plus a sibling `assets/` folder: screenshots and the
 editor's Shiki-highlighted code files, loaded one at a time via an `<iframe>` (keeps the
@@ -111,15 +111,14 @@ pnpm dev        # author a single cell with HMR
 ### How the next-yak lanes get the library
 
 Every next-yak lane pins a published npm version, so `pnpm install` is all it takes.
-There are three settings, each as a styled + css-prop pair:
+There are two settings, each as a styled + css-prop pair:
 
-- `next-yak` / `next-yak-css` — 9.6.0, the baseline.
-- `next-yak-9.7` / `next-yak-css-9.7` — 9.7.0. It folds statically known styles at build
-  time by default: a static styled usage compiles to a plain element with a `className`,
-  and a static `css` prop becomes a plain `className`, both skipping the runtime wrapper.
-- `next-yak-9.7-nofold` / `next-yak-css-9.7-nofold` — 9.7.0 with `foldStatic: false`
-  passed to `viteYak` in each lane's vite configs, which turns folding off and keeps the
-  runtime path, so the two 9.7.0 pairs isolate what folding is worth.
+- `next-yak` / `next-yak-css` — folding on, the default. A static styled usage compiles to
+  a plain element with a `className`, and a static `css` prop becomes a plain `className`,
+  both skipping the runtime wrapper.
+- `next-yak-nofold` / `next-yak-css-nofold` — `foldStatic: false` passed to `viteYak` in
+  each lane's vite configs, which turns folding off and keeps the runtime path, so the two
+  pairs isolate what folding is worth.
 
 Within a pair, styled vs css-prop syntax is the only difference.
 
@@ -213,7 +212,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 |---|---|---|
 | author | vanilla | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×6: styled + css-prop, on 9.6.0, 9.7.0, 9.7.0 no-fold) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | next-yak (×4: styled + css-prop, folding on and off) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |

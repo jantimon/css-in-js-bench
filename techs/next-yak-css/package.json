@@ -1,17 +1,16 @@
 {
   "name": "next-yak-css",
-  "description": "next-yak css-prop 9.6.0",
+  "description": "next-yak (css prop)",
   "private": true,
   "type": "module",
   "bench": {
-    "color": "#8b5cf6",
+    "color": "#d946ef",
     "buildPlugin": "yak",
     "appStylesheet": null,
-    "cssKind": "extracted",
-    "defaultOff": true
+    "cssKind": "extracted"
   },
   "dependencies": {
-    "next-yak": "^9.6.0",
+    "next-yak": "9.7.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }
