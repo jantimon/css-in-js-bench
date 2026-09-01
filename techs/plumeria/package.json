@@ -5,7 +5,7 @@
   "type": "module",
   "bench": {
     "color": "#ea580c",
-    "buildPlugin": null,
+    "buildPlugin": "plumeria",
     "appStylesheet": null,
     "cssKind": "atomic"
   },
