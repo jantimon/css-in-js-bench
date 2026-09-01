@@ -1,6 +1,6 @@
 {
   "name": "plumeria",
-  "description": "Plumeria (classStyle prop, zero runtime)",
+  "description": "Plumeria (classStyle prop)",
   "private": true,
   "type": "module",
   "bench": {
