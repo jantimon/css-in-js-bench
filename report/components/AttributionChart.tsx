@@ -13,14 +13,15 @@ export interface AttrRow {
 }
 
 const BUCKET_DEFS = [
-  ["react", "#4c6ef5", "react-dom (the shared floor)"],
+  ["react", "#4c6ef5", "react-dom / solid (the framework floor)"],
   ["lib", "#e8590c", "styling library runtime"],
   ["component", "#868e96", "your component"],
 ] as const;
 
 // "Where the time goes" — per lane, a horizontal bar split into the median render's
-// per-bucket self-time (§ attribution). react-dom is the floor every lane shares; the
-// spread is the library's own per-render work. Reused for the SSR render split and the two
+// per-bucket self-time (§ attribution). The UI framework — react-dom for most lanes, solid
+// for the Solid ones — is the floor every lane of that framework shares; the spread is the
+// library's own per-render work. Reused for the SSR render split and the two
 // browser splits (hydration / interaction) — only the `other` label differs (node vs
 // browser). Sorted fastest-first; each row carries data-tech for the global filter.
 export function AttributionChart({ rows, otherLabel = "node / gc / unattributed" }: { rows: AttrRow[]; otherLabel?: string }) {

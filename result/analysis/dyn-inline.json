@@ -1,293 +1,293 @@
 {
-  "schemaVersion": 1,
-  "caseId": "dyn-inline",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:53:48Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "With every lane on a plain inline style, next-yak included, only the element-level fold is left to measure: next-yak and hand-written vanilla finish within 4%, and next-yak's own no-fold lane costs 1.41×.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1565251,
-          "ratioToBaseline": 1.0381527955657754
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1507727,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 1068708,
-          "ratioToBaseline": 0.7088206286681873
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1507727
-      },
-      "why": "Three lanes, one technique: a static class plus an inline style for the moving value. Nothing here turns on how a library handles dynamic values, so what remains is the per-element path. `vanilla` at 1.57M renders/s and `next-yak` at 1.51M finish within 4% of each other, and `next-yak-nofold` at 1.07M is that same source with folding off, pricing the wrapper at 1.41×. Set against the Example `dyn-fair`, where the same lane runs at 724,000 through a CSS custom property, this cell prices next-yak's variable path at 2.08× rather than its dynamic-value support in general.",
-      "confidence": "high"
+ "schemaVersion": 1,
+ "caseId": "dyn-inline",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "With the value on a plain inline style and the class fully static, `@yak/solid` folds and matches hand-written Solid at 2.16M renders/s — the control that isolates its CSS-variable path as the whole cost.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 2170000,
+     "ratioToBaseline": 1.39
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1238,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1203,
-          "ratioToBaseline": 0.9717285945072698
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 926,
-          "ratioToBaseline": 0.7479806138933764
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1238
-      },
-      "why": "`next-yak` at 1,238 req/s and `vanilla` at 1,203 finish within 3% of each other, and `next-yak-nofold` at 926 shows the wrapper under load.",
-      "confidence": "high"
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 2160000,
+     "ratioToBaseline": 1.39
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 0.785,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 0.805,
-          "ratioToBaseline": 1.0254777070063694
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 1.018,
-          "ratioToBaseline": 1.2968152866242038
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 0.785
-      },
-      "why": "`next-yak` at 0.785 ms and `vanilla` at 0.805 ms tie within spread, while `next-yak-nofold` at 1.02 ms carries 0.321 ms of lib self-time for the wrapper. With the styling strategy held constant across all three lanes, that wrapper is the only difference left to measure.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 47,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 48.7,
-          "ratioToBaseline": 1.0361702127659576
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 49.5,
-          "ratioToBaseline": 1.053191489361702
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 47
-      },
-      "why": "All three lanes hydrate between 47.0 ms and 49.5 ms. An inline style asks nothing of the client sheet, so the axis is flat by construction.",
-      "confidence": "low"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 7.2,
-          "ratioToBaseline": 0.9230769230769231
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 7.7,
-          "ratioToBaseline": 0.9871794871794872
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 7.8,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.8
-      },
-      "why": "7.2 ms to 7.8 ms across the three lanes, indistinguishable at this spread.",
-      "confidence": "low"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 61.9,
-          "ratioToBaseline": 0.995176848874598
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 62.2,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 66.5,
-          "ratioToBaseline": 1.0691318327974275
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 62.2
-      },
-      "why": "61.9 ms to 66.5 ms with `vanilla` first. Layout dominates a mount and all three lanes produce the same DOM.",
-      "confidence": "low"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane at 0.124 ms to 0.132 ms. Inline styles never enter selector matching.",
-      "confidence": "low"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 5502,
-          "ratioToBaseline": 0.8360431545357848
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 6581,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 6643,
-          "ratioToBaseline": 1.0094210606290837
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 6581
-      },
-      "why": "`vanilla` at 5,502 gz B ships no JS at all. `next-yak` adds 1,152 B of wrapper runtime and `next-yak-nofold` 1,216 B. The thousand inline styles dominate the HTML equally for all three.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 2.624,
-          "ratioToBaseline": 0.9479768786127168
-        },
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 2.768,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 3.711,
-          "ratioToBaseline": 1.340679190751445
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 2.768
-      },
-      "why": "`vanilla` at 2.62 ms and `next-yak` at 2.77 ms hold the same line to the largest size, and `next-yak-nofold` at 3.71 ms diverges because its wrapper runs per element.",
-      "confidence": "high"
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1620000,
+     "ratioToBaseline": 1.04
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1560000
+   },
+   "why": "With no interpolation in the template the styled component folds to a plain element, so `yak-solid` reaches 2.16M renders/s against `vanilla-solid`'s 2.17M — a gap of half a percent, well inside the spread. `next-yak` at 1.56M does the same on React. `next-yak-nofold` at 1.12M is the price of keeping the wrapper for a component that has nothing dynamic left to do.",
+   "confidence": "low"
   },
-  "crossCase": "The control for the Examples `dyn-translate` and `dyn-fair` shown above. Holding the technique constant across every lane isolates one number: `next-yak` renders 1.51M here against 724,000 in `dyn-fair`, so its CSS custom-property path costs 2.08× against the inline style other lanes write by hand. That is the honest price of the feature, and it stands against what the feature removes — the naive pattern in `dyn-translate`, where `goober` falls to 166,000 renders/s and hydration takes 1.27 s because nobody wrote the split."
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1190,
+     "ratioToBaseline": 1.02
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1170,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1170,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1170
+   },
+   "why": "`vanilla` at 1,190 req/s, `next-yak` at 1,170, `vanilla-solid` at 1,170 and `yak-solid` at 1,120 finish inside each other's spread — a four-way tie where the styling library has been compiled out of the request entirely.",
+   "confidence": "medium"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 0.688,
+     "ratioToBaseline": 0.774
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 0.708,
+     "ratioToBaseline": 0.796
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 0.889,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 0.889
+   },
+   "why": "`vanilla-solid` renders in 0.688 ms and `yak-solid` in 0.708 ms with 0.012 ms of lib and 0.255 ms of framework, against 11.3 ms with 9.58 ms of framework on the CSS-variable path. `next-yak` at 0.889 ms still books 0.238 ms of lib, so its fold leaves slightly more behind than yak-solid's does.",
+   "confidence": "medium"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 30.7,
+     "ratioToBaseline": 0.615
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 31.1,
+     "ratioToBaseline": 0.623
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 49.9,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 49.9
+   },
+   "why": "`vanilla-solid` at 30.7 ms and `yak-solid` at 31.1 ms are indistinguishable, and both React lanes sit near 50 ms. With the element folded there is nothing of the library left for hydration to walk.",
+   "confidence": "low"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 6.3,
+     "ratioToBaseline": 0.851
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 7.4,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 7.5,
+     "ratioToBaseline": 1.01
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7.4
+   },
+   "why": "`yak-solid` at 6.3 ms leads with `vanilla-solid` and `vanilla` at 7.5 ms — the narrowest spread of the trio, because with the value on an inline style the update is one attribute write for every lane.",
+   "confidence": "low"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 22,
+     "ratioToBaseline": 0.341
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 22.7,
+     "ratioToBaseline": 0.352
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 64.1,
+     "ratioToBaseline": 0.994
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 64.5
+   },
+   "why": "`vanilla-solid` mounts in 22.0 ms and `yak-solid` in 22.7 ms, roughly a third of the React lanes' 64 ms. A folded element with an inline style is DOM construction and nothing else.",
+   "confidence": "low"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane. An inline style never touches the sheet, so this is the cheapest shape a dynamic value can take for the style engine.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 5500,
+     "ratioToBaseline": 0.836
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 6580,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-nofold",
+     "label": "next-yak (styled API) foldStatic: false",
+     "value": 6640,
+     "ratioToBaseline": 1.01
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 6580
+   },
+   "why": "`vanilla` at 5,502 gz B is the floor and `next-yak` adds 1,152 B of runtime. `yak-solid` at 11,852 B ships the smallest CSS in the case, 67 B, and the largest HTML, 8,073 B, which is Solid's hydration keys on a thousand dots.",
+   "confidence": "high"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1.75,
+     "ratioToBaseline": 0.648
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1.84,
+     "ratioToBaseline": 0.683
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 2.69,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 2.69
+   },
+   "why": "`yak-solid` holds 1.75 ms at 4,000 instances and `vanilla-solid` 1.84 ms, both flat. The same lane bends to 39.1 ms once the value goes through a CSS variable, which is the sharpest statement of the cost in the suite.",
+   "confidence": "medium"
+  }
+ },
+ "crossCase": "The control for the Examples `dyn-translate` and `dyn-fair`. On React the CSS variable costs `next-yak` about half: 1.56M renders/s here against 792,000 there. On Solid it costs nineteen times: `yak-solid` reads 2.16M here and 113,000 there, with 0.255 ms of framework time in this case against 9.58 ms in the other. Same library, same value, and the only difference is whether the compiler could fold the element away."
 }

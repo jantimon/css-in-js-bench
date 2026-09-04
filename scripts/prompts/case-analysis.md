@@ -63,11 +63,29 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
    ships the optimization as a feature; elsewhere the same result costs developer discipline
    on every dynamic value. State both halves: what parity costs the developer, and that the
    naive pattern is what you get when nobody pays that cost.
-7. `provenance`: gitSha + runTimestamp from `result/meta.json` / BENCHMARK.json meta,
+7. CROSS-FRAMEWORK LANES. Two lanes render Solid 2, not React: `yak-solid` (@yak/solid,
+   styled API) and its floor `vanilla-solid` (default-off). They run the same workloads, so
+   they rank in the same lists, but three of their numbers are not like-for-like and saying
+   so is part of the job:
+   - HTML bytes. Solid stamps a unique `_hk` hydration key on every element, and unique
+     strings do not compress, so both Solid lanes carry ~2.5-3x the gzipped HTML of any
+     React lane. That is Solid's hydration format, identical in both, and never a yak
+     result. If payload prose ranks a Solid lane, name this as the cause.
+   - JS bytes. The marginal figure is measured over `vanilla-solid`, not `vanilla`. Solid
+     tree-shakes per app, so a Solid lane's marginal JS also carries the parts of
+     `@solidjs/web` only the styling library pulls in.
+   - INP. The React lanes re-render with unchanged props and write nothing to the DOM; the
+     Solid lanes' signal bump changes values, so their bindings really do update. Compare
+     `yak-solid` against `vanilla-solid` there and say why the React column is not the same
+     workload.
+   The framework floor in the CPU attribution is react-dom for the React lanes and
+   solid-js/@solidjs/* for the Solid ones — the `react` bucket means "the framework", so
+   read a Solid lane's floor as Solid's own work.
+8. `provenance`: gitSha + runTimestamp from `result/meta.json` / BENCHMARK.json meta,
    generatedAt = now (ISO), model = your model id.
-8. Numbers in prose: round to 3 significant digits, always with units. Never invent a number
+9. Numbers in prose: round to 3 significant digits, always with units. Never invent a number
    that is not derivable from the inputs.
-9. Prose hygiene — write like a sharp human editor, not a model:
+10. Prose hygiene — write like a sharp human editor, not a model:
    - Active voice; concrete numbers, mechanisms and function names beat abstractions.
    - No trailing "-ing" analysis clauses ("…, highlighting/underscoring/taking X to Y").
      Say what happens in a full clause instead.

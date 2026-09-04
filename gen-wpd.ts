@@ -173,10 +173,14 @@ const COMPONENT_PACKAGES = new Set([
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
   "bamboo", // lib is @bamboocss/* (+ generated styled-system)
   "next-yak-css", // lib is next-yak (no npm package named next-yak-css)
-  "vanilla", // no styling library
+  "yak-solid", // lib is @yak/solid (no npm package named yak-solid)
+  "vanilla", "vanilla-solid", // no styling library
 ]);
 function bucketForPackage(pkg: string): "react" | "lib" | "component" | "other" {
+  // The `react` bucket is the UI FRAMEWORK's own self-time — the floor every lane of
+  // that framework shares. For the Solid lanes that floor is solid-js + @solidjs/*.
   if (/^(react-dom|react|scheduler|react-is)$/.test(pkg)) return "react";
+  if (/^(solid-js|@solidjs\/.+)$/.test(pkg)) return "react";
   if (COMPONENT_PACKAGES.has(pkg)) return "component";
   if (/^\(node\)|^\(native\)|^\(program\)|^\(gc\)/.test(pkg)) return "other";
   // Every real styling package (@emotion/*, goober, stylis, styled-system, ...) AND wpd's

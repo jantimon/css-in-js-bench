@@ -1,293 +1,293 @@
 {
-  "schemaVersion": 1,
-  "caseId": "tabs",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:52:49Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "A full design-system Tabs is where a dynamic prop closure blocks folding: `styled(TabInternal)` keeps its runtime call, and next-yak's styled lane runs at half its own css-prop sibling.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 160650,
-          "ratioToBaseline": 1.9889318080522953
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 157604,
-          "ratioToBaseline": 1.951220720051503
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 144121,
-          "ratioToBaseline": 1.7842940622988164
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 80772
-      },
-      "why": "The tab group carries a state matrix, responsive typography and an animated underline through CSS anchor positioning, and the active state arrives as a prop. `next-yak-css` at 161,000 renders/s and `vanilla` at 158,000 lead, both emitting plain elements with one class each. The styled lane cannot follow: `Tab` compiles to `styled(TabInternal)(\"yWZDb8a7\", ({ isActive }) => …)`, and a dynamic interpolation over a custom component leaves the runtime call in place, so `next-yak` lands at 80,800 and only 1.11× above its own `foldStatic: false` lane. Lanes that name classes after their declarations pay in React instead of in the library: `bamboo` books 0.034 ms of lib self-time and still totals 2.95 ms, 2.67 ms of it React writing long class attributes. `emotion` at 22,800 re-hashes the state matrix for every tab.",
-      "confidence": "high"
+ "schemaVersion": 1,
+ "caseId": "tabs",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "The suite's hardest CSS compiles away on every build-time lane, but `styled(TabInternal)` denies `@yak/solid` the fold and costs it 12.9 of its 16.0 ms per render in Solid's component machinery.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 192000,
+     "ratioToBaseline": 2.33
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 730,
-          "ratioToBaseline": 1.6367713004484306
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 684,
-          "ratioToBaseline": 1.5336322869955157
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 516,
-          "ratioToBaseline": 1.15695067264574
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 446
-      },
-      "why": "`vanilla` at 730 req/s and `next-yak-css` at 684 lead. `next-yak` at 446 and `next-yak-nofold` at 362 finish close together, which is the render story again: with the fold blocked there is little left for it to remove. `panda-props` at 88 req/s is the floor.",
-      "confidence": "high"
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 160000,
+     "ratioToBaseline": 1.93
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1.282,
-          "ratioToBaseline": 0.5728328865058088
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1.373,
-          "ratioToBaseline": 0.6134941912421805
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 1.486,
-          "ratioToBaseline": 0.6639857015192135
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 2.238
-      },
-      "why": "`next-yak-css` at 1.28 ms and `vanilla` at 1.37 ms hold the floor with 0.000 ms of lib self-time. `next-yak` needs 2.24 ms with 0.847 ms of lib time, because the dynamic `isActive` interpolation keeps the runtime `styled()` call alive. Further down the cost leaves the library entirely: `bamboo` spends 2.67 ms of its 2.95 ms inside React, and `panda-props` books 6.88 ms as component self-time.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 45.1,
-          "ratioToBaseline": 0.8706563706563707
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 45.3,
-          "ratioToBaseline": 0.8745173745173745
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 45.8,
-          "ratioToBaseline": 0.8841698841698842
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 51.8
-      },
-      "why": "Six lanes hydrate between 45.1 ms and 47.6 ms. `goober` at 188 ms and `styled-components` at 190 ms need four times that, rebuilding a full state matrix in the client before React can attach.",
-      "confidence": "high"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css-nofold",
-      "top3": [
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 7,
-          "ratioToBaseline": 0.9333333333333333
-        },
-        {
-          "tech": "panda",
-          "label": "Panda (css fn)",
-          "value": 7.2,
-          "ratioToBaseline": 0.9600000000000001
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 7.3,
-          "ratioToBaseline": 0.9733333333333333
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.5
-      },
-      "why": "Ten lanes answer a tab switch between 7.0 ms and 8.0 ms. `styled-components` needs 11.8 ms, `goober` 13.6 ms, `panda-props` 23.7 ms and `emotion` 26.5 ms, all of them re-deriving the state matrix on the tab that changed.",
-      "confidence": "high"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 88,
-          "ratioToBaseline": 0.9062821833161689
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 88.2,
-          "ratioToBaseline": 0.9083419155509784
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 90.2,
-          "ratioToBaseline": 0.9289392378990732
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 97.1
-      },
-      "why": "Eight lanes mount between 88.0 ms and 97.1 ms. `goober` at 188 ms, `styled-components` at 192 ms and `emotion` at 215 ms build their sheets during the mount itself.",
-      "confidence": "high"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane, and its cost splits in two: 0.871 ms to 1.02 ms for twelve lanes, then 1.66 ms to 1.71 ms for `emotion`, `styled-components` and `goober`, the three that inject their sheet at render time.",
-      "confidence": "medium"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 2690,
-          "ratioToBaseline": 0.7661634861862717
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 2694,
-          "ratioToBaseline": 0.7673027627456566
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 2707,
-          "ratioToBaseline": 0.7710054115636571
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 3511
-      },
-      "why": "`vanilla` at 2,690 gz B and `next-yak-css` at 2,707 B set the floor, with `next-yak` adding 805 B for its runtime. The gap to the rest is the widest in the suite: `cnfast` at 22.0 kB and `tailwind-merge` at 21.1 kB carry both a merge runtime and long class lists in the markup, roughly eight times what the leading lanes ship for the same 150 tab groups.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 29.132,
-          "ratioToBaseline": 0.4395027457606662
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 29.57,
-          "ratioToBaseline": 0.44611067527608467
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 30.156,
-          "ratioToBaseline": 0.4549514211574437
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 66.284
-      },
-      "why": "Scaling the tab count separates static resolution from everything else. `vanilla` at 29.1 ms, `stylex` at 29.6 ms and `next-yak-css` at 31.2 ms hold a line, while `next-yak` reaches 66.3 ms because the blocked fold leaves a runtime call per tab. `panda-props` at 279 ms shows what per-instance object resolution does to a slope.",
-      "confidence": "high"
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 156000,
+     "ratioToBaseline": 1.89
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 82500
+   },
+   "why": "`vanilla-solid` at 192,000 renders/s leads, with `next-yak-css` at 160,000 and `vanilla` at 156,000. `next-yak` at 82,500 keeps one wrapper per tab, which the css prop avoids by compiling to a plain class. `yak-solid` at 11,100 is the case's outlier: `Tab` is `styled(TabInternal)`, so folding never applies, and 12.9 of its 16.0 ms per render sits in `@solidjs/signals` and `@solidjs/web` building a component and a reactive scope for every tab. `cnfast` at 72,200 and `cn` at 71,300 resolve a ~40-token list per tab from cache.",
+   "confidence": "high"
   },
-  "crossCase": "The Example `multifile-composition` shown below is this exact workload with the styled primitives moved into an imported `parts.tsx`, and nothing meaningful moves: `next-yak` runs 80,800 here against 85,900 there, a difference inside the run-to-run spread, because that module keeps the primitives and their JSX use sites together, which is all folding requires. Contrast the Example `multifile-shop`, where primitives ship for another module's JSX to use and `next-yak` gives up 43% of its throughput."
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 752,
+     "ratioToBaseline": 1.73
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 721,
+     "ratioToBaseline": 1.66
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 684,
+     "ratioToBaseline": 1.58
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 434
+   },
+   "why": "`vanilla-solid` at 752 req/s and `vanilla` at 721 lead, `next-yak-css` at 684 close behind. `yak-solid` at 72 req/s is last, since the per-tab component instantiation runs inside every request.",
+   "confidence": "low"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1.13,
+     "ratioToBaseline": 0.367
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1.27,
+     "ratioToBaseline": 0.413
+    },
+    {
+     "tech": "stylex",
+     "label": "StyleX without CSS layers (:not() specificity hack)",
+     "value": 1.34,
+     "ratioToBaseline": 0.435
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 3.08
+   },
+   "why": "`vanilla-solid` at 1.13 ms leads, then `stylex` at 1.34 ms and `next-yak-css` at 1.43 ms, all with an empty lib bucket — the css prop compiles to a class, StyleX resolved at build time, and the hand-written lane never had a library. `next-yak` at 3.08 ms books 0.739 ms of lib for its per-tab wrapper. `emotion` at 22.2 ms books 16.9 ms of its own: the full state matrix, serialized per tab.",
+   "confidence": "medium"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 41.8,
+     "ratioToBaseline": 0.784
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 47.3,
+     "ratioToBaseline": 0.887
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 47.4,
+     "ratioToBaseline": 0.889
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 53.3
+   },
+   "why": "`vanilla-solid` at 41.8 ms leads and `next-yak-css` at 47.3 ms heads a tight React field. `yak-solid` at 118 ms walks the same unfolded wrappers it built on the server, and `goober` at 195 ms and `styled-components` at 193 ms inject a large sheet while attaching.",
+   "confidence": "medium"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "stylex",
+   "top3": [
+    {
+     "tech": "stylex",
+     "label": "StyleX without CSS layers (:not() specificity hack)",
+     "value": 6.6,
+     "ratioToBaseline": 0.835
+    },
+    {
+     "tech": "cn",
+     "label": "cn (shadcn-ui)",
+     "value": 6.6,
+     "ratioToBaseline": 0.835
+    },
+    {
+     "tech": "panda",
+     "label": "Panda (css fn)",
+     "value": 7.1,
+     "ratioToBaseline": 0.899
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7.9
+   },
+   "why": "`cn` at 6.6 ms and `stylex` at 6.6 ms lead, and most lanes answer between 7 and 9 ms. The Solid lanes read 18.5 ms and 79.2 ms because their signal bump changes the group's tab count, so the list is rebuilt rather than left alone — the React pass re-renders the same tabs and writes nothing. `emotion` at 27.6 ms and `panda-props` at 25.6 ms are slow on mechanism.",
+   "confidence": "low"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 29.5,
+     "ratioToBaseline": 0.298
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 92.7,
+     "ratioToBaseline": 0.937
+    },
+    {
+     "tech": "stylex",
+     "label": "StyleX without CSS layers (:not() specificity hack)",
+     "value": 92.7,
+     "ratioToBaseline": 0.937
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 98.9
+   },
+   "why": "`vanilla-solid` mounts in 29.5 ms against 92.7 ms for `vanilla` — Solid builds this DOM from cloned templates while React constructs a fiber tree for 16 elements per group. `yak-solid` at 99.6 ms gives that advantage back to the per-tab component instantiation. `emotion` at 224 ms and `styled-components` at 201 ms inject before the first paint.",
+   "confidence": "high"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane at roughly 0.87 ms, the highest in the suite: the anchor-positioned underline and the `@supports` fallbacks make the match expensive, and every lane pays it equally.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 2690,
+     "ratioToBaseline": 0.766
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 2690,
+     "ratioToBaseline": 0.767
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 2710,
+     "ratioToBaseline": 0.771
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 3510
+   },
+   "why": "`vanilla` at 2,690 gz B and the next-yak css-prop lanes at roughly 2,700 B are the floor. `yak-solid` reaches 8,303 B with 3,936 B of HTML — 16 elements per group, each carrying a hydration key. The utility lanes are the heavy end at 21.1–23.5 kB, `cn` highest, since a ~40-token class list per tab lands in both the markup and the merge runtime.",
+   "confidence": "medium"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 24.9,
+     "ratioToBaseline": 0.379
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 29.4,
+     "ratioToBaseline": 0.447
+    },
+    {
+     "tech": "stylex-layers",
+     "label": "StyleX",
+     "value": 30,
+     "ratioToBaseline": 0.457
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 65.7
+   },
+   "why": "`vanilla-solid` holds 24.9 ms at the largest size with `vanilla` at 29.4 ms; `next-yak` reaches 65.7 ms for its per-tab wrapper. `yak-solid` at 503 ms has the steepest line in the suite, one component instantiation per tab all the way up.",
+   "confidence": "high"
+  }
+ },
+ "crossCase": "Paired with the Example `multifile-composition`, which is this exact workload with the primitives moved to an imported module. `next-yak` moves 82,500 to 81,000 renders/s and `yak-solid` 11,100 to 10,000, so the module boundary costs both of them little here — the fold was already lost to `styled(TabInternal)` inside a single file. What defeats folding in this component is the component target, not the file layout."
 }

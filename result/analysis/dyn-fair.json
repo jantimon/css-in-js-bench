@@ -1,293 +1,293 @@
 {
-  "schemaVersion": 1,
-  "caseId": "dyn-fair",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:53:48Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "With every lane on its own best practice the field converges near 1.6M renders/s, and next-yak's automatic CSS-variable path costs 2.08× against the inline style the other lanes write by hand.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "cnfast",
-      "top3": [
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1618233,
-          "ratioToBaseline": 2.235925233025028
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1579988,
-          "ratioToBaseline": 2.1830818164484027
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1575629,
-          "ratioToBaseline": 2.1770589519469645
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 723742
-      },
-      "why": "Lanes without native dynamic-value support split the static class from the moving value by hand, and it works: `cnfast` reaches 1.62M renders/s from 574,000 on the naive pattern, `panda` 1.00M from 222,000, `goober` 945,000 from 166,000. `next-yak-css` sits with them at 1.54M without anyone writing that split, because the compiler performs it. The styled lane takes a different route and pays for it: `next-yak` at 724,000 passes the value through a CSS custom property on a wrapper, 0.783 ms of lib self-time against 0.000 ms for the css prop. The convergence is real, and so is what reaching it costs — a manual optimization repeated for every dynamic value in the codebase.",
-      "confidence": "high"
+ "schemaVersion": 1,
+ "caseId": "dyn-fair",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "Given each ecosystem's documented answer to a high-cardinality value the field converges, `cn` returns to parity with `cnfast`, and only `@yak/solid` stays behind — its reactive wrapper is not something best practice can hand-write away.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 2190000,
+     "ratioToBaseline": 2.76
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1347,
-          "ratioToBaseline": 1.8892005610098177
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1221,
-          "ratioToBaseline": 1.7124824684431978
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1207,
-          "ratioToBaseline": 1.6928471248246844
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 713
-      },
-      "why": "`next-yak-css` at 1,347 req/s leads. The hand-written split rescues the runtime lanes under load as well: `styled-components` reaches 561 req/s against 186 on the naive pattern, and `goober` 674 against 152.",
-      "confidence": "high"
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1660000,
+     "ratioToBaseline": 2.09
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 0.756,
-          "ratioToBaseline": 0.5662921348314607
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 0.762,
-          "ratioToBaseline": 0.5707865168539326
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 0.791,
-          "ratioToBaseline": 0.5925093632958802
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1.335
-      },
-      "why": "`next-yak-css` at 0.756 ms and `bamboo` at 0.762 ms hold the floor. `next-yak` at 1.34 ms is the slowest compile-time lane in the case, and what it pays for is the custom-property wrapper rather than any per-instance serialization. `emotion` at 2.46 ms stays the ceiling even with the hand-written split applied.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css-nofold",
-      "top3": [
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 46.5,
-          "ratioToBaseline": 0.9356136820925552
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 46.9,
-          "ratioToBaseline": 0.9436619718309859
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 47.6,
-          "ratioToBaseline": 0.9577464788732394
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 49.7
-      },
-      "why": "The naive pattern's hydration cliff disappears: `goober` needs 81.0 ms here against 1,265 ms on `dyn-translate`. Eight lanes finish between 46.5 ms and 49.9 ms.",
-      "confidence": "high"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "goober",
-      "top3": [
-        {
-          "tech": "goober",
-          "label": "Goober",
-          "value": 6.5,
-          "ratioToBaseline": 0.8441558441558441
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 6.8,
-          "ratioToBaseline": 0.8831168831168831
-        },
-        {
-          "tech": "panda",
-          "label": "Panda (css fn)",
-          "value": 6.8,
-          "ratioToBaseline": 0.8831168831168831
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.7
-      },
-      "why": "Fourteen lanes answer between 6.5 ms and 7.8 ms, flat at this spread. Changing a value on one element is cheap however the value is authored.",
-      "confidence": "low"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 60,
-          "ratioToBaseline": 0.9244992295839752
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 63,
-          "ratioToBaseline": 0.970724191063174
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 63.1,
-          "ratioToBaseline": 0.9722650231124806
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 64.9
-      },
-      "why": "`next-yak-css` at 60.0 ms leads a band running to 76.3 ms for twelve lanes. `goober` mounts in 79.2 ms against 1,241 ms on the naive pattern, the same rescue hydration shows.",
-      "confidence": "high"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane, 0.106 ms to 0.171 ms. Moving the value out of the selector holds the engine's matching work constant.",
-      "confidence": "low"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 5502,
-          "ratioToBaseline": 0.8614372945044622
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 5565,
-          "ratioToBaseline": 0.8713010803193988
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 5583,
-          "ratioToBaseline": 0.8741193048379521
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 6387
-      },
-      "why": "`vanilla` at 5,502 gz B is the floor and the compile-time lanes sit just above it. The hand-written split fixes the wire too: `emotion` ships 18.4 kB here against 39.4 kB on the naive pattern and `styled-components` 18.9 kB against 35.5 kB, because one static rule replaces a thousand unique ones.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 2.582,
-          "ratioToBaseline": 0.48680241327300144
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 2.701,
-          "ratioToBaseline": 0.5092383107088989
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 2.711,
-          "ratioToBaseline": 0.5111236802413273
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 5.304
-      },
-      "why": "`next-yak-css` at 2.58 ms and `vanilla` at 2.70 ms hold a flat line to the largest size, with the utility lanes joining at 2.71 ms and 2.79 ms. `next-yak` at 5.30 ms carries its custom-property cost as a slope, and `emotion` at 9.63 ms stays the steepest.",
-      "confidence": "high"
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 1650000,
+     "ratioToBaseline": 2.08
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 792000
+   },
+   "why": "`vanilla-solid` leads at 2.19M renders/s. Given best practice the recoveries are large: `cn` reaches 1.60M from 243,000 and `tailwind-merge` 1.55M from 477,000, both by hand-splitting the value out of the class, and `cn` returns to within 3% of `cnfast`'s 1.64M. `next-yak` at 792,000 and `yak-solid` at 113,000 are unchanged from the naive case, since the CSS-variable path is what they already compiled to. That parity is the point on React and the problem on Solid: 9.58 of yak-solid's 11.3 ms is framework work for a per-element memo.",
+   "confidence": "high"
   },
-  "crossCase": "The trio reads as one argument. The Example `dyn-translate` shown above is the naive pattern, what a codebase produces when nobody optimizes: `goober` at 166,000 renders/s and a 1.27 s hydration. This case is every lane at its best, and for a library without native support that best is hand-written, the developer splitting static class from inline style per component, for every dynamic value, indefinitely. next-yak ships that separation as a compiler feature instead. The Example `dyn-inline` shown below removes the last variable by putting every lane, next-yak included, on a plain inline style, and `next-yak` renders 1.51M there against 724,000 here, which prices its CSS-variable path at 2.08×."
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "next-yak-css",
+   "top3": [
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 1280,
+     "ratioToBaseline": 1.87
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1200,
+     "ratioToBaseline": 1.74
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1170,
+     "ratioToBaseline": 1.7
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 685
+   },
+   "why": "`next-yak-css` at 1,280 req/s leads with `vanilla` at 1,200; `cnfast` at 1,160, `vanilla-solid` at 1,170 and `cn` at 1,090 arrive there by hand-written discipline. `yak-solid` at 94 req/s is unchanged from the naive case.",
+   "confidence": "medium"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 0.714,
+     "ratioToBaseline": 0.372
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 0.736,
+     "ratioToBaseline": 0.384
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 0.9,
+     "ratioToBaseline": 0.469
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1.92
+   },
+   "why": "`vanilla-solid` at 0.714 ms and `next-yak-css` at 0.736 ms are the floor. `cn` falls to 0.312 ms of lib self-time from 4.20 ms in the naive case, and `goober` to 0.489 ms from 6.18 ms — the two clearest single measurements of what the hand-written workaround buys. `yak-solid` at 11.3 ms is again 85% framework.",
+   "confidence": "medium"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 31.4,
+     "ratioToBaseline": 0.616
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 47.4,
+     "ratioToBaseline": 0.929
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 47.5,
+     "ratioToBaseline": 0.931
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 51
+   },
+   "why": "`vanilla-solid` at 31.4 ms leads, the React lanes cluster near 48 ms, and `yak-solid` at 95.4 ms rebuilds its per-element memos. `goober` at 86.1 ms is back with the field, having stopped inserting a rule per value.",
+   "confidence": "high"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "panda-props",
+   "top3": [
+    {
+     "tech": "panda-props",
+     "label": "Panda (style props)",
+     "value": 6.9,
+     "ratioToBaseline": 0.986
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 7,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 7.1,
+     "ratioToBaseline": 1.01
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7
+   },
+   "why": "The React field is flat between 6.9 ms and 9.5 ms, and `cn` at 7.3 ms is back beside `cnfast` — the 17.0 ms it paid on the naive case is gone with the arbitrary value. `vanilla-solid` at 7.1 ms is unremarkable here.",
+   "confidence": "low"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 22.1,
+     "ratioToBaseline": 0.331
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 63.1,
+     "ratioToBaseline": 0.945
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 63.3,
+     "ratioToBaseline": 0.948
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 66.8
+   },
+   "why": "`vanilla-solid` mounts in 22.1 ms and the React lanes cluster between 63 ms and 96 ms — with the value on an inline style there is no sheet to inject, so `goober` lands at 82.4 ms instead of 1,290 ms.",
+   "confidence": "high"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane. Every lane in this case ends with a static class plus an inline value, which is the shape the style engine handles in one match.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 5500,
+     "ratioToBaseline": 0.861
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 5570,
+     "ratioToBaseline": 0.871
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 5580,
+     "ratioToBaseline": 0.874
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 6390
+   },
+   "why": "`vanilla` at 5,502 gz B is the floor and the CSS column collapses for everyone: `goober` ships 189 B against 9,145 B in the naive case, and the utility lanes drop about 5 kB each once the arbitrary-value utilities stop being generated. `cn` at 18,436 B remains the heaviest, 13,054 B of it library JS.",
+   "confidence": "medium"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1.77,
+     "ratioToBaseline": 0.318
+    },
+    {
+     "tech": "cnfast",
+     "label": "cnfast",
+     "value": 2.66,
+     "ratioToBaseline": 0.478
+    },
+    {
+     "tech": "tailwind-merge",
+     "label": "tailwind-merge",
+     "value": 2.68,
+     "ratioToBaseline": 0.481
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 5.57
+   },
+   "why": "`vanilla-solid` holds 1.77 ms at 4,000 instances, `cnfast` 2.66 ms and `tailwind-merge` 2.68 ms — best practice flattens every line that bent in the naive case, `cn` included at 2.80 ms. `yak-solid` at 39.1 ms is the exception, since its slope comes from the wrapper rather than from the value.",
+   "confidence": "high"
+  }
+ },
+ "crossCase": "The best-practice corner of the trio with the Examples `dyn-translate` and `dyn-inline`. The lanes that recover here do it by hand: the developer splits the static class from the dynamic inline style, replicating per component what a compiler could do once. `goober` moves 169,000 to 877,000 renders/s, `tailwind-merge` 477,000 to 1.55M, and `cn` 243,000 to 1.60M — the largest recovery in the case, because its whole loss was the arbitrary-value cache miss. `next-yak` reads 792,000 either way because its CSS-variable path is already the same code, and `yak-solid` reads 113,000 either way for the same reason."
 }
