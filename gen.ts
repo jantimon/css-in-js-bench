@@ -12,11 +12,12 @@
 //   pnpm gen:samples --tech 'next-yak*'          glob over tech dirnames
 //   pnpm gen:samples --case 'realistic-button'   glob over cases
 import { build } from "vite";
-import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
+import { execSync, execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import os from "node:os";
+import { createHash } from "node:crypto";
 import benchConfig from "./bench.config.ts";
 import { gzipSync } from "node:zlib";
 import { createServer } from "node:http";
@@ -416,11 +417,46 @@ async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMet
   });
 }
 
+// Screenshot filenames are content-addressed, so a removed lane or a changed render leaves
+// its old image behind with nothing pointing at it. Sweep result/assets/ against the MERGED
+// path map — which carries every cell, not just the ones this run touched — so a filtered
+// `--tech`/`--case` run prunes as correctly as a full one.
+function pruneAssets(map: Record<string, string[]>): void {
+  const assetsDir = join(RESULT_DIR, "assets");
+  if (!existsSync(assetsDir)) return;
+  const live = new Set(Object.values(map).flat().map((p) => p.replace(/^assets\//, "")));
+  for (const f of readdirSync(assetsDir)) if (!live.has(f)) rmSync(join(assetsDir, f), { force: true });
+}
+
+// PNG is already near-optimal for flat UI screenshots, so lossless re-encoding buys
+// nothing; q90 AVIF is a fifth of the bytes and stays well inside verify.ts's pixel
+// tolerance. avifenc is a `pnpm gen` prerequisite — CI only builds the report, never
+// measures, so it never needs the encoder.
+function encodeAvif(png: Buffer, dest: string): void {
+  const tmp = join(os.tmpdir(), `bench-shot-${process.pid}-${Date.now()}.png`);
+  writeFileSync(tmp, png);
+  try {
+    execFileSync("avifenc", ["-q", "90", "-s", "4", "--jobs", String(os.cpus().length), tmp, dest], { stdio: "pipe" });
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") throw new Error("avifenc not found on PATH — install libavif (`brew install libavif`)");
+    throw e;
+  } finally {
+    unlinkSync(tmp);
+  }
+}
+
 // ---- screenshots: a rendered preview of each cell (visual parity across lanes) ---
 // Serves the SSR { html, css } (no hydration needed for a static preview) in a headless
-// browser and snapshots the rendered root → result/assets/<case>__<tech>.png. Writes a
+// browser and snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
 // path map (measurement-screenshots.json) the report uses to reference the images from a
 // sibling assets/ folder (§10.6). n is capped so the preview stays readable.
+//
+// Every lane of a case renders the SAME pixels — that is the parity invariant verify.ts
+// asserts — so the file is named by a hash of its own bytes and lanes that agree share one
+// image (238 cells collapse to ~20 files). The hash is taken from the PNG the browser
+// produced, not the encoded AVIF: identity belongs to the render, so a change of avifenc
+// version or thread count must not rename every committed file.
 async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, string[]>> {
   const assetsDir = join(RESULT_DIR, "assets");
   mkdirSync(assetsDir, { recursive: true });
@@ -440,8 +476,10 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
         `${css}</style><div id="root">${html}</div>`;
       await page.setContent(doc, { waitUntil: "load" });
       const el = await page.$("#root");
-      const file = `${cell.caseId}__${tech}.png`;
-      await (el ?? page).screenshot({ path: join(assetsDir, file) });
+      const png = await (el ?? page).screenshot();
+      const hash = createHash("sha1").update(png).digest("hex").slice(0, 8);
+      const file = `${cell.caseId}__${hash}.avif`;
+      if (!existsSync(join(assetsDir, file))) encodeAvif(png, join(assetsDir, file));
       out[`${cell.caseId}/${tech}`] = [`assets/${file}`];
     }
     await page.close();
@@ -498,11 +536,7 @@ async function main() {
   // it covers is rewritten), so removed cells fall out of the measurements being run.
   mkdirSync(RESULT_DIR, { recursive: true });
   const unfiltered = !args.tech && !args.case;
-  if (unfiltered)
-    for (const m of measurements) {
-      rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
-      if (m === "screenshots") rmSync(join(RESULT_DIR, "assets"), { recursive: true, force: true }); // drop stale PNGs
-    }
+  if (unfiltered) for (const m of measurements) rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
   console.log(`discovered ${cells.length} cell(s) · ${techs.length} tech(s) × ${cases.length} case(s)`);
   if (CPU_THROTTLE > 1) console.log(`⚙ CPU throttle: ${CPU_THROTTLE}× on hydrate/inp/mount (browser wall-clock passes)`);
 
@@ -555,6 +589,7 @@ async function main() {
         try {
           Object.assign(data, await fn(tech, ssrMod, techCells, caseMeta));
           writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
+          if (measurement === "screenshots") pruneAssets(data as Record<string, string[]>);
           console.log(`  ${tech} · ${measurement}: ${techCells.length} cell(s)`);
         } catch (e) {
           console.error(`  ✗ ${tech} · ${measurement}: ${(e as Error).message.split("\n")[0]} — skipped`);
