@@ -1,10 +1,11 @@
 {
   "host": "Apple M1 Max (arm64)",
   "node": "v24.13.0",
-  "timestamp": "2026-08-28T00:44:33.935Z",
-  "gitSha": "5fdc9c1",
+  "timestamp": "2026-09-04T14:13:23.951Z",
+  "gitSha": "cd59670",
   "techs": [
     "bamboo",
+    "cn",
     "cnfast",
     "emotion",
     "goober",
@@ -19,7 +20,9 @@
     "stylex",
     "stylex-layers",
     "tailwind-merge",
-    "vanilla"
+    "vanilla",
+    "vanilla-solid",
+    "yak-solid"
   ],
   "cases": [
     "btn-variant",

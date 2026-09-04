@@ -432,7 +432,7 @@ async function main() {
                   Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
                     The median server <code>renderToString()</code>, split by CPU self-time from a sampled V8 profile mapped
-                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
+                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): the <b>UI framework</b> (react-dom, or solid for the Solid lanes — the floor every lane of that framework shares), the <b>styling library</b>'s runtime,
                     and <b>your component</b>. <b>other</b> is GC / unattributed native work.
                   </InfoTip>
                 </h3>
@@ -509,8 +509,11 @@ async function main() {
                 <h3 className="chart-title">
                   Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
                   <InfoTip>
-                    Gzipped bytes the browser downloads for this page: the client JS runtime the lane ships (over the bare
-                    React floor), the CSS, and the SSR HTML. Lower is better.
+                    Gzipped bytes the browser downloads for this page: the client JS runtime the lane ships (over its own
+                    bare-framework floor — <code>vanilla</code> for the React lanes, <code>vanilla-solid</code> for the Solid
+                    ones), the CSS, and the SSR HTML. Lower is better. The Solid lanes' HTML carries Solid's per-element
+                    <code>_hk</code> hydration keys, which no React lane needs — compare HTML across frameworks with that in
+                    mind.
                   </InfoTip>
                 </h3>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
@@ -537,7 +540,7 @@ async function main() {
                 Build time — full client build · lower is better
                 <InfoTip>
                   Wall time for a lane's whole <b>production client build</b> — the vite bundle that ships to the browser
-                  (react + react-dom + the styling runtime + every workload's components), the same build measured for page
+                  (the UI framework + the styling runtime + every workload's components), the same build measured for page
                   bytes. <b>cold</b> clears that lane's build output, vite's on-disk caches and Panda's generated
                   <code>styled-system</code> first, so it includes the cache-miss regen; <b>warm</b> is the same build run
                   again with nothing cleared. Median of 3. This is <b>build-time developer experience</b>, machine-dependent —

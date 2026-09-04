@@ -28,6 +28,11 @@ export interface TechBench {
   appStylesheet: "tailwind" | "panda" | "stylex" | "bamboo" | null;
   /** How this lane's CSS exists — drives the report legend. */
   cssKind: "extracted" | "atomic" | "utility" | "runtime" | "none";
+  /** UI framework the lane renders with. Absent means React (the default for this
+   * suite). A Solid lane is measured on the same workloads but against its own
+   * framework floor — the marginal-JS subtraction and the attribution's framework
+   * bucket both key on this. */
+  framework?: "solid";
   /** Hidden by default in the report's lane filter (one click to show), left out of the
    * Key-findings panel. For diagnostic variants that matter to one library's maintainers
    * more than to a cross-library comparison, and for extreme outliers that would skew the
@@ -46,6 +51,11 @@ export interface TechInfo {
 
 /** The render-function contract a `case/<id>/index.tsx` default-exports (§6). */
 export type RenderCase = (i: number) => unknown; // ReactElement; unknown to avoid a react dep here
+
+/** The same contract for the Solid lanes: the instance index arrives as an ACCESSOR.
+ * Solid has no re-render, so an interaction is a value change flowing through the
+ * reactive graph — the client entry drives this accessor from a signal. */
+export type SolidRenderCase = (i: () => number) => unknown; // JSX.Element
 
 /** Uniform SSR entry every tech build exposes (§6.1). */
 export type RenderCaseFn = (caseId: string, n: number) => { html: string; css: string };
@@ -99,7 +109,7 @@ export interface NsweepSample {
 /** Attribution: the median SSR render split into per-bucket self-time (ms). */
 export interface AttributionSample {
   renderMs: number;
-  react: number; // react-dom + react + scheduler (the floor every lane shares)
+  react: number; // the UI framework's own self-time — react-dom + react + scheduler, or solid-js + @solidjs/* (the floor every lane of that framework shares)
   lib: number; // the styling library's own self-time
   component: number; // the case component + ssr-entry
   other: number; // node / native / gc

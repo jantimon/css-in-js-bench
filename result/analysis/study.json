@@ -1,78 +1,94 @@
 {
-  "schemaVersion": 1,
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:54:28Z",
-    "model": "claude-opus-5[1m]"
+ "schemaVersion": 1,
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "Where a style gets resolved decides nearly everything, and two lanes added this round sharpen it: the same yak compiler pointed at Solid wins bigger where it folds and loses far harder where it cannot, and a drop-in replacement for a Tailwind merger matches it everywhere except the one case that misses the cache.",
+ "findings": [
+  {
+   "title": "@yak/solid is the fastest lane in the suite where folding applies, and the slowest where it does not",
+   "prose": "On the Example `button-variants` shown below, three imported style fragments merge onto one element and `yak-solid` compiles the styled component away entirely: 5.08M renders/s with 0.014 ms of library self-time, more than twice `next-yak`. On the Example `button-variants-nested` — the identical declarations exported as components instead of values — it renders 225,000. The library's own code barely moves between the two; what changes is that an unfolded `styled(Component)` leaves a Solid component with its own reactive scope on every element, and 4.42 of the 5.80 ms per render lands in `@solidjs/signals` and `@solidjs/web`. Folding is worth roughly 20x on Solid against roughly 2x on React, because what it removes is more expensive there."
   },
-  "headline": "Where a style gets resolved decides nearly everything: the lanes that finish at build time run 2 to 8× the runtime libraries, and the one thing that reliably switches the compiler off is a module boundary between a styled component and the JSX that uses it.",
-  "findings": [
-    {
-      "title": "A module boundary switches off next-yak's compiler, unless what you export is styles rather than components",
-      "prose": "The Example `multifile-shop` shown below is the Example `product-grid` re-laid-out across separate modules, byte-identical in DOM and CSS and verified pixel-identical. `next-yak` falls from 185,000 to 105,000 renders/s and lands beside its own `foldStatic: false` lane at 103,000, because `fold_jsx_usages` rewrites a declaration and its use site only when both live in one module. The css prop is untouched, 231,000 against 223,000, since it folds where it is written and inlines an imported fragment at build time. The Example `multifile-composition` shows which boundary is free: move a component and its JSX together and folding still sees both."
-    },
-    {
-      "title": "Composition depth is free only where the chain collapses at build time",
-      "prose": "Across the Examples `compose-1`, `compose-3` and `compose-6` shown below, `next-yak` costs 2.24M, 1.40M and 1.48M renders/s. Six levels of wrapping compile to one component carrying six class names in a single string, so everything after the first wrapper is free. Hand-written `vanilla` pays once per level, 1.92M to 1.37M to 919,000, and `panda` pays hardest, 1.12M to 310,000. The Example `button-variants` shows the ceiling of the same mechanism: three imported style values fold into `className=\"yTV3SxX\"` and the wrapper component disappears from the output."
-    },
-    {
-      "title": "The two next-yak APIs are not interchangeable, and they fail in opposite places",
-      "prose": "The css prop folds across a module boundary and the styled API does not, worth 2.12× on the Example `multifile-shop` shown below. Under composition the ordering reverses: the styled API concatenates a chain into one component while the css prop merges at every level, so on the Example `compose-6` the styled lane runs 1.48M renders/s against 600,000. On the Example `button-variants-nested` the css prop has no cell at all, because a style fragment cannot arrive as a component prop and the case does not compile for it. Choosing between the two is a bet on which pattern a codebase uses most."
-    },
-    {
-      "title": "Runtime libraries pay the same cost three times, and hydration is where it shows",
-      "prose": "On the Example `product-grid` shown below, `styled-components` spends 5.66 ms and `goober` 5.93 ms of server CPU serializing rules per instance, against 0.000 ms for the lanes that resolve at build time. The same work returns on the client, where both need around 240 ms to hydrate the page against 56 ms for the leaders, because the sheet must be rebuilt before React can attach. It arrives a third time on interaction: one wishlist toggle costs `emotion` 46.2 ms against 8.5 ms."
-    },
-    {
-      "title": "Dynamic values are a compiler feature in next-yak and a discipline everywhere else",
-      "prose": "The Example `dyn-translate` shown below measures the naive pattern, the value baked into the class name, which is what a codebase produces when nobody optimizes: `goober` renders at 166,000 renders/s and takes 1.27 s to hydrate. The Example `dyn-fair` gives every lane its own best practice, and for a library without native support that best practice is hand-written, splitting the static class from an inline style per component, for every dynamic value, indefinitely. It works, lifting `goober` to 945,000 and `panda` to 1.00M. next-yak ships that separation as a compiler feature and pays for it: the Example `dyn-inline` puts every lane on a plain inline style, where `next-yak` renders 1.51M against 724,000 through its CSS custom property."
-    },
-    {
-      "title": "Payload separates the extracted lanes from everything else by a factor of eight",
-      "prose": "On the Example `tabs` shown below, `next-yak-css` ships 2,707 gz B and `cnfast` 22.0 kB for the identical page. The split is not the stylesheet, which stays within a few hundred bytes across lanes; it is the JS and the markup. `emotion` and `styled-components` each carry about 13 kB of library, while the utility lanes write their class lists into the HTML. The Example `product-grid` holds the same ordering at 7,475 gz B against 27,718."
-    }
-  ],
-  "libraryHints": [
-    {
-      "tech": "next-yak",
-      "hint": "Folding stops at a module boundary: imported styled components stay runtime wrappers, 185k → 105k renders/s on `multifile-shop`."
-    },
-    {
-      "tech": "next-yak-css",
-      "hint": "Folds across modules, but merges once per composition level: 1.91M → 600k renders/s from depth 1 to 6, and again on hydration."
-    },
-    {
-      "tech": "bamboo",
-      "hint": "No styling runtime, but readable class names reach the markup: `tabs` spends 2.67 of 2.95 ms inside React writing them."
-    },
-    {
-      "tech": "panda",
-      "hint": "`css()` resolves per render where a call site is not hoisted. Recipes avoid it, 1.30M vs 768k on `btn-variant`; fold static call sites too."
-    },
-    {
-      "tech": "stylex-layers",
-      "hint": "Nothing on the render path for flat JSX; `styleq`'s per-element merge is what remains, 2.01M → 799k renders/s from depth 1 to 6."
-    },
-    {
-      "tech": "styled-components",
-      "hint": "Re-hashes and injects per render: 5.66 ms of `product-grid` CPU, 240 ms to hydrate. Hash the static rule once, ride values on a variable."
-    },
-    {
-      "tech": "emotion",
-      "hint": "Re-hashes the serialized string every render, 7.79 ms of `product-grid` CPU and 46.2 ms per interaction; memoize on string identity."
-    },
-    {
-      "tech": "goober",
-      "hint": "Injects a class per distinct value, so unique values are a cliff: `dyn-translate` hydrates in 1.27 s. Key the cache on template identity."
-    },
-    {
-      "tech": "tailwind-merge",
-      "hint": "The merge rebuilds its joined-class key every render, six times over at depth 6 (419k renders/s). Cache on argument identity."
-    },
-    {
-      "tech": "cnfast",
-      "hint": "Near-free on repeated class lists, 1.66M renders/s on `btn-variant`; only high-cardinality values cost, through the cache miss."
-    }
-  ]
+  {
+   "title": "A CSS-variable dynamic value is @yak/solid's single largest cost",
+   "prose": "The Examples `dyn-translate` and `dyn-fair` shown below both put a unique transform on a thousand elements, and `yak-solid` renders 110,000 and 113,000 renders/s. The Example `dyn-inline`, which moves the same value to a plain inline style and lets the class fold, puts it at 2.16M — level with hand-written Solid. The gap is not the CSS variable: it is that any interpolation forces the runtime path, so each element gets a component and a memo built to make future updates cheap, in a server render that has no future. Framework self-time goes from 0.255 ms to 9.58 ms across that pair. Folding the static half of a dynamic component, or skipping memo construction when rendering to a string, is the largest single win available to the library."
+  },
+  {
+   "title": "cn ported cnfast's cache but not its miss path",
+   "prose": "`cn` is a drop-in replacement for `tailwind-merge` and `clsx`, and on this suite it emits byte-identical markup to `cnfast` in every case. On twelve of thirteen it also matches on speed, and on repeated class lists its engine is the leaner of the two: 0.364 ms of library self-time against 0.395 ms on the Example `product-grid` shown below, and 0.236 against 0.296 on the Example `multifile-composition`. The Example `dyn-translate` is the exception, where every element carries a unique arbitrary-value utility and nothing can be cached: there `cn` spends 4.20 of its 4.59 ms per render inside its own package, against 1.86 ms for `cnfast` and 1.82 ms for `tailwind-merge`, and the same miss shows up again on interaction at 17.0 ms against 7.9 ms. The Example `dyn-fair` confirms the diagnosis — hand-split the value out of the class and `cn` returns to 1.60M renders/s, within 3% of `cnfast`."
+  },
+  {
+   "title": "A module boundary switches off the styled compiler, unless what you export is styles rather than components",
+   "prose": "The Example `multifile-shop` shown below is the Example `product-grid` re-laid-out across separate modules, byte-identical in DOM and CSS and verified pixel-identical. `next-yak` falls from 195,000 to 101,000 renders/s and its library self-time doubles from 0.681 ms to 1.71 ms, because a declaration and its use site must share a module for the rewrite to happen. The css prop is untouched, 226,000 against 230,000, since it folds where it is written and inlines an imported fragment at build time. `yak-solid` falls from 105,000 to 11,500 across the same split — the same lost fold at the higher Solid unit price."
+  },
+  {
+   "title": "Composition depth is free only where the chain collapses at build time",
+   "prose": "Across the Examples `compose-1`, `compose-3` and `compose-6` shown below, `next-yak` costs 2.11M, 1.39M and 1.50M renders/s: six levels of wrapping compile to one component carrying six class names, so everything after the first wrapper is free. Hand-written `vanilla` pays once per level, 1.89M to 964,000, and `tailwind-merge` hardest at 1.84M to 422,000, re-resolving conflicts at every level where the cached mergers do not. `yak-solid` shows the same shape with a taller step, 5.08M at depth 1 and 236,000 at depth 6, and its depth-3 and depth-6 numbers are within 2% of each other — the whole penalty is the first level folding cannot reach."
+  },
+  {
+   "title": "Runtime libraries pay the same cost three times, and hydration is where it shows",
+   "prose": "On the Example `product-grid` shown below, `styled-components` spends 5.72 ms and `goober` 6.13 ms of server CPU serializing rules per instance, against nothing at all for the lanes that resolve at build time. The same work returns on the client, where both need around 250 ms to hydrate the page against 57 ms for the leaders, because the sheet must be rebuilt before React can attach. It arrives a third time on interaction: one update costs `emotion` 52.4 ms against 9.0 ms for the hand-written floor."
+  },
+  {
+   "title": "Dynamic values are a compiler feature in next-yak and a discipline everywhere else",
+   "prose": "The Example `dyn-translate` shown below measures the naive pattern, the value baked into the class name, which is what a codebase produces when nobody optimizes: `goober` renders at 169,000 renders/s and takes 1.30 s to hydrate. The Example `dyn-fair` gives every lane its own best practice, and for a library without native support that best practice is hand-written — splitting the static class from an inline style, per component, indefinitely. It works, lifting `goober` to 877,000 and `cn` to 1.60M. next-yak ships that separation as a compiler feature and pays a little for it: the Example `dyn-inline` puts every lane on a plain inline style, where `next-yak` renders 1.56M against 792,000 through its CSS custom property."
+  },
+  {
+   "title": "Payload separates the extracted lanes from everything else, and Solid pays in markup rather than JS",
+   "prose": "On the Example `tabs` shown below, `next-yak-css` ships 2,707 gz B and `cn` 23.5 kB for the identical page. The split is not the stylesheet, which stays within a few hundred bytes across lanes; it is the JS and the markup. `emotion` and `styled-components` each carry about 13 kB of library, the utility lanes write their class lists into the HTML and ship a merger on top, and `cn` is the heaviest of the three at 13,054 B of client JS against `cnfast`'s 11,594 B. The Solid lanes lose on a third axis: Solid stamps a unique `_hk` hydration key on every element, and unique strings do not compress, so `yak-solid` ships 8,303 gz B where `next-yak` ships 3,511. That cost is identical in the hand-written Solid floor and belongs to the framework's hydration format, not to yak."
+  }
+ ],
+ "libraryHints": [
+  {
+   "tech": "yak-solid",
+   "hint": "Folding wins ~20x on Solid; without it each element gets a component and memo. Fold `styled(Component)` chains and skip memo setup during SSR."
+  },
+  {
+   "tech": "cn",
+   "hint": "Cache hits match cnfast and beat it slightly; the miss path does not. `dyn-translate` costs 4.20 ms of self-time against cnfast's 1.86 ms."
+  },
+  {
+   "tech": "next-yak",
+   "hint": "Folding stops at a module boundary: imported styled components stay runtime wrappers, 195k → 101k renders/s on `multifile-shop`."
+  },
+  {
+   "tech": "next-yak-css",
+   "hint": "Folds across modules, but merges once per composition level: 1.92M → 609k renders/s from depth 1 to 6, and again on hydration."
+  },
+  {
+   "tech": "bamboo",
+   "hint": "No styling runtime, but readable class names reach the markup: `tabs` spends 2.97 of 3.21 ms inside React writing them."
+  },
+  {
+   "tech": "panda",
+   "hint": "`css()` resolves per render where a call site is not hoisted. Recipes avoid it, 1.43M vs 727k on `btn-variant`; fold static call sites too."
+  },
+  {
+   "tech": "stylex-layers",
+   "hint": "Nothing on the render path for flat JSX; `styleq`'s per-element merge is what remains, 1.99M → 740k renders/s from depth 1 to 6."
+  },
+  {
+   "tech": "styled-components",
+   "hint": "Re-hashes and injects per render: 5.72 ms of `product-grid` CPU, 244 ms to hydrate. Hash the static rule once, ride values on a variable."
+  },
+  {
+   "tech": "emotion",
+   "hint": "Re-hashes the serialized string every render, 8.62 ms of `product-grid` CPU and 52.4 ms per interaction; memoize on string identity."
+  },
+  {
+   "tech": "goober",
+   "hint": "Injects a class per distinct value, so unique values are a cliff: `dyn-translate` hydrates in 1.30 s. Key the cache on template identity."
+  },
+  {
+   "tech": "tailwind-merge",
+   "hint": "The merge rebuilds its joined-class key every render, six times over at depth 6 (422k renders/s). Cache on argument identity."
+  },
+  {
+   "tech": "cnfast",
+   "hint": "Near-free on repeated class lists, 1.60M renders/s on `btn-variant`; only high-cardinality values cost, through the cache miss."
+  }
+ ]
 }

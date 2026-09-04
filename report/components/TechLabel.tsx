@@ -1,17 +1,18 @@
 import React from "react";
 
 // Map a lane dirname to its technology logo (mirrored into assets/logos/ by report.tsx).
-// All next-yak* lanes share the yak mark; tailwind-merge and cnfast share the Tailwind mark;
-// the three Panda lanes share the Panda mark. Anything unmapped renders label-only.
+// All next-yak* lanes plus yak-solid share the yak mark; tailwind-merge and cnfast share the
+// Tailwind mark; the three Panda lanes share the Panda mark; both vanilla baselines share the
+// vanilla mark. Anything unmapped renders label-only.
 export function logoFor(tech: string): string | null {
-  if (tech.startsWith("next-yak")) return "assets/logos/next-yak.avif";
+  if (tech.startsWith("next-yak") || tech === "yak-solid") return "assets/logos/next-yak.avif";
   if (tech === "tailwind-merge" || tech === "cnfast" || tech === "cn") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
   if (tech === "bamboo") return "assets/logos/bamboo.png";
   if (tech === "stylex" || tech === "stylex-layers") return "assets/logos/stylex.avif";
   if (tech === "emotion") return "assets/logos/emotion.avif";
   if (tech === "goober") return "assets/logos/goober.avif";
-  if (tech === "vanilla") return "assets/logos/vanilla.avif";
+  if (tech === "vanilla" || tech === "vanilla-solid") return "assets/logos/vanilla.avif";
   if (tech === "styled-components") return "assets/logos/styled-components.avif";
   return null;
 }
@@ -36,6 +37,9 @@ export const TECH_ALIASES: Record<string, string> = {
   bamboo: "bamboo",
   Bamboo: "bamboo",
   vanilla: "vanilla",
+  "@yak/solid": "yak-solid",
+  "vanilla-solid": "vanilla-solid",
+  "yak-solid": "yak-solid",
 };
 
 // A technology's logo (when one is mapped) followed by its label text. The <img> is decorative

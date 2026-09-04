@@ -1,293 +1,293 @@
 {
-  "schemaVersion": 1,
-  "caseId": "compose-6",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:51:07Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "Six levels cost next-yak nothing over three, because the whole chain compiles to one `__yak_button` holding six classes in a single string, while every lane that merges at render pays six times.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1475925,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 1181392,
-          "ratioToBaseline": 0.8004417568643393
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 919188,
-          "ratioToBaseline": 0.6227877432796382
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1475925
-      },
-      "why": "Five wrappers over a base button, each adding one declaration. `next-yak` compiles all six levels to `__yak_button(\"yRGSbEH yRGSbEH1 … yRGSbEH5\")`, one component and one class string, and renders at 1.48M renders/s, the same figure it posts at depth three. `next-yak-nofold` at 1.18M keeps all six wrappers and shows exactly what the fold removes. Hand-written `vanilla` at 919,000 now sits below both yak lanes, because six React functions and six string joins are not free even with no library involved. `next-yak-css` at 600,000 runs `mergeCssProp` six times, and `panda` at 310,000 re-resolves six style objects per instance.",
-      "confidence": "high"
+ "schemaVersion": 1,
+ "caseId": "compose-6",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "Doubling the chain to six levels costs `next-yak` nothing and `@yak/solid` almost nothing either — its penalty was already paid at the first `styled(Component)`.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "next-yak",
+   "top3": [
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1500000,
+     "ratioToBaseline": 1
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1206,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 980,
-          "ratioToBaseline": 0.8126036484245439
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 840,
-          "ratioToBaseline": 0.6965174129353234
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1206
-      },
-      "why": "`next-yak` at 1,206 req/s barely moves from its depth-three figure while `vanilla` falls to 840 and `panda` to 191. Depth under load is where the compile-time and render-time strategies separate most plainly.",
-      "confidence": "high"
+    {
+     "tech": "next-yak-nofold",
+     "label": "next-yak (styled API) foldStatic: false",
+     "value": 1140000,
+     "ratioToBaseline": 0.758
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 0.808,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 0.886,
-          "ratioToBaseline": 1.0965346534653464
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1.239,
-          "ratioToBaseline": 1.5334158415841583
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 0.808
-      },
-      "why": "`next-yak` totals 0.808 ms, indistinguishable from the 0.797 ms it spends at depth three, with 0.402 ms of lib self-time inside the single folded wrapper. `vanilla` needs 1.24 ms, 0.395 ms of it component self-time spread over six functions and 0.844 ms in React itself. `next-yak-css` reaches 2.84 ms and `goober` 4.85 ms, both paying once per level.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 49.5,
-          "ratioToBaseline": 0.561861520998865
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 49.6,
-          "ratioToBaseline": 0.5629965947786607
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 53.9,
-          "ratioToBaseline": 0.6118047673098752
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 88.1
-      },
-      "why": "Hydration on the compose cases is bimodal, with modes near 45 ms and 90 ms that swap between batteries, so the ordering inside the leading group is noise rather than mechanism. `vanilla` at 49.5 ms and `bamboo` at 49.6 ms hold the fast mode; `next-yak` reads 88.1 ms here against 46.6 ms previously. `styled-components` at 96.2 ms and `goober` at 107 ms sit high in both.",
-      "confidence": "low"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 7,
-          "ratioToBaseline": 0.9210526315789475
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 7.1,
-          "ratioToBaseline": 0.9342105263157895
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 7.2,
-          "ratioToBaseline": 0.9473684210526316
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.6
-      },
-      "why": "Eight lanes answer one click between 7.0 ms and 8.0 ms. `goober` at 23.1 ms, `panda` at 14.8 ms and `emotion` at 11.2 ms are the exceptions, all re-deriving the full six-level chain on the component that was clicked.",
-      "confidence": "high"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 71.4,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 73.2,
-          "ratioToBaseline": 1.0252100840336134
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 75.5,
-          "ratioToBaseline": 1.057422969187675
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 71.4
-      },
-      "why": "`next-yak` leads at 71.4 ms in a band running to 89.4 ms for twelve lanes. Six levels add render work, and mount is dominated by parse and layout, so the ordering compresses against what the microbench shows.",
-      "confidence": "medium"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane, 0.129 ms to 0.188 ms. Six levels of composition still produce one element and the same matching work.",
-      "confidence": "low"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 3075,
-          "ratioToBaseline": 0.7478112840466926
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 3286,
-          "ratioToBaseline": 0.7991245136186771
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 3304,
-          "ratioToBaseline": 0.8035019455252919
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 4112
-      },
-      "why": "Depth is nearly free on the wire for the compile-time lanes: `next-yak` ships 4,112 gz B against 3,958 B at depth three, the difference being three more small rules. `vanilla` holds the floor at 3,075 B. The runtime lanes are unchanged from depth one, because what fills their payload is the library rather than the chain.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 2.842,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 3.223,
-          "ratioToBaseline": 1.134060520760028
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 4.219,
-          "ratioToBaseline": 1.4845179451090782
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 2.842
-      },
-      "why": "`next-yak` at 2.84 ms at the largest size is close to its depth-three figure, while `next-yak-nofold` needs 3.22 ms and `vanilla` 4.22 ms. Per-level work sets the slope, and a folded chain has no per-level work to set one with.",
-      "confidence": "high"
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 964000,
+     "ratioToBaseline": 0.642
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1500000
+   },
+   "why": "`next-yak` leads at 1.50M renders/s, faster than it manages at depth 3, because the whole chain still collapses into one wrapper no matter how long it is. `vanilla` drops to 964,000 running six functions. `yak-solid` at 236,000 is within 2% of its depth-3 number: once the first `styled(Component)` has forced a Solid component per element, the five levels above it are merged at construction and cost almost nothing more. `tailwind-merge` at 422,000 is the lane depth hurts most, re-resolving the conflicting utilities at every level.",
+   "confidence": "high"
   },
-  "crossCase": "The deep end of the trio, with the Examples `compose-1` and `compose-3`. `next-yak` costs 2.24M, 1.40M and 1.48M renders/s across the three depths, so everything after the first wrapper is free and the chain concatenates into one component whatever its depth. Every other lane pays per level, most steeply `panda` at 1.12M, 540,000 and 310,000."
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "next-yak",
+   "top3": [
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1140,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-nofold",
+     "label": "next-yak (styled API) foldStatic: false",
+     "value": 958,
+     "ratioToBaseline": 0.838
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 817,
+     "ratioToBaseline": 0.715
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1140
+   },
+   "why": "`next-yak` holds 1,140 req/s while `vanilla` falls to 817 — the flattened chain is what keeps the per-request cost constant across depth. `panda` at 142 req/s and `yak-solid` at 194 are the two lanes whose per-instance work grows with the tree.",
+   "confidence": "high"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "next-yak",
+   "top3": [
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 0.796,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "cn",
+     "label": "cn (shadcn-ui)",
+     "value": 1.22,
+     "ratioToBaseline": 1.53
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1.24,
+     "ratioToBaseline": 1.56
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 0.796
+   },
+   "why": "`next-yak` renders in 0.796 ms with 0.372 ms of lib self-time, unchanged from depth 3. `cn` at 1.22 ms and `vanilla` at 1.24 ms follow, and the contrast with `tailwind-merge` at 2.70 ms — 1.94 ms of it in its own runtime — is the case's clearest reading of what a per-level merge costs when nothing caches it. `vanilla-solid` books 2.58 ms of component self-time for its six functions, and `yak-solid`'s 6.30 ms is again mostly framework.",
+   "confidence": "high"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 39.4,
+     "ratioToBaseline": 0.828
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 47.6,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-nofold",
+     "label": "next-yak (styled API) foldStatic: false",
+     "value": 49.5,
+     "ratioToBaseline": 1.04
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 47.6
+   },
+   "why": "`vanilla-solid` at 39.4 ms leads, and the React lanes cluster near 50 ms. `yak-solid` at 71.4 ms carries the same unfolded wrapper into hydration. `emotion` at 116 ms and `goober` at 111 ms sit high in every compose case.",
+   "confidence": "high"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 3.6,
+     "ratioToBaseline": 0.456
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 3.8,
+     "ratioToBaseline": 0.481
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 6.6,
+     "ratioToBaseline": 0.835
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7.9
+   },
+   "why": "`yak-solid` at 3.6 ms and `vanilla-solid` at 3.8 ms lead a field where the React lanes answer near 7.9 ms — with the caveat that React writes nothing to the DOM on this pass and the Solid lanes do. `goober` at 22.8 ms and `panda` at 16.2 ms re-run their runtimes for all six levels.",
+   "confidence": "low"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 27.2,
+     "ratioToBaseline": 0.37
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 52,
+     "ratioToBaseline": 0.707
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 73.5,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 73.5
+   },
+   "why": "`vanilla-solid` mounts in 27.2 ms, `yak-solid` in 52.0 ms, and the React field spans 73.5 ms to 113 ms. Depth costs the Solid lanes visibly and the React lanes almost nothing, because layout, not composition, sets the React mount time.",
+   "confidence": "high"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane. Six levels of declarations resolve to one class list on one element, so the style engine sees exactly what it sees at depth 1.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 3080,
+     "ratioToBaseline": 0.748
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 3290,
+     "ratioToBaseline": 0.799
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 3300,
+     "ratioToBaseline": 0.804
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 4110
+   },
+   "why": "`vanilla` is the floor at 3,075 gz B and the compile-time lanes stay within 1.2 kB of it: six levels of declarations gzip into roughly what one level produces. `yak-solid` at 9,243 B carries Solid's runtime and its hydration-keyed markup. `cn` at 16,502 B and `styled-components` at 16,787 B ship their runtimes regardless of depth.",
+   "confidence": "medium"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "next-yak",
+   "top3": [
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 2.82,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-nofold",
+     "label": "next-yak (styled API) foldStatic: false",
+     "value": 3.39,
+     "ratioToBaseline": 1.2
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 4.44,
+     "ratioToBaseline": 1.58
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 2.82
+   },
+   "why": "`next-yak` holds 2.82 ms at 4,000 instances against 4.44 ms for `vanilla` and 11.6 ms for `vanilla-solid`, so the flattened chain is the only structure in the case with no per-level slope. `panda` at 19.1 ms and `yak-solid` at 18.9 ms bend hardest.",
+   "confidence": "high"
+  }
+ },
+ "crossCase": "The upper bracket of the sweep that starts at the Examples `compose-1` and `compose-3`. `vanilla` degrades with depth as expected, 1.89M to 1.28M to 964,000 renders/s, since it runs one more function per level. `next-yak` runs 2.11M, 1.39M and 1.50M — flat after the first wrapper. `yak-solid` runs 5.08M, 241,000 and 236,000: the cliff is the first unfolded level, and levels four through six add 2%."
 }

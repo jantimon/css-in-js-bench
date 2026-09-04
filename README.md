@@ -2,7 +2,8 @@
 
 **Live report: <https://jantimon.github.io/css-in-js-bench/>**
 
-Compares CSS-in-JS and utility styling strategies for React on identical workloads.
+Compares CSS-in-JS and utility styling strategies on identical workloads — React for
+almost every lane, plus a Solid 2 pair with its own framework floor.
 Every strategy ("lane") renders the same components under the same conditions, so the
 numbers are actually comparable
 
@@ -35,14 +36,15 @@ For each case you get:
 - **Page bytes shipped** (JS + CSS + HTML, gzipped, lower better): what the page costs on
   the wire. Runtime libs ship the critical CSS they injected, atomic/extracted libs ship
   the slice of their build-time sheet the page used. JS is the lane's marginal client
-  bundle over the bare-React floor (gzipped `hydrate` build minus vanilla's), so it's the
-  same for every case of a lane
+  bundle over its own bare-framework floor (gzipped `hydrate` build minus `vanilla`'s, or
+  minus `vanilla-solid`'s for the Solid lanes), so it's the same for every case of a lane
 - **SSR throughput under load** (requests/sec, higher better): a real HTTP server renders
   the page per request while autocannon hammers it. Heavy and machine-dependent
-- **Where the SSR render time goes** (CPU attribution): the median render split into
-  react-dom (the floor every lane shares) vs the styling library's own runtime vs your
-  component, profiled in node V8 and mapped back to each package via the bundle
-  sourcemap. This is why a throughput number looks the way it does
+- **Where the SSR render time goes** (CPU attribution): the median render split into the
+  UI framework (react-dom, or solid for the Solid lanes — the floor every lane of that
+  framework shares) vs the styling library's own runtime vs your component, profiled in
+  node V8 and mapped back to each package via the bundle sourcemap. This is why a
+  throughput number looks the way it does
 - **Client hydration time** (ms, lower better): Playwright loads the SSR markup plus a
   per-tech browser build that `hydrateRoot`s it, and times the hydration commit
 - **Where the client hydration time goes** (CPU attribution): the same react /
@@ -122,6 +124,37 @@ There are two settings, each as a styled + css-prop pair:
 
 Within a pair, styled vs css-prop syntax is the only difference.
 
+### The Solid lanes
+
+`yak-solid` runs [`@yak/solid`](https://www.npmjs.com/package/@yak/solid) — the same yak
+compiler with a Solid 2 runtime — over the same 14 workloads, styled API only.
+`vanilla-solid` is its floor: the identical case tree written by hand with plain class
+names, no styling library, the way `vanilla` is the floor for the React lanes. It's hidden
+by default in the lane filter.
+
+Three things follow from Solid not being React, and they are worth knowing before reading
+a chart that mixes them:
+
+- **Bytes.** The JS number is marginal over `vanilla-solid`, never over the React
+  `vanilla`. Solid tree-shakes per app, so a Solid lane's marginal JS includes the parts of
+  `@solidjs/web` only the styling library pulls in — those bytes ship because you use the
+  library, which is exactly what the number is for. The HTML number is a different story:
+  Solid stamps a unique `_hk` hydration key on every element it may claim, and unique
+  strings don't compress, so the Solid lanes' gzipped HTML runs ~2.5–3× the React lanes'.
+  That is Solid's cost, identical in both Solid lanes, and it has nothing to do with yak.
+- **Interaction.** Solid has no re-render. The React lanes' INP pass forces one with
+  `setState` + `flushSync`, so every component re-runs and the styling library recomputes,
+  but the props are unchanged and React writes nothing to the DOM. The Solid analogue is a
+  value change: every case takes its instance index as an accessor and `__inp` bumps the
+  signal behind it, so yak's per-component memo re-runs and the class/style bindings
+  update. That means the Solid lanes really do mutate the DOM in that pass and the React
+  lanes mostly don't — the two INP columns are not the same workload, and only the
+  Solid-vs-Solid gap is a clean read.
+- **Hydration bootstrap.** In production Solid ships an inline `<script>` that creates the
+  `_$HY` store and starts capturing pre-hydration events. The benchmark's html is component
+  markup only, so both Solid lanes run that same bootstrap from the top of their client
+  bundle instead — where the shared framework floor cancels it out.
+
 ### gen and verify
 
 `gen` runs `verify` automatically at the end (skip with `SKIP_VERIFY=1`). verify proves
@@ -184,7 +217,8 @@ Create `techs/<name>/`:
 
 1. `package.json`: `name` MUST equal the dirname, `description` is the chart label
    (npm names can't hold spaces or `()`), `"type": "module"`, a `bench` block
-   (`color`, `buildPlugin`, `appStylesheet`, `cssKind`), your dependencies
+   (`color`, `buildPlugin`, `appStylesheet`, `cssKind`, and `framework: "solid"` if the
+   lane doesn't render React), your dependencies
 2. `vite.microbench.config.ts`: a standalone SSR build → `dist/microbench/entry.mjs`.
    Copy the closest existing lane and swap the `plugins` array (runtime libs: just
    `react()`, build-plugin libs: add `viteYak`/`stylexVite` + `ssrEmitAssets:true`)
@@ -193,7 +227,9 @@ Create `techs/<name>/`:
    microbench times rendering, not extraction). Discover cases with
    `import.meta.glob("./case/*/index.tsx")`
 4. `case/<id>/index.tsx` for each case the lane covers, default-exporting
-   `(i) => ReactElement`
+   `(i) => ReactElement` — or, on a lane whose `bench.framework` is `"solid"`,
+   `(i: () => number) => JSX.Element`, taking the index as an accessor so the interaction
+   pass can drive it from a signal
 
 No registry edits anywhere. `pnpm lint` then validates the package, `pnpm gen:samples` builds it
 
@@ -211,9 +247,9 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 
 | family | lanes | how `css` is produced |
 |---|---|---|
-| author | vanilla | the co-located `styles.css`, read `?raw` |
+| author | vanilla, vanilla-solid | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×4: styled + css-prop, folding on and off) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | next-yak (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |

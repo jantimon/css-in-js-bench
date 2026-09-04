@@ -1,292 +1,292 @@
 {
-  "schemaVersion": 1,
-  "caseId": "btn-variant",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:51:52Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "A thousand buttons cycling twelve class strings put eight lanes within 20% of each other, because almost every lookup is a cache hit; the split is between lanes that cache and lanes that recompute regardless.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1784917,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1735734,
-          "ratioToBaseline": 0.9724452173406383
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1658603,
-          "ratioToBaseline": 0.9292325637550654
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1784917
-      },
-      "why": "Roughly twelve distinct class strings serve 1,000 buttons, so most calls hit a cache and the case prices lookup rather than style computation. Eight lanes finish between 1.46M and 1.78M renders/s, led by `next-yak` at 1.78M with each variant condition compiled into a ternary over literal class names. `cnfast` at 1.66M and `stylex` at 1.65M sit in the same band because their merge is a map lookup on repeated keys. The lanes that fall away are the ones that recompute whatever the repetition: `next-yak-nofold` at 744,000 builds a wrapper per instance, `panda` at 768,000 re-resolves its style object, and `emotion` at 368,000 re-serializes from scratch.",
-      "confidence": "medium"
+ "schemaVersion": 1,
+ "caseId": "btn-variant",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "Twelve distinct class strings across a thousand buttons is the shape a build-time compiler resolves completely: `@yak/solid` picks the class at compile time and leads at 2.71M renders/s with no library code left at runtime.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 2710000,
+     "ratioToBaseline": 1.61
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1593,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1447,
-          "ratioToBaseline": 0.9083490269930948
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1276,
-          "ratioToBaseline": 0.8010043942247332
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1593
-      },
-      "why": "`next-yak` leads at 1,593 req/s with `next-yak-css` at 1,447 and `vanilla` at 1,276. The instructive pair is inside Panda: `panda-recipe` at 893 req/s does 1.6× the work of `panda` at 567 on the same variants, because a recipe resolves its variant table during the build rather than on every call.",
-      "confidence": "high"
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1680000,
+     "ratioToBaseline": 1
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 0.673,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 0.679,
-          "ratioToBaseline": 1.0089153046062407
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 0.713,
-          "ratioToBaseline": 1.0594353640416045
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 0.673
-      },
-      "why": "Seven lanes total between 0.673 ms and 0.765 ms, which is the floor for 1,000 single-element buttons. `next-yak` books 0.317 ms of lib self-time and still leads on total; `next-yak-css`, `stylex` and `stylex-layers` all record 0.000 ms of lib time and pay about 0.26 ms as component self-time instead. `next-yak-nofold` doubles the total to 1.50 ms on identical source with folding off. `emotion` at 2.87 ms and `goober` at 2.24 ms carry their serializers into every instance.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 45.2,
-          "ratioToBaseline": 0.5298944900351701
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 45.8,
-          "ratioToBaseline": 0.536928487690504
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 46,
-          "ratioToBaseline": 0.5392731535756154
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 85.3
-      },
-      "why": "Six lanes hydrate between 45.2 ms and 47.2 ms. `next-yak` reads 85.3 ms here, which is the bimodal mode this axis keeps producing on the small cases rather than a property of the lane. `goober` at 89.7 ms and `styled-components` at 91.5 ms sit high in every battery, because both rebuild a sheet before React attaches.",
-      "confidence": "low"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "styled-components",
-      "top3": [
-        {
-          "tech": "styled-components",
-          "label": "styled-components",
-          "value": 6.1,
-          "ratioToBaseline": 0.8356164383561644
-        },
-        {
-          "tech": "next-yak-nofold",
-          "label": "next-yak (styled API) foldStatic: false",
-          "value": 7,
-          "ratioToBaseline": 0.9589041095890412
-        },
-        {
-          "tech": "goober",
-          "label": "Goober",
-          "value": 7.3,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.3
-      },
-      "why": "Fifteen lanes answer one click between 6.1 ms and 8.1 ms, indistinguishable at this spread. `emotion` at 11.0 ms is the only lane that separates.",
-      "confidence": "low"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 68.8,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 70.2,
-          "ratioToBaseline": 1.0203488372093024
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 71,
-          "ratioToBaseline": 1.0319767441860466
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 68.8
-      },
-      "why": "Twelve lanes mount between 68.8 ms and 89.0 ms, `next-yak` first at 68.8 ms. Parse and layout dominate and every lane produces the same DOM, so the render ordering compresses. `emotion` at 98.7 ms carries its sheet construction into the mount.",
-      "confidence": "medium"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane, 0.129 ms to 0.207 ms. Twelve distinct class strings over one element per instance give the engine the same matching work everywhere.",
-      "confidence": "low"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "next-yak-css-nofold",
-      "top3": [
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 3718,
-          "ratioToBaseline": 0.818942731277533
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 3737,
-          "ratioToBaseline": 0.8231277533039647
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 3789,
-          "ratioToBaseline": 0.8345814977973568
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 4540
-      },
-      "why": "`next-yak-css` ships 3,737 gz B against 4,540 B for `next-yak`, the difference being the wrapper runtime. `panda-recipe` at 6,477 B carries 1,442 B of JS, under a third of `panda`'s 4,903 B, because the recipe's variant table is resolved during the build instead of shipped as a resolver. The utility and runtime lanes run from 15.1 kB to 17.0 kB.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak",
-      "top3": [
-        {
-          "tech": "next-yak",
-          "label": "next-yak (styled API)",
-          "value": 1.956,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "stylex-layers",
-          "label": "StyleX",
-          "value": 2.225,
-          "ratioToBaseline": 1.1375255623721883
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 2.26,
-          "ratioToBaseline": 1.1554192229038853
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1.956
-      },
-      "why": "`next-yak` holds 1.96 ms at the largest size while `next-yak-nofold` needs 5.15 ms, a 2.63× gap that widens with the count because the wrapper runs per instance however repetitive the variants are. `emotion` at 12.2 ms sets the far end.",
-      "confidence": "high"
+    {
+     "tech": "stylex",
+     "label": "StyleX without CSS layers (:not() specificity hack)",
+     "value": 1630000,
+     "ratioToBaseline": 0.971
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1680000
+   },
+   "why": "The conditional interpolations resolve to a fixed set of classes, so both yak compilers can decide the class list without running anything: `yak-solid` books zero lib self-time and leads at 2.71M renders/s, `next-yak` books 0.294 ms and reaches 1.68M. `next-yak-nofold` at 721,000 shows what the same source costs when the wrapper stays, less than half the folded lane. The cached mergers do well here as the case predicts — `cnfast` at 1.60M and `cn` at 1.49M, since twelve repeated strings make almost every lookup a hit — while `styled-components` at 536,000 and `emotion` at 321,000 rebuild the class string per instance even though only twelve exist.",
+   "confidence": "high"
+  },
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1750,
+     "ratioToBaseline": 1.17
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1490,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 1350,
+     "ratioToBaseline": 0.907
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1490
+   },
+   "why": "`yak-solid` answers 1,750 req/s and `next-yak` 1,490, with `next-yak-css` also at 1,490. `cnfast` holds 1,040 and `cn` 929; `panda-props` at 370 resolves style props per instance inside the request.",
+   "confidence": "medium"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 0.425,
+     "ratioToBaseline": 0.688
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 0.618,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 0.697,
+     "ratioToBaseline": 1.13
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 0.618
+   },
+   "why": "`yak-solid` renders in 0.425 ms with nothing in the lib bucket at all. `next-yak` at 0.618 ms splits 0.324 ms of react-dom against 0.294 ms of yak, and `next-yak-css` at 0.697 ms carries an empty lib bucket because a static css prop compiles to a plain class. `emotion` needs 3.08 ms with 1.94 ms inside its own runtime.",
+   "confidence": "high"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 30.2,
+     "ratioToBaseline": 0.691
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 32.9,
+     "ratioToBaseline": 0.753
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 43.7,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 43.7
+   },
+   "why": "`yak-solid` at 30.2 ms and `vanilla-solid` at 32.9 ms claim the markup without building a tree; the React lanes start at 43.7 ms. `goober` at 130 ms and `emotion` at 116 ms pay their first style injection during hydration.",
+   "confidence": "low"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 4.1,
+     "ratioToBaseline": 0.539
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 5.1,
+     "ratioToBaseline": 0.671
+    },
+    {
+     "tech": "panda",
+     "label": "Panda (css fn)",
+     "value": 6.8,
+     "ratioToBaseline": 0.895
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7.6
+   },
+   "why": "`yak-solid` at 4.1 ms and `vanilla-solid` at 5.1 ms lead the React field's ~7.5 ms, though React writes nothing on this pass while the Solid lanes re-evaluate the variant and swap the class. `emotion` at 12.9 ms is the only lane that separates on mechanism rather than framework.",
+   "confidence": "high"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 20,
+     "ratioToBaseline": 0.284
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 21.4,
+     "ratioToBaseline": 0.304
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 70.5,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 70.5
+   },
+   "why": "`yak-solid` mounts in 20.0 ms and `vanilla-solid` in 21.4 ms, against 70.5 ms for `next-yak` and 102 ms for `emotion`. With the class decided at build time the cold mount is template cloning; the runtime lanes inject their sheet before the first paint.",
+   "confidence": "low"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane, near 0.13 ms. Twelve class strings across a thousand elements is a cache hit for the style engine no matter which lane produced them.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "next-yak-css-nofold",
+   "top3": [
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 3720,
+     "ratioToBaseline": 0.819
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 3740,
+     "ratioToBaseline": 0.823
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 3790,
+     "ratioToBaseline": 0.835
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 4540
+   },
+   "why": "The next-yak css-prop lanes are the lightest at roughly 3,730 gz B, with `vanilla` at 3,789 B. `yak-solid` reaches 9,309 B, its markup carrying a hydration key per element. The utility lanes are the heavy end — `cn` 17,553 B, `cnfast` 16,093 B, `tailwind-merge` 15,130 B — where the whole difference is library JS for a page whose CSS is 226 B.",
+   "confidence": "medium"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "yak-solid",
+   "top3": [
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1.15,
+     "ratioToBaseline": 0.593
+    },
+    {
+     "tech": "next-yak",
+     "label": "next-yak (styled API)",
+     "value": 1.94,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "stylex-layers",
+     "label": "StyleX",
+     "value": 2.21,
+     "ratioToBaseline": 1.14
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1.94
+   },
+   "why": "`yak-solid` holds 1.15 ms at 4,000 instances and `next-yak` 1.94 ms, both flat, because a decided class has no per-instance work to scale. `panda-props` at 8.17 ms and `emotion` at 11.3 ms grow with every element.",
+   "confidence": "high"
   }
+ }
 }

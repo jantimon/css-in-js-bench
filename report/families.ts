@@ -9,7 +9,13 @@ export interface Family {
 }
 
 export const FAMILIES: Family[] = [
-  { group: "Baseline", items: [{ tech: "vanilla", short: "vanilla" }] },
+  {
+    group: "Baseline",
+    items: [
+      { tech: "vanilla", short: "vanilla" },
+      { tech: "vanilla-solid", short: "vanilla Solid" },
+    ],
+  },
   {
     group: "next-yak",
     items: [
@@ -19,6 +25,7 @@ export const FAMILIES: Family[] = [
       { tech: "next-yak-css-nofold", short: "css-prop, no fold" },
     ],
   },
+  { group: "Solid", items: [{ tech: "yak-solid", short: "@yak/solid styled" }] },
   {
     group: "Panda",
     items: [
