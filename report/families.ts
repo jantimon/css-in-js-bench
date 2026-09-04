@@ -41,6 +41,7 @@ export const FAMILIES: Family[] = [
       { tech: "stylex-layers", short: "StyleX" },
       { tech: "stylex", short: "StyleX (:not hack)" },
       { tech: "cnfast", short: "cnfast" },
+      { tech: "cn", short: "cn" },
       { tech: "tailwind-merge", short: "tailwind-merge" },
     ],
   },
