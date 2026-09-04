@@ -46,6 +46,7 @@ const ALLOWED_ATTRS = new Set([
   "class", "id", "style", // styling hooks — the only ones that should be common
   "disabled", "type", "tabindex", "role", "name", "value", "href", // functional HTML
   "viewbox", "fill", "d", "focusable", "width", "height", "xmlns", // SVG (names compared lowercased)
+  "_hk", // Solid's hydration key — markup the Solid lanes genuinely ship, like React's <!-- --> markers
 ]);
 const allowedFamily = (a: string) => a.startsWith("aria-") || a.startsWith("data-");
 

@@ -177,12 +177,25 @@ function payload(mod: SsrModule, caseId: string, n: number, js: number): Payload
   return [{ js, css: gzipSync(css).length, html: gzipSync(html).length }];
 }
 
-// JS bytes a lane ships, as the MARGINAL gzipped client bundle over the bare-React
+// JS bytes a lane ships, as the MARGINAL gzipped client bundle over the bare-framework
 // floor. Each tech's hydrate browser build (vite.hydrate.config) is its real client
-// bundle — react + react-dom + the styling runtime + the case components. The vanilla
-// lane is the framework floor (react only, no styling runtime), so subtracting it
-// leaves the lane's own runtime cost. It's per-TECH (the bundle isn't case-split), so
-// every case of a tech reports the same js — the lane's footprint, not a per-page split.
+// bundle — the UI framework + the styling runtime + the case components. The floor is
+// the lane's OWN framework: `vanilla` (react only) for the React lanes, `vanilla-solid`
+// (solid only) for the Solid ones, so subtracting it leaves the lane's own runtime cost
+// either way. It's per-TECH (the bundle isn't case-split), so every case of a tech
+// reports the same js — the lane's footprint, not a per-page split.
+// Which UI framework a lane renders with (techs/<t>/package.json bench.framework;
+// absent = react, this suite's default). Drives the marginal-JS floor below.
+const frameworkCache = new Map<string, "react" | "solid">();
+function frameworkOf(tech: string): "react" | "solid" {
+  const cached = frameworkCache.get(tech);
+  if (cached) return cached;
+  const pkg = JSON.parse(readFileSync(join(TECHS_DIR, tech, "package.json"), "utf8")) as { bench?: { framework?: "solid" } };
+  const fw = pkg.bench?.framework ?? "react";
+  frameworkCache.set(tech, fw);
+  return fw;
+}
+
 const hydrateGzCache = new Map<string, number>();
 async function hydrateBundleGz(tech: string): Promise<number> {
   const cached = hydrateGzCache.get(tech);
@@ -194,15 +207,20 @@ async function hydrateBundleGz(tech: string): Promise<number> {
   hydrateGzCache.set(tech, gz);
   return gz;
 }
-let frameworkFloor: number | null = null;
-async function frameworkFloorGz(): Promise<number> {
-  if (frameworkFloor === null)
-    frameworkFloor = existsSync(join(TECHS_DIR, "vanilla", "vite.hydrate.config.ts")) ? await hydrateBundleGz("vanilla") : 0;
-  return frameworkFloor;
+// The baseline lane per framework: the same client-entry with no styling library at all.
+const FLOOR_LANE = { react: "vanilla", solid: "vanilla-solid" } as const;
+const frameworkFloors = new Map<string, number>();
+async function frameworkFloorGz(tech: string): Promise<number> {
+  const lane = FLOOR_LANE[frameworkOf(tech)];
+  const cached = frameworkFloors.get(lane);
+  if (cached !== undefined) return cached;
+  const gz = existsSync(join(TECHS_DIR, lane, "vite.hydrate.config.ts")) ? await hydrateBundleGz(lane) : 0;
+  frameworkFloors.set(lane, gz);
+  return gz;
 }
 async function payloadJsBytes(tech: string): Promise<number> {
   try {
-    return Math.max(0, (await hydrateBundleGz(tech)) - (await frameworkFloorGz()));
+    return Math.max(0, (await hydrateBundleGz(tech)) - (await frameworkFloorGz(tech)));
   } catch (e) {
     console.error(`  ! ${tech}: payload js unavailable (${(e as Error).message.split("\n")[0]}) — js=0`);
     return 0;
