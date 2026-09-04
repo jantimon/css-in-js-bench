@@ -1,0 +1,17 @@
+{
+  "name": "cn",
+  "description": "cn (shadcn-ui)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#94a3b8",
+    "buildPlugin": null,
+    "appStylesheet": "tailwind",
+    "cssKind": "utility"
+  },
+  "dependencies": {
+    "cn": "0.2.4",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}
