@@ -1,293 +1,293 @@
 {
-  "schemaVersion": 1,
-  "caseId": "dyn-translate",
-  "provenance": {
-    "gitSha": "5fdc9c1",
-    "runTimestamp": "2026-08-28T00:44:33.935Z",
-    "generatedAt": "2026-08-28T00:53:48Z",
-    "model": "claude-opus-5[1m]"
-  },
-  "headline": "Baking a unique value into the class name mints 1,000 one-off classes: goober needs 1.27 s to hydrate the page and 149 ms at the largest size, while the lanes that keep the value out of the selector never notice.",
-  "measurements": {
-    "microbench": {
-      "unit": "renders/s",
-      "higherBetter": true,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1638450,
-          "ratioToBaseline": 2.07605288299498
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1590141,
-          "ratioToBaseline": 2.0148413484808936
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 1580613,
-          "ratioToBaseline": 2.002768577344041
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 789214
-      },
-      "why": "Every element carries a unique `translateX`, and the naive pattern puts that value into the class name, so no merger can ever hit a cache. `bamboo` at 1.64M renders/s, `next-yak-css` at 1.59M and `vanilla` at 1.58M avoid the trap because the value reaches the element as a custom property or an inline style instead of as part of a selector. `next-yak` at 789,000 routes it through a CSS variable on a wrapper, which costs 0.743 ms of lib self-time. The pattern's real price lands on `goober` at 166,000 and `panda-props` at 157,000, which mint and insert a rule for every element.",
-      "confidence": "high"
+ "schemaVersion": 1,
+ "caseId": "dyn-translate",
+ "provenance": {
+  "gitSha": "f1dddf7",
+  "runTimestamp": "2026-09-03T17:50:09.829Z",
+  "generatedAt": "2026-09-03T19:09:09.107Z",
+  "model": "claude-opus-5[1m]"
+ },
+ "headline": "A thousand unique transforms splits the field three ways: the CSS-variable lanes hold constant work, `cn` and the runtimes pay per value, and `@yak/solid` pays for a reactive wrapper it will never use.",
+ "measurements": {
+  "microbench": {
+   "unit": "renders/s",
+   "higherBetter": true,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 2180000,
+     "ratioToBaseline": 2.72
     },
-    "autocannon": {
-      "unit": "req/s",
-      "higherBetter": true,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 1349,
-          "ratioToBaseline": 1.9026798307475317
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1177,
-          "ratioToBaseline": 1.6600846262341327
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 1162,
-          "ratioToBaseline": 1.6389280677009872
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 709
-      },
-      "why": "`next-yak-css` at 1,349 req/s and `bamboo` at 1,177 lead. `goober` at 152 req/s and `panda-props` at 135 finish roughly an order below, because a thousand fresh rules get constructed inside every request.",
-      "confidence": "high"
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1620000,
+     "ratioToBaseline": 2.02
     },
-    "attribution": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 0.742,
-          "ratioToBaseline": 0.5341972642188625
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 0.8,
-          "ratioToBaseline": 0.5759539236861051
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 0.801,
-          "ratioToBaseline": 0.5766738660907128
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1.389
-      },
-      "why": "`bamboo` at 0.742 ms, `next-yak-css` at 0.800 ms and `vanilla` at 0.801 ms hold the floor with no library at render. `next-yak` at 1.39 ms carries 0.743 ms of lib self-time for the variable wrapper. The pattern's cost gathers at the far end: 4.50 ms of lib time for `styled-components`, 6.04 ms for `goober`, and for the Panda lanes it lands in the component instead, 5.14 ms and 8.03 ms.",
-      "confidence": "high"
-    },
-    "hydrate": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 45.1,
-          "ratioToBaseline": 0.9129554655870445
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 46.2,
-          "ratioToBaseline": 0.9352226720647774
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 48.1,
-          "ratioToBaseline": 0.9736842105263158
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 49.4
-      },
-      "why": "`goober` needs 1,265 ms, more than ten times the next-slowest lane, because hydration re-inserts a thousand unique rules into the client sheet. Seven lanes finish between 45.1 ms and 49.8 ms. This single number is why the naive pattern earns a case of its own.",
-      "confidence": "high"
-    },
-    "inp": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 7.3,
-          "ratioToBaseline": 0.9605263157894737
-        },
-        {
-          "tech": "styled-components",
-          "label": "styled-components",
-          "value": 7.3,
-          "ratioToBaseline": 0.9605263157894737
-        },
-        {
-          "tech": "stylex",
-          "label": "StyleX without CSS layers (:not() specificity hack)",
-          "value": 7.4,
-          "ratioToBaseline": 0.9736842105263159
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 7.6
-      },
-      "why": "Ten lanes answer between 7.3 ms and 7.8 ms, since the interaction touches one element and mints no new classes. `panda-props` at 28.6 ms, `panda` at 22.2 ms and `goober` at 21.5 ms still pay, because their per-instance rule generation runs again on the re-render.",
-      "confidence": "high"
-    },
-    "mount": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 60.1,
-          "ratioToBaseline": 0.9274691358024691
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 60.9,
-          "ratioToBaseline": 0.9398148148148149
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 64.1,
-          "ratioToBaseline": 0.9891975308641975
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 64.8
-      },
-      "why": "`goober` at 1,241 ms is the outlier again, on the same mechanism as hydration. Eight lanes mount between 60.1 ms and 65.5 ms.",
-      "confidence": "high"
-    },
-    "renderTiming": {
-      "unit": "style recalcs",
-      "higherBetter": false,
-      "winner": "bamboo",
-      "top3": [
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "cnfast",
-          "label": "cnfast",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        },
-        {
-          "tech": "emotion",
-          "label": "Emotion",
-          "value": 1,
-          "ratioToBaseline": 1.0
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 1
-      },
-      "why": "One style recalculation per lane at 0.078 ms to 0.181 ms. A thousand unique classes cost at insertion time rather than at match time, which is why this axis stays flat while hydrate and mount blow out.",
-      "confidence": "medium"
-    },
-    "payload": {
-      "unit": "gz B",
-      "higherBetter": false,
-      "winner": "vanilla",
-      "top3": [
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 5502,
-          "ratioToBaseline": 0.861302442078898
-        },
-        {
-          "tech": "next-yak-css-nofold",
-          "label": "next-yak (css prop) foldStatic: false",
-          "value": 5563,
-          "ratioToBaseline": 0.8708515967438948
-        },
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 5586,
-          "ratioToBaseline": 0.8744520976831559
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 6388
-      },
-      "why": "A thousand unique class names have to be written down somewhere. `vanilla` ships 5,502 gz B with the values in inline styles, while `emotion` reaches 39.4 kB and `styled-components` 35.5 kB, six to seven times the floor, because every distinct rule lands in both the sheet and the markup.",
-      "confidence": "high"
-    },
-    "nsweep": {
-      "unit": "ms",
-      "higherBetter": false,
-      "winner": "next-yak-css",
-      "top3": [
-        {
-          "tech": "next-yak-css",
-          "label": "next-yak (css prop)",
-          "value": 2.53,
-          "ratioToBaseline": 0.42628475147430495
-        },
-        {
-          "tech": "vanilla",
-          "label": "vanilla (hand-written ceiling)",
-          "value": 2.7,
-          "ratioToBaseline": 0.4549283909014322
-        },
-        {
-          "tech": "bamboo",
-          "label": "Bamboo",
-          "value": 2.836,
-          "ratioToBaseline": 0.47784330244313394
-        }
-      ],
-      "baseline": {
-        "tech": "next-yak",
-        "value": 5.935
-      },
-      "why": "`goober` at 149 ms against 2.53 ms for `next-yak-css` is a factor of 59, and it widens with the count, since each new element is a new rule. `next-yak` at 5.94 ms and `next-yak-nofold` at 5.06 ms are close together, because the CSS variable is the cost rather than the wrapper.",
-      "confidence": "high"
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 1580000,
+     "ratioToBaseline": 1.97
     }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 801000
+   },
+   "why": "`vanilla-solid` leads at 2.18M renders/s writing an inline style directly. `next-yak-css` at 1.58M and `bamboo` at 1.57M turn the value into a CSS variable and keep per-instance work constant, while `styled-components` at 211,000 emits a rule per value and `goober` at 169,000 hashes one. This is the case that separates the two Tailwind mergers: `cnfast` holds 557,000 and `cn` falls to 243,000, below `tailwind-merge` at 477,000, because a unique arbitrary-value utility per element misses every cache. `yak-solid` at 110,000 is last, and its own runtime accounts for only 0.945 ms of the 11.3 ms: a dynamic interpolation takes the non-folded path, so every element gets a Solid component with a memo over its props — machinery that exists to make updates cheap, running in a server render that will never update.",
+   "confidence": "high"
   },
-  "crossCase": "The Examples `dyn-fair` and `dyn-inline` shown below take this workload two other ways. In `dyn-fair` every lane uses its own best practice, which for a library with no native dynamic-value support means a hand-written split of static class from inline style; that lifts `goober` from 166,000 to 945,000 renders/s and `panda` from 222,000 to 1.00M. next-yak ships that separation as a compiler feature, so nobody writes it; elsewhere the same result is developer discipline applied to every dynamic value, on every component, indefinitely. The naive pattern measured here is what a codebase gets when nobody pays that cost."
+  "autocannon": {
+   "unit": "req/s",
+   "higherBetter": true,
+   "winner": "next-yak-css",
+   "top3": [
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 1280,
+     "ratioToBaseline": 1.84
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1190,
+     "ratioToBaseline": 1.72
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 1150,
+     "ratioToBaseline": 1.65
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 695
+   },
+   "why": "`next-yak-css` at 1,280 req/s and `vanilla` at 1,190 lead. `cn` at 235 req/s serves less than half of `cnfast`'s 489, and `yak-solid` at 100 is last, its per-element memo constructed inside every request.",
+   "confidence": "medium"
+  },
+  "attribution": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "bamboo",
+   "top3": [
+    {
+     "tech": "bamboo",
+     "label": "Bamboo",
+     "value": 0.778,
+     "ratioToBaseline": 0.581
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 0.785,
+     "ratioToBaseline": 0.587
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 0.81,
+     "ratioToBaseline": 0.605
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1.34
+   },
+   "why": "`bamboo` at 0.778 ms, `next-yak-css` at 0.785 ms and `vanilla-solid` at 0.810 ms lead with empty lib buckets. `cn` spends 4.20 of its 4.59 ms inside its own package — 92% of the render — against 1.86 of 2.60 ms for `cnfast` and 1.82 of 2.40 ms for `tailwind-merge`, so the miss path costs `cn` more than twice what either of the others pays. `styled-components` needs 5.25 ms with 4.73 ms of lib: a thousand unique values means a thousand rules. `yak-solid`'s 11.3 ms is 88% framework, the reactive scope per element rather than the variable itself.",
+   "confidence": "medium"
+  },
+  "hydrate": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 31.1,
+     "ratioToBaseline": 0.605
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 47.6,
+     "ratioToBaseline": 0.926
+    },
+    {
+     "tech": "bamboo",
+     "label": "Bamboo",
+     "value": 49.2,
+     "ratioToBaseline": 0.957
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 51.4
+   },
+   "why": "`vanilla-solid` at 31.1 ms leads and the React lanes cluster near 50 ms. `yak-solid` at 94.0 ms rebuilds the same per-element memos while attaching. `goober` at 1,300 ms is the suite's worst reading, inserting one rule per unique value into the document during hydration.",
+   "confidence": "high"
+  },
+  "inp": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 5.5,
+     "ratioToBaseline": 0.764
+    },
+    {
+     "tech": "stylex-layers",
+     "label": "StyleX",
+     "value": 6.5,
+     "ratioToBaseline": 0.903
+    },
+    {
+     "tech": "stylex",
+     "label": "StyleX without CSS layers (:not() specificity hack)",
+     "value": 7,
+     "ratioToBaseline": 0.972
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 7.2
+   },
+   "why": "`stylex-layers` at 6.5 ms leads and most React lanes answer near 7.5 ms. `cn` at 17.0 ms pays its cache miss again on the update, more than twice `cnfast`'s 7.9 ms. `goober` at 23.2 ms and `panda-props` at 28.9 ms re-hash or re-resolve every value, which is what a per-value class costs when the value actually moves.",
+   "confidence": "low"
+  },
+  "mount": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 22.2,
+     "ratioToBaseline": 0.332
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 61.6,
+     "ratioToBaseline": 0.921
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 64.4,
+     "ratioToBaseline": 0.963
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 66.9
+   },
+   "why": "`next-yak-css` mounts in 61.6 ms and `vanilla-solid` in 22.2 ms. `goober` at 1,290 ms and `panda-props` at 103 ms pay their per-value insertion before the first paint. `yak-solid` at 75.1 ms sits with the React field, since its per-element cost is JavaScript that overlaps the browser's layout work.",
+   "confidence": "high"
+  },
+  "renderTiming": {
+   "unit": "style recalcs",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1,
+     "ratioToBaseline": 1
+    },
+    {
+     "tech": "yak-solid",
+     "label": "@yak/solid (styled API, Solid 2)",
+     "value": 1,
+     "ratioToBaseline": 1
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 1
+   },
+   "why": "One style recalculation per lane. A CSS variable on an inline style never invalidates the sheet, so the lanes that avoid a class per value all reach the style engine with the same single match.",
+   "confidence": "medium"
+  },
+  "payload": {
+   "unit": "gz B",
+   "higherBetter": false,
+   "winner": "vanilla",
+   "top3": [
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 5500,
+     "ratioToBaseline": 0.861
+    },
+    {
+     "tech": "next-yak-css-nofold",
+     "label": "next-yak (css prop) foldStatic: false",
+     "value": 5560,
+     "ratioToBaseline": 0.871
+    },
+    {
+     "tech": "next-yak-css",
+     "label": "next-yak (css prop)",
+     "value": 5590,
+     "ratioToBaseline": 0.874
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 6390
+   },
+   "why": "`vanilla` at 5,502 gz B and the next-yak css-prop lanes near 5,580 B are the floor. The per-value lanes lose here as they lose everywhere: `emotion` ships 18,347 B of CSS and `styled-components` 13,838 B for a thousand rules. `cn` at 23,438 B carries 13,054 B of library JS, the most of any lane in the case, and `yak-solid` at 12,016 B keeps its CSS to 97 B and pays in hydration-keyed markup instead.",
+   "confidence": "medium"
+  },
+  "nsweep": {
+   "unit": "ms",
+   "higherBetter": false,
+   "winner": "vanilla-solid",
+   "top3": [
+    {
+     "tech": "vanilla-solid",
+     "label": "vanilla Solid (hand-written ceiling)",
+     "value": 1.74,
+     "ratioToBaseline": 0.316
+    },
+    {
+     "tech": "bamboo",
+     "label": "Bamboo",
+     "value": 2.74,
+     "ratioToBaseline": 0.497
+    },
+    {
+     "tech": "vanilla",
+     "label": "vanilla (hand-written ceiling)",
+     "value": 2.83,
+     "ratioToBaseline": 0.513
+    }
+   ],
+   "baseline": {
+    "tech": "next-yak",
+    "value": 5.51
+   },
+   "why": "`vanilla-solid` holds 1.74 ms at 4,000 instances and `bamboo` 2.74 ms. `goober` at 156 ms, `yak-solid` at 37.3 ms and `cn` at 18.9 ms have the steepest lines, for three different reasons: a rule per value, a reactive scope per element, and a cache miss per element.",
+   "confidence": "high"
+  }
+ },
+ "crossCase": "The naive corner of the dynamic trio with the Examples `dyn-fair` and `dyn-inline`. On React the three read 801,000, 792,000 and 1.56M renders/s for `next-yak`: the CSS-variable path costs it about half the inline-style control, and that control is what a developer reaches by hand-splitting static class from dynamic style. On Solid the same three read 110,000, 113,000 and 2.16M for `yak-solid` — the inline-style control is at parity with hand-written Solid while the variable path is twenty times behind it. `cn` shows the third pattern: 243,000 here against 1.60M on the best-practice case, so its whole loss is the cache miss."
 }
