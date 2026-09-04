@@ -17,13 +17,13 @@
 //      autocannon (SSR) path and the hydrate path measure the same render. Needs dist/.
 //
 // 1–2 read only result/snapshot.json (always present after any gen:samples). 3–4 reuse the
-// artifacts a full gen:samples already produced (PNGs / per-tech dist) and are SKIPPED, never
+// artifacts a full gen:samples already produced (screenshots / per-tech dist) and are SKIPPED, never
 // rebuilt, when absent — so a quick `pnpm gen:samples` gets a fast static verify and a full run
 // gets the works. verify never builds and never writes result/ data; it writes only its
 // own report (result/verify.json + result/verify/*.png diffs) and exits non-zero on any
 // violation.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "node:http";
 import { chromium, type Browser, type Page } from "@playwright/test";
@@ -129,9 +129,10 @@ function staticChecks(snaps: Record<string, Snapshot>): { reports: CaseReport[];
 }
 
 // ---- pixel parity across techs (browser) ----------------------------------------
-const dataUrl = (file: string) => `data:image/png;base64,${readFileSync(file).toString("base64")}`;
+const MIME: Record<string, string> = { ".avif": "image/avif", ".png": "image/png" };
+const dataUrl = (file: string) => `data:${MIME[extname(file)] ?? "image/png"};base64,${readFileSync(file).toString("base64")}`;
 
-// Compare two PNGs pixel-by-pixel inside the page (canvas getImageData) — no native image
+// Compare two screenshots pixel-by-pixel inside the page (canvas getImageData) — no native image
 // deps. Different dimensions are NOT a separate hard-fail: both images are drawn top-left
 // onto a common max(w)×max(h) canvas (the area only one image covers stays transparent and
 // counts as differing), so a size delta folds into the SAME ratio. A 2px rounding drift is
@@ -187,10 +188,14 @@ async function pixelChecks(page: Page, assets: Record<string, string[]>, reports
     // (incl. the hand-written vanilla) derives from it — so it's the authoritative pixel
     // reference. Fall back to vanilla, then alphabetical.
     const refTech = names.includes("styled-components") ? "styled-components" : names.includes("vanilla") ? "vanilla" : names.sort()[0];
-    const refUrl = dataUrl(techs[refTech]);
+    let refUrl = ""; // base64 of a 1500px-wide image — only paid for once a lane actually differs
     const report = reports.find((r) => r.caseId === caseId) ?? (reports.push({ caseId, ok: true, notes: [] }), reports[reports.length - 1]);
     for (const tech of names.sort()) {
       if (tech === refTech) continue;
+      // Screenshots are content-addressed, so lanes that render identically share one file.
+      // Same path means same bytes means same pixels — nothing for the browser to decide.
+      if (techs[tech] === techs[refTech]) continue;
+      refUrl ||= dataUrl(techs[refTech]);
       const res = await pixelDiff(page, refUrl, dataUrl(techs[tech]));
       if (res.ratio > PIXEL_EPS) {
         report.ok = false; failed = true;

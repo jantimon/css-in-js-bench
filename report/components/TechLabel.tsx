@@ -5,7 +5,7 @@ import React from "react";
 // the three Panda lanes share the Panda mark. Anything unmapped renders label-only.
 export function logoFor(tech: string): string | null {
   if (tech.startsWith("next-yak")) return "assets/logos/next-yak.avif";
-  if (tech === "tailwind-merge" || tech === "cnfast") return "assets/logos/tailwind.avif";
+  if (tech === "tailwind-merge" || tech === "cnfast" || tech === "cn") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
   if (tech === "bamboo") return "assets/logos/bamboo.png";
   if (tech === "stylex" || tech === "stylex-layers") return "assets/logos/stylex.avif";
@@ -24,6 +24,7 @@ export const TECH_ALIASES: Record<string, string> = {
   "next-yak": "next-yak",
   "tailwind-merge": "tailwind-merge",
   cnfast: "cnfast",
+  cn: "cn",
   stylex: "stylex",
   StyleX: "stylex",
   emotion: "emotion",

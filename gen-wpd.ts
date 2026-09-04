@@ -163,7 +163,7 @@ const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (
 // techs/<tech> resolves to that tech's WORKSPACE package name (its dir name), and the compiled/
 // transformed bundle to wpd's generic first-party buckets `app` / `css-in-js-bench`. A workspace
 // name only counts as `component` when it does NOT collide with a runtime styling-library npm name:
-// for cnfast / goober / next-yak / styled-components / tailwind-merge the workspace package is named
+// for cn / cnfast / goober / next-yak / styled-components / tailwind-merge the workspace package is named
 // after the library it benchmarks, so that key IS the library runtime (measured on the SSR data),
 // and first-party for those lanes lands on `app` instead. Those names therefore stay in `lib`.
 const COMPONENT_PACKAGES = new Set([

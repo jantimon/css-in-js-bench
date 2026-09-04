@@ -105,7 +105,7 @@ async function main() {
   const study = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
 
   // Screenshots live in result/assets/; mirror them next to BENCHMARK.html so the
-  // self-contained report can reference assets/<…>.png (§10.6 — single file except images).
+  // self-contained report can reference assets/<…>.avif (§10.6 — single file except images).
   const assetsSrc = join(RESULT, "assets");
   const assetsDst = join(ROOT, "assets");
   rmSync(assetsDst, { recursive: true, force: true });
@@ -257,7 +257,7 @@ async function main() {
         return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome, firefox };
       });
     // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
-    // each also carries its rendered-preview PNG (if screenshots ran) so the editor's "preview"
+    // each also carries its rendered-preview image (if screenshots ran) so the editor's "preview"
     // tab can show that lane's output inline — one image, switched with the selected lane.
     const editorLanes: EditorLane[] = usedTechs
       .filter((t) => snaps[`${caseId}/${t}`])
