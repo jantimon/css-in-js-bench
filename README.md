@@ -128,7 +128,7 @@ Within a pair, styled vs css-prop syntax is the only difference.
 the core invariant: for each case, every tech renders an identical DOM (same element
 count + tag skeleton, attributes on a whitelist so a leaked `$prop` fails) and identical
 pixels, and the hydrate build matches the SSR markup. Static checks always run, the
-pixel/hydrate checks reuse the PNGs / `dist/` a full run produced (skipped when absent,
+pixel/hydrate checks reuse the screenshots / `dist/` a full run produced (skipped when absent,
 never rebuilt). Diffs land in `result/verify/`
 
 `gen:samples` filters:
@@ -147,7 +147,8 @@ manifest incomplete and isn't reportable, so re-run a plain `pnpm gen` to publis
 `microbench` + `payload` are fast and deterministic and run by default. The others are
 opt-in, run them deliberately and the browser/load ones on an idle machine: `nsweep`
 (scaling), `autocannon` (req/s under load), `hydrate`, `inp`, `mount`, and `screenshots`
-(browser passes; `screenshots` writes PNGs to `result/assets/`). E.g.
+(browser passes; `screenshots` writes AVIFs to `result/assets/`, named by a hash of their
+pixels so lanes that render identically share one file — `avifenc` must be on `PATH`). E.g.
 `pnpm gen:samples --measure=nsweep,hydrate`. A filtered or partial-measure run merges into
 `result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
 live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
