@@ -1,0 +1,18 @@
+{
+  "name": "plumeria",
+  "description": "Plumeria (classStyle prop)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#ea580c",
+    "buildPlugin": "plumeria",
+    "appStylesheet": null,
+    "cssKind": "atomic"
+  },
+  "dependencies": {
+    "@plumeria/core": "18.3.14",
+    "@plumeria/unplugin": "18.3.14",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}
