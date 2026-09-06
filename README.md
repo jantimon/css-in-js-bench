@@ -312,3 +312,12 @@ compare each lane with its own SSR/CSS reference; screenshot checks compare lane
 `pnpm test:browser` checks CSS emission for every lane, failure detection, and
 representative styled pages without writing measurement files. Set
 `BROWSER_STYLES_CASES=all` to check every supported case in the browser test lanes.
+
+Runtime lanes return complete style tags in `renderCase().head`: Emotion keeps its
+style IDs and shares a cache key with the client; styled-components keeps its
+adoption metadata; Goober keeps its style element ID. These tags style SSR pages
+before JavaScript. Cold mounts start without runtime server styles. Required
+per-request style collection stays inside SSR timing.
+
+The browser test command also checks runtime style adoption without duplicate
+rules and rejects missing server style metadata.

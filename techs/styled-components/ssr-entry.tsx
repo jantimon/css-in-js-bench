@@ -6,13 +6,13 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { ServerStyleSheet } from "styled-components";
-import type { RenderCase } from "../../report/types";
+import type { RenderCase, RenderResult } from "../../report/types";
 
 const renders = import.meta.glob<{ default: RenderCase }>("./case/*/index.tsx", { eager: true });
 
 const stripStyleTags = (s: string) => s.replace(/<style[^>]*>/g, "").replace(/<\/style>/g, "");
 
-export function renderCase(caseId: string, n: number): { html: string; css: string } {
+export function renderCase(caseId: string, n: number): RenderResult {
   const mod = renders[`./case/${caseId}/index.tsx`];
   if (!mod) throw new Error(`styled-components: no case/${caseId}/index.tsx`);
   const render = mod.default;
@@ -20,8 +20,9 @@ export function renderCase(caseId: string, n: number): { html: string; css: stri
   try {
     const children = Array.from({ length: n }, (_, i) => React.createElement(React.Fragment, { key: i }, render(i)));
     const html = renderToString(sheet.collectStyles(React.createElement(React.Fragment, null, children)));
-    const css = stripStyleTags(sheet.getStyleTags()).trim();
-    return { html, css };
+    const head = sheet.getStyleTags();
+    const css = stripStyleTags(head).trim();
+    return { html, css, head };
   } finally {
     sheet.seal();
   }
