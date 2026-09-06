@@ -3,7 +3,7 @@ import { css } from "styled-system/css";
 
 // Copy, rating and price styles. Declarations only — no JSX use site lives here.
 
-export const badge = css({
+export const badge = css.raw({
   position: "absolute",
   top: "6px",
   left: "6px",
@@ -15,7 +15,7 @@ export const badge = css({
   background: "#f59e0b",
 });
 
-export const badgeHigh = css({ background: "#dc2626" });
+export const badgeHigh = css.raw({ background: "#dc2626" });
 
 export const title = css({
   margin: "8px 0 4px",

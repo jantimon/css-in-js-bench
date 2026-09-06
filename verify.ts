@@ -12,9 +12,9 @@
 //      count AND one tag skeleton (the structure, ignoring class/id/style values).
 //   3. PIXEL PARITY ACROSS TECHS (browser) — each tech's screenshot matches the case's
 //      reference pixel-for-pixel (writes a red diff PNG on mismatch). Needs result/assets.
-//   4. SSR↔HYDRATE PARITY (browser) — the hydrate client build re-renders the SSR markup
-//      with no hydration mismatch and the same element count, proving the microbench/
-//      autocannon (SSR) path and the hydrate path measure the same render. Needs dist/.
+//   4. BROWSER STYLE PARITY — emitted assets style the SSR markup before JavaScript.
+//      Hydration retains that DOM and appearance; changed input and cold mount match
+//      independently rendered expected styles. Needs dist/.
 //
 // 1–2 read only result/snapshot.json (always present after any gen:samples). 3–4 reuse the
 // artifacts a full gen:samples already produced (screenshots / per-tech dist) and are SKIPPED, never
@@ -22,12 +22,12 @@
 // gets the works. verify never builds and never writes result/ data; it writes only its
 // own report (result/verify.json + result/verify/*.png diffs) and exits non-zero on any
 // violation.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createServer } from "node:http";
+import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
+import { validateBrowserFixture } from "./scripts/browser-validation.ts";
 import { chromium, type Browser, type Page } from "@playwright/test";
-import benchConfig from "./bench.config.ts";
 import type { Snapshot, SsrModule } from "./report/types.ts";
 import { validateWpdResults } from "./report/wpd-results.ts";
 
@@ -211,55 +211,37 @@ async function pixelChecks(page: Page, assets: Record<string, string[]>, reports
 }
 
 // ---- SSR↔hydrate parity (browser, reuses dist) ----------------------------------
-// For each tech that has BOTH a microbench SSR build and a hydrate client build on disk,
-// serve the SSR markup + the client bundle, hydrate in a real browser, and assert: no
-// hydration-mismatch console error, and the post-hydration element count equals the SSR
-// count. That ties the SSR-measured path (microbench/autocannon) to the hydrate path.
+// Check the same document and emitted assets used by both timing runners.
 async function hydrateChecks(browser: Browser, techs: string[], cases: string[], reports: CaseReport[]): Promise<boolean> {
-  const n = benchConfig.snapshotN;
   let failed = false;
   for (const tech of techs) {
     const ssrPath = join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs");
-    const bundlePath = join(TECHS_DIR, tech, "dist", "hydrate", "entry.js");
-    if (!existsSync(ssrPath) || !existsSync(bundlePath)) continue;
-    let mod: SsrModule;
+    const directory = join(TECHS_DIR, tech, "dist", "hydrate");
+    if (!existsSync(ssrPath) || !existsSync(join(directory, "entry.js"))) continue;
+    let close: (() => Promise<void>) | undefined;
     try {
-      mod = (await import(pathToFileURL(ssrPath).href + `?t=${Date.now()}`)) as SsrModule;
-    } catch { continue; }
-    const bundleJs = readFileSync(bundlePath);
-    const server = createServer((req, res) => {
-      const url = new URL(req.url ?? "/", "http://x");
-      if (url.pathname === "/entry.js") { res.setHeader("content-type", "text/javascript"); return res.end(bundleJs); }
-      const caseId = url.searchParams.get("case") ?? "";
-      res.setHeader("content-type", "text/html");
-      res.end(`<!doctype html><meta charset=utf-8><div id="root">${mod.renderCase(caseId, n).html}</div><script type="module" src="/entry.js"></script>`);
-    });
-    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-    const port = (server.address() as { port: number }).port;
-    try {
+      const ssrMod = await import(pathToFileURL(ssrPath).href + `?t=${Date.now()}`) as SsrModule;
+      const fixture = await serveBrowserFixture({ directory, ssrMod });
+      close = fixture.close;
       for (const caseId of cases) {
         if (!existsSync(join(TECHS_DIR, tech, "case", caseId, "index.tsx"))) continue;
         const report = reports.find((r) => r.caseId === caseId)!;
-        const ssrCount = parseElements(mod.renderCase(caseId, n).html).length;
-        const page = await browser.newPage();
-        const errors: string[] = [];
-        page.on("console", (m) => { if (m.type() === "error" && /hydrat|did not match|mismatch/i.test(m.text())) errors.push(m.text()); });
-        page.on("pageerror", (e) => errors.push(String(e)));
-        await page.goto(`http://127.0.0.1:${port}/?case=${caseId}&n=${n}`, { waitUntil: "load" });
-        try { await page.waitForFunction(() => window.__hydrateMs !== undefined, null, { timeout: 15_000 }); } catch {}
-        const liveCount = await page.evaluate(() => document.getElementById("root")!.querySelectorAll("*").length);
-        await page.close();
-        if (errors.length) {
+        try {
+          await validateBrowserFixture(browser, { port: fixture.port, ssrMod, caseId });
+          report.notes.push(`✓ styled SSR, hydration, update and mount: ${tech}`);
+        } catch (error) {
           report.ok = false; failed = true;
-          report.notes.push(`✗ hydrate ${tech}: hydration mismatch — ${errors[0].slice(0, 120)}`);
-        } else if (liveCount !== ssrCount) {
-          report.ok = false; failed = true;
-          report.notes.push(`✗ hydrate ${tech}: post-hydration ${liveCount} elements ≠ SSR ${ssrCount}`);
+          report.notes.push(`✗ browser ${tech}: ${String(error).slice(0, 240)}`);
         }
       }
-    } finally {
-      await new Promise<void>((r) => server.close(() => r()));
-    }
+    } catch (error) {
+      failed = true;
+      for (const report of reports) {
+        if (!existsSync(join(TECHS_DIR, tech, "case", report.caseId, "index.tsx"))) continue;
+        report.ok = false;
+        report.notes.push(`✗ browser fixture ${tech}: ${String(error).slice(0, 240)}`);
+      }
+    } finally { await close?.(); }
   }
   return failed;
 }

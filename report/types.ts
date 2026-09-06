@@ -65,7 +65,13 @@ export interface InteractionSamples {
 export type SolidRenderCase = (i: () => number) => unknown; // JSX.Element
 
 /** Uniform SSR entry every tech build exposes (§6.1). */
-export type RenderCaseFn = (caseId: string, n: number) => { html: string; css: string };
+export interface RenderResult {
+  html: string;
+  css: string;
+  /** Complete runtime style tags, including the IDs the client needs for hydration. */
+  head?: string;
+}
+export type RenderCaseFn = (caseId: string, n: number) => RenderResult;
 
 /**
  * Optional hot-path render for the microbench: the production SSR work ONLY (no

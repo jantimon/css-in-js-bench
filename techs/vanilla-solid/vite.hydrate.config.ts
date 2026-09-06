@@ -2,6 +2,7 @@
 // Solid lane ships, compiled hydratable (solid({ ssr: true })) so it claims the server's
 // DOM instead of rebuilding it. Its gzipped size is the Solid framework floor that
 // gen subtracts from the yak-solid lane's bundle.
+import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
 import solid from "@solidjs/vite-plugin";
 import { fileURLToPath } from "node:url";
@@ -11,10 +12,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [solid({ ssr: true })],
+  plugins: [browserStyles(here, "vanilla"), solid({ ssr: true })],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/hydrate",
+    manifest: true,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",

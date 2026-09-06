@@ -26,6 +26,8 @@ import { chromium, type Browser } from "@playwright/test";
 import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
 import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
+import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
+import { validateBrowserFixture } from "./scripts/browser-validation.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
@@ -325,28 +327,7 @@ async function buildtimeSample(tech: string): Promise<{ cold: number[]; warm: nu
 // Shared by the hydrate, INP, and mount Playwright passes.
 async function serveHydrate(tech: string, ssrMod: SsrModule): Promise<{ port: number; close: () => Promise<void> }> {
   await buildOnly(tech, "hydrate");
-  const bundle = join(TECHS_DIR, tech, "dist", "hydrate", "entry.js");
-  if (!existsSync(bundle)) throw new Error(`${tech}: hydrate build produced no entry.js`);
-  const bundleJs = readFileSync(bundle);
-  const render = htmlOf(ssrMod);
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
-    if (url.pathname === "/entry.js") {
-      res.setHeader("content-type", "text/javascript");
-      return res.end(bundleJs);
-    }
-    const caseId = url.searchParams.get("case") ?? "";
-    const n = Number(url.searchParams.get("n") ?? "1");
-    // mount mode renders into an EMPTY root from scratch (cold client mount); every other
-    // consumer hydrates the SSR markup, so the root carries it. Guard a missing case (e.g. a
-    // stray favicon request from wpd's browser) so the handler never throws and kills gen.
-    const body = url.searchParams.get("mount") === "1" || !caseId ? "" : render(caseId, n);
-    res.setHeader("content-type", "text/html");
-    res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const port = (server.address() as { port: number }).port;
-  return { port, close: () => new Promise<void>((r) => server.close(() => r())) };
+  return serveBrowserFixture({ directory: join(TECHS_DIR, tech, "dist", "hydrate"), ssrMod });
 }
 
 // Serve the hydrate bundle, launch a browser, and hand (browser, port) to `run`. Shared by
@@ -370,6 +351,7 @@ async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (brows
 // (the dominant source of hydrate variance).
 async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("hydrate");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {
@@ -392,6 +374,7 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
 // Each reset settles outside the timer. __inp ends at the first rAF callback.
 async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, InteractionSamples>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
     const out: Record<string, InteractionSamples> = {};
     for (const cell of cells) {
       const n = caseMeta[cell.caseId].n;
@@ -419,6 +402,7 @@ async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta:
 // Round-robin across cells with a discarded warmup round, same as hydrateTech.
 async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("mount");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {
@@ -469,7 +453,7 @@ function encodeAvif(png: Buffer, dest: string): void {
 }
 
 // ---- screenshots: a rendered preview of each cell (visual parity across lanes) ---
-// Serves the SSR { html, css } (no hydration needed for a static preview) in a headless
+// Serves the same document and assets as timing, with client JavaScript disabled, in a headless
 // browser and snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
 // path map (measurement-screenshots.json) the report uses to reference the images from a
 // sibling assets/ folder (§10.6). n is capped so the preview stays readable.
@@ -482,21 +466,14 @@ function encodeAvif(png: Buffer, dest: string): void {
 async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, string[]>> {
   const assetsDir = join(RESULT_DIR, "assets");
   mkdirSync(assetsDir, { recursive: true });
+  const { port, close } = await serveHydrate(tech, ssrMod);
   const browser = await chromium.launch();
   try {
     const out: Record<string, string[]> = {};
-    const page = await browser.newPage({ ...PAGE_OPTS, deviceScaleFactor: 2 }); // crisp images
+    const page = await browser.newPage({ ...PAGE_OPTS, deviceScaleFactor: 2, javaScriptEnabled: false }); // crisp SSR images
     for (const cell of cells) {
       const n = Math.min(caseMeta[cell.caseId].n, 6); // a handful of instances reads better than 1,000
-      const { html, css } = ssrMod.renderCase(cell.caseId, n);
-      // The harness renders n bare instances with no parent layout; left as inline-block
-      // they collapse to min-content (a tall, text-wrapped strip). Lay them out in a bounded
-      // responsive grid so each instance gets a real width and reads like the real page.
-      const doc =
-        `<!doctype html><meta charset=utf-8><style>*{box-sizing:border-box}body{margin:0}` +
-        `#root{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;align-items:start;width:760px;padding:24px;background:#fff}` +
-        `${css}</style><div id="root">${html}</div>`;
-      await page.setContent(doc, { waitUntil: "load" });
+      await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
       const el = await page.$("#root");
       const png = await (el ?? page).screenshot();
       const hash = createHash("sha1").update(png).digest("hex").slice(0, 8);
@@ -508,6 +485,7 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
     return out;
   } finally {
     await browser.close();
+    await close();
   }
 }
 

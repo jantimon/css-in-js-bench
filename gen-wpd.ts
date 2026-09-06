@@ -34,7 +34,9 @@ import { promisify } from "node:util";
 import { readFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createServer } from "node:http";
+import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
+import { validateBrowserFixture } from "./scripts/browser-validation.ts";
+import { chromium } from "@playwright/test";
 import os from "node:os";
 import benchConfig from "./bench.config.ts";
 import type { CaseMeta, SsrModule } from "./report/types.ts";
@@ -108,40 +110,13 @@ async function buildMicrobench(tech: string): Promise<SsrModule> {
 // Un-minified + sourcemapped hydrate bundle so wpd can split the js slice per package (the
 // production hydrate build is minified with no map; a minified single bundle would collapse to one
 // origin bucket). Same trick gen's *-attribution passes use (gen.ts:470-483).
-async function buildHydrateBreakdown(tech: string): Promise<Buffer> {
+async function buildHydrateBreakdown(tech: string): Promise<string> {
   const cfg = await loadViteConfig(join(TECHS_DIR, tech, "vite.hydrate.config.ts"));
   const merged = { ...cfg, build: { ...cfg.build, outDir: "dist/hydrate-bd", minify: false, sourcemap: true } };
   await build({ ...merged, configFile: false, logLevel: "warn" });
   const bundle = join(TECHS_DIR, tech, "dist", "hydrate-bd", "entry.js");
   if (!existsSync(bundle)) throw new Error(`${tech}: hydrate-bd build produced no entry.js`);
-  return readFileSync(bundle);
-}
-
-// ---- static server: SSR markup + the hydrate bundle + its sourcemap ------------
-function serveHydrate(ssrMod: SsrModule, bundleJs: Buffer, mapJson: Buffer | null) {
-  const render = ssrMod.renderHtml ?? ((caseId: string, n: number) => ssrMod.renderCase(caseId, n).html);
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
-    if (url.pathname === "/entry.js") {
-      res.setHeader("content-type", "text/javascript");
-      return res.end(bundleJs);
-    }
-    if (url.pathname === "/entry.js.map" && mapJson) {
-      res.setHeader("content-type", "application/json");
-      return res.end(mapJson);
-    }
-    const caseId = url.searchParams.get("case") ?? "";
-    const n = Number(url.searchParams.get("n") ?? "1");
-    const body = url.searchParams.get("mount") === "1" || !caseId ? "" : render(caseId, n);
-    res.setHeader("content-type", "text/html");
-    res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
-  });
-  return new Promise<{ port: number; close: () => Promise<void> }>((resolve) => {
-    server.listen(0, "127.0.0.1", () => {
-      const port = (server.address() as { port: number }).port;
-      resolve({ port, close: () => new Promise<void>((done) => server.close(() => done())) });
-    });
-  });
+  return join(TECHS_DIR, tech, "dist", "hydrate-bd");
 }
 
 // ---- wpd runner ----------------------------------------------------------------
@@ -522,14 +497,16 @@ async function main() {
     // ---- browser lanes share one build + one server ----
     const needsBrowser = lanes.some((lane) => lane !== "ssr");
     if (needsBrowser) {
-      let bundleJs: Buffer, mapJson: Buffer | null;
+      let directory: string;
+      try { directory = await buildHydrateBreakdown(tech); }
+      catch (error) { console.error(`  ✗ ${tech}: hydrate-bd build failed — ${errLine(error)}`); continue; }
+      const { port, close } = await serveBrowserFixture({ directory, ssrMod: mod });
       try {
-        bundleJs = await buildHydrateBreakdown(tech);
-        const mapPath = join(TECHS_DIR, tech, "dist", "hydrate-bd", "entry.js.map");
-        mapJson = existsSync(mapPath) ? readFileSync(mapPath) : null;
-      } catch (error) { console.error(`  ✗ ${tech}: hydrate-bd build failed — ${errLine(error)}`); continue; }
-      const { port, close } = await serveHydrate(mod, bundleJs, mapJson);
-      try {
+        // Correctness checks use separate pages before any profile recording.
+        const browser = await chromium.launch();
+        try {
+          for (const cell of techCells) await validateBrowserFixture(browser, { port, ssrMod: mod, caseId: cell.caseId });
+        } finally { await browser.close(); }
         for (const cell of techCells) {
           const key = `${cell.caseId}/${tech}`;
           if (lanes.includes("mount")) {

@@ -16,7 +16,7 @@ export const srOnly = css({
   border: "0",
 });
 
-export const minTargetSize = css({
+export const minTargetSize = css.raw({
   _before: {
     content: '""',
     position: "absolute",
@@ -39,7 +39,7 @@ export const minTargetSize = css({
   },
 });
 
-export const focusRing = css({
+export const focusRing = css.raw({
   _focusVisible: {
     outline: "2px solid #2563eb",
     outlineOffset: "2px",

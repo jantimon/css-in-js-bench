@@ -294,3 +294,21 @@ records and analysis prose. Run `pnpm gen:wpd` for the full profile set before b
 `pnpm test:interaction` checks repeated state changes and resets in Chromium using
 the React and Solid baselines. It builds temporary browser bundles and leaves
 measurement files untouched.
+
+### Browser pages and style checks
+
+Timing, WPD profiles, screenshots and browser verification use one document and
+asset server. The browser build supplies stylesheet links through Vite's manifest
+and `browser-styles.json`. Vanilla loads one case stylesheet to keep reused class
+names separate. Utility builds include the finite `dyn-translate` input range,
+including the last changed input; the server rejects sizes beyond that range.
+
+Before collecting browser samples, each runner checks a small fixture on separate,
+untimed pages. It compares key computed styles and text before JavaScript, after
+hydration, after the changed-input update, and after a cold mount. Hydration must
+keep the server-rendered elements and complete without browser errors. These checks
+compare each lane with its own SSR/CSS reference; screenshot checks compare lanes.
+
+`pnpm test:browser` checks CSS emission for every lane, failure detection, and
+representative styled pages without writing measurement files. Set
+`BROWSER_STYLES_CASES=all` to check every supported case in the browser test lanes.
