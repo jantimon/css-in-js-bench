@@ -52,11 +52,16 @@ For each case you get:
   hydration commit (CDP Profiler + source maps, hydration deferred behind `?manual=1` so
   the samples are clean). Build-time lanes show ~zero styling-lib cost, runtime CSS-in-JS
   shows its client runtime as a real segment
-- **Interaction → next paint** (ms, lower better): a `flushSync` re-render of the mounted
-  workload in place, then a wait for paint. The per-element runtime cost a user actually
-  feels
-- **Where the interaction time goes** (CPU attribution): that re-render, split per package
-  in the browser. This is where runtime libraries re-run their styling on every update
+- **Interaction update** (ms, lower better): each mounted instance changes its input from
+  `i` to `i + 1`, with stable instance identities. React uses state and `flushSync`; Solid
+  uses a signal and `flush`. Both states warm up before sampling. Each sample resets to
+  `i` and lets the page settle outside the timer. The timer covers the synchronous update
+  and the wait to the first `requestAnimationFrame` callback; it does not measure a real
+  input event or completed paint
+- **Where the interaction time goes** (CPU attribution): the same update, split per package
+  in the browser. WPD's `inp:frame` span adds one more animation frame callback to include
+  rendering work. Its outer `run` span also includes reset time and is not the interaction
+  timing
 - **Where the cold-mount time goes** (CPU attribution): starting from a blank root (no SSR
   markup), a "click" renders the whole workload from scratch (`createRoot().render()`),
   then we wait for the first paint. Unlike hydration this is a cold client mount, so the
@@ -142,14 +147,12 @@ a chart that mixes them:
   Solid stamps a unique `_hk` hydration key on every element it may claim, and unique
   strings don't compress, so the Solid lanes' gzipped HTML runs ~2.5–3× the React lanes'.
   That is Solid's cost, identical in both Solid lanes, and it has nothing to do with yak.
-- **Interaction.** Solid has no re-render. The React lanes' INP pass forces one with
-  `setState` + `flushSync`, so every component re-runs and the styling library recomputes,
-  but the props are unchanged and React writes nothing to the DOM. The Solid analogue is a
-  value change: every case takes its instance index as an accessor and `__inp` bumps the
-  signal behind it, so yak's per-component memo re-runs and the class/style bindings
-  update. That means the Solid lanes really do mutate the DOM in that pass and the React
-  lanes mostly don't — the two INP columns are not the same workload, and only the
-  Solid-vs-Solid gap is a clean read.
+- **Interaction.** Both frameworks change every instance's input from `i` to `i + 1`
+  without changing its identity. React updates state and renders the changed input;
+  Solid updates a signal that each case reads through an accessor. Both produce the same
+  requested change through their own update paths. Samples repeat that transition after
+  warmup, with reset and settling outside the timer. The result includes framework work;
+  compare each styling library with its own framework's vanilla lane to assess its cost.
 - **Hydration bootstrap.** In production Solid ships an inline `<script>` that creates the
   `_$HY` store and starts capturing pre-hydration events. The benchmark's html is component
   markup only, so both Solid lanes run that same bootstrap from the top of their client
@@ -279,3 +282,15 @@ never the lane sources). Every lane is isolated to its own package under `techs/
 library authors can tune their lane via a PR that touches only `techs/<their-lib>/`, see
 "Add a lane" above. Lane PRs don't need Rust unless they touch the next-yak lanes, and
 `pnpm gen:samples --tech '<your-lane>'` only builds your lane
+
+### Interaction samples
+
+`pnpm gen:samples --measure=inp` stores each cell as
+`{ protocol: "index-shift-0-to-1", samples: [...] }`. WPD interaction records carry
+the same protocol in `interactionProtocol`. Case and study analyses also include
+`provenance.interactionProtocol`. The report requires this protocol for interaction
+records and analysis prose. Run `pnpm gen:wpd` for the full profile set before building a report.
+
+`pnpm test:interaction` checks repeated state changes and resets in Chromium using
+the React and Solid baselines. It builds temporary browser bundles and leaves
+measurement files untouched.

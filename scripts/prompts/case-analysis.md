@@ -65,8 +65,7 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
    naive pattern is what you get when nobody pays that cost.
 7. CROSS-FRAMEWORK LANES. Two lanes render Solid 2, not React: `yak-solid` (@yak/solid,
    styled API) and its floor `vanilla-solid` (default-off). They run the same workloads, so
-   they rank in the same lists, but three of their numbers are not like-for-like and saying
-   so is part of the job:
+   they rank in the same lists. Explain the framework costs and the shared interaction:
    - HTML bytes. Solid stamps a unique `_hk` hydration key on every element, and unique
      strings do not compress, so both Solid lanes carry ~2.5-3x the gzipped HTML of any
      React lane. That is Solid's hydration format, identical in both, and never a yak
@@ -74,15 +73,20 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
    - JS bytes. The marginal figure is measured over `vanilla-solid`, not `vanilla`. Solid
      tree-shakes per app, so a Solid lane's marginal JS also carries the parts of
      `@solidjs/web` only the styling library pulls in.
-   - INP. The React lanes re-render with unchanged props and write nothing to the DOM; the
-     Solid lanes' signal bump changes values, so their bindings really do update. Compare
-     `yak-solid` against `vanilla-solid` there and say why the React column is not the same
-     workload.
+   - Interaction update (`inp`). Both frameworks change each mounted instance's input from
+     `i` to `i + 1` with stable identities: React uses state and `flushSync`, Solid a signal
+     and `flush`. Both states warm up; each sample resets to `i` and settles outside the
+     interaction timer. The ordinary `__inp` timer ends at the first animation frame
+     callback, so do not call it real input latency or completed paint. WPD's `inp:frame`
+     adds one more callback to include rendering work. The outer `run` span includes reset
+     and is not interaction timing. Compare each library with its framework's vanilla
+     lane to assess styling cost; cross-framework results also include framework work.
    The framework floor in the CPU attribution is react-dom for the React lanes and
    solid-js/@solidjs/* for the Solid ones — the `react` bucket means "the framework", so
    read a Solid lane's floor as Solid's own work.
 8. `provenance`: gitSha + runTimestamp from `result/meta.json` / BENCHMARK.json meta,
-   generatedAt = now (ISO), model = your model id.
+   generatedAt = now (ISO), model = your model id. Set `interactionProtocol` to
+   `index-shift-0-to-1`; only analyze interaction samples that carry this protocol.
 9. Numbers in prose: round to 3 significant digits, always with units. Never invent a number
    that is not derivable from the inputs.
 10. Prose hygiene — write like a sharp human editor, not a model:

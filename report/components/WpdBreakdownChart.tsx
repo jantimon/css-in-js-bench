@@ -54,7 +54,7 @@ export function WpdBreakdownChart({ rows, wpdVersion }: { rows: WpdBreakdownRow[
       ))}
       <p className="rt-note">
         Chrome-profiled first-span anatomy (web-performance-debugger {wpdVersion}); segments reconcile exactly to span wall. Rank uses active time (wall minus idle).
-        Repeated timing median is shown when available; slice anatomy is retained for the first iteration only.
+        Repeated timing median is shown when available. Each profile bar describes a named action span, including its frame waits.
       </p>
     </div>
   );

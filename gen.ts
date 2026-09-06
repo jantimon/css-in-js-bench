@@ -23,8 +23,8 @@ import { gzipSync } from "node:zlib";
 import { createServer } from "node:http";
 import autocannon from "autocannon";
 import { chromium, type Browser } from "@playwright/test";
-import type { CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
-import { SOURCE_EXT } from "./report/types.ts";
+import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
+import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
@@ -388,22 +388,26 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
   });
 }
 
-// inp: hydrate once per cell, then re-render the mounted workload in place repeatedly,
-// timing click→next-paint (window.__inp). One page load, many samples — warmup discarded.
-async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
+// inp: hydrate once, warm both input states, then time the same i → i + 1 update.
+// Each reset settles outside the timer. __inp ends at the first rAF callback.
+async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, InteractionSamples>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
-    const out: Record<string, number[]> = {};
+    const out: Record<string, InteractionSamples> = {};
     for (const cell of cells) {
       const n = caseMeta[cell.caseId].n;
       const page = await browser.newPage(PAGE_OPTS);
       await applyCpuThrottle(page);
       await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
-      await page.waitForFunction(() => window.__inp !== undefined && window.__hydrateMs !== undefined, null, { timeout: 30_000 });
-      for (let w = 0; w < 3; w++) await page.evaluate(() => window.__inp!()); // warmup, discarded
+      await page.waitForFunction(() => window.__prepareInp !== undefined && window.__inp !== undefined && window.__hydrateMs !== undefined, null, { timeout: 30_000 });
+      const sample = () => page.evaluate(async () => {
+        await window.__prepareInp!();
+        return window.__inp!();
+      });
+      for (let w = 0; w < 3; w++) await sample();
       const samples: number[] = [];
-      for (let s = 0; s < samplesFor("inp"); s++) samples.push(await page.evaluate(() => window.__inp!()));
+      for (let s = 0; s < samplesFor("inp"); s++) samples.push(await sample());
       await page.close();
-      out[`${cell.caseId}/${tech}`] = samples.map((x) => Math.round(x * 100) / 100);
+      out[`${cell.caseId}/${tech}`] = { protocol: INTERACTION_PROTOCOL, samples: samples.map((x) => Math.round(x * 100) / 100) };
     }
     return out;
   });

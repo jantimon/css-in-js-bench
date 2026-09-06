@@ -38,6 +38,7 @@ import { createServer } from "node:http";
 import os from "node:os";
 import benchConfig from "./bench.config.ts";
 import type { CaseMeta, SsrModule } from "./report/types.ts";
+import { INTERACTION_PROTOCOL } from "./report/types.ts";
 import { WPD_MANIFEST, writeJsonAtomic, type WpdManifest, type WpdLane } from "./report/wpd-results.ts";
 
 const execFileP = promisify(execFile);
@@ -276,11 +277,20 @@ async function breakdownLane(phase: "hydrate" | "inp", tech: string, port: numbe
   const base = `?case=${cell.caseId}&n=${n}${mode}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `${phase}__${tech}__${cell.caseId}.json`);
-  const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp re-renders in place
+  const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp repeats one warm input change
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
     "--warmup", "0", "--out", rec]);
   const summary = readSummary(rec);
+  if (phase === "inp") {
+    // Only the named action span excludes reset and settling. The outer run's
+    // wall time and iteration samples include setup, so they are not reported.
+    return {
+      span: await querySpan(rec, "inp:frame"),
+      runSpan: null,
+      timing: { wallMs: null, perIteration: [], stats: null },
+    };
+  }
   return {
     span: await querySpan(rec, `${phase}:frame`),
     runSpan: await querySpan(rec, "run"),
@@ -539,7 +549,7 @@ async function main() {
             catch (error) { bump("hydrate", false); console.error(`  ✗ hydrate ${key}: ${errLine(error)}`); }
           }
           if (lanes.includes("inp")) {
-            try { const { span, runSpan, timing } = await breakdownLane("inp", tech, port, cell); data.inp[key] = [{ span, runSpan, timing }]; bump("inp", !!span); console.log(`  ${span ? "✓" : "∅"} inp ${key}${span ? ` (wall ${span.wallMs}ms, js ${span.slices.js}ms, idle ${span.slices.idle}ms)` : ""}`); writeResult(files.inp, data.inp); }
+            try { const { span, runSpan, timing } = await breakdownLane("inp", tech, port, cell); data.inp[key] = [{ interactionProtocol: INTERACTION_PROTOCOL, span, runSpan, timing }]; bump("inp", !!span); console.log(`  ${span ? "✓" : "∅"} inp ${key}${span ? ` (wall ${span.wallMs}ms, js ${span.slices.js}ms, idle ${span.slices.idle}ms)` : ""}`); writeResult(files.inp, data.inp); }
             catch (error) { bump("inp", false); console.error(`  ✗ inp ${key}: ${errLine(error)}`); }
           }
           if (lanes.includes("firefox") && firefoxOk) {

@@ -12,6 +12,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
 import { median, percentile, spread } from "./report/stats.ts";
+import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -79,11 +80,11 @@ async function main() {
   const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
   const wpdSsr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-wpd-ssr.json"), {});
   const hyd = readJson<Record<string, number[]>>(join(RESULT, "measurement-hydrate.json"), {});
-  const inp = readJson<Record<string, number[]>>(join(RESULT, "measurement-inp.json"), {});
+  const inp = interactionTimings(readJson<Record<string, unknown>>(join(RESULT, "measurement-inp.json"), {}));
   const mount = readJson<Record<string, number[]>>(join(RESULT, "measurement-mount.json"), {});
   const nsweep = readJson<Record<string, NsweepSample[]>>(join(RESULT, "measurement-nsweep.json"), {});
   const wpdHydrate = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-hydrate.json"), {});
-  const wpdInp = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {});
+  const wpdInp = interactionProfiles(readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {}));
   const wpdMount = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-mount.json"), {});
   const wpdFirefox = readJson<Record<string, WpdFirefoxSample[]>>(join(RESULT, "measurement-wpd-firefox.json"), {});
   const wpdBlame = readJson<Record<string, WpdBlameSample[]>>(join(RESULT, "measurement-wpd-blame.json"), {});
@@ -92,17 +93,18 @@ async function main() {
   const buildtime = readJson<Record<string, { cold: number[]; warm?: number[] }>>(join(RESULT, "measurement-buildtime.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
   // LLM-written per-case analyses (result/analysis/<caseId>.json) — optional like any
-  // other result file; validated only by shape (schemaVersion + matching caseId).
+  // other result file; require matching interaction provenance as well as case identity.
   const analysisDir = join(RESULT, "analysis");
   const analyses: Record<string, CaseAnalysis> = {};
   if (existsSync(analysisDir)) {
     for (const f of readdirSync(analysisDir)) {
       if (!f.endsWith(".json")) continue;
       const a = readJson<CaseAnalysis | null>(join(analysisDir, f), null);
-      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "")) analyses[a.caseId] = a;
+      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "") && hasInteractionProvenance(a)) analyses[a.caseId] = a;
     }
   }
-  const study = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const studyData = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const study = hasInteractionProvenance(studyData) ? studyData : null;
 
   // Screenshots live in result/assets/; mirror them next to BENCHMARK.html so the
   // self-contained report can reference assets/<…>.avif (§10.6 — single file except images).
@@ -196,7 +198,7 @@ async function main() {
         const xs = hyd[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
-    // inp: click→next-paint of an in-place re-render (ms, lower better) — optional/heavy.
+    // inp: warm input change through the first rAF callback (ms, lower better).
     const inpBars: Bar[] = usedTechs
       .filter((t) => inp[`${caseId}/${t}`]?.length)
       .map((t) => {
@@ -457,13 +459,12 @@ async function main() {
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction re-render — repeated timing + Chrome-profiled span anatomy
+                  Interaction update — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    A state change triggers a <b>synchronous re-render</b> (<code>flushSync</code>) of the whole mounted
-                    workload, then we wait for the next paint — click→paint latency. The profile separates active work from the
-                    frame-alignment idle that used to dominate this number. This
-                    is where <b>runtime</b> CSS-in-JS libraries re-run their per-element styling on every update; build-time
-                    lanes (next-yak / Panda / Tailwind / vanilla) do almost none. Lower is better.
+                    Every sample changes each instance's input from <code>i</code> to <code>i + 1</code>, keeping its identity.
+                    React updates state; Solid updates a signal. Both states are warmed, and reset and settling are outside
+                    the timer. The repeated timing ends at the first animation-frame callback, before repaint; it is not INP.
+                    The profiled action span adds a frame to include rendering work and excludes reset. Lower is better.
                   </InfoTip>
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}

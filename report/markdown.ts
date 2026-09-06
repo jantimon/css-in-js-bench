@@ -154,7 +154,7 @@ const MEASUREMENTS = `## Measurements
 Every per-case section below reports these as tables. Definitions are given here once. The
 statistic is the **median** where a repeated timing distribution exists; the Chrome-profiled span anatomy
 (recorded with web-performance-debugger WPD_VERSION) is
-the first instrumented iteration and is labelled separately. Production React in every lane. In
+the first instrumented iteration and is labelled separately. Each lane uses its framework's production build. In
 each table the best value is **bold** and rows are sorted best-first.
 
 - **SSR render throughput** — renders/sec, higher is better. How many times per second the lane
@@ -171,10 +171,13 @@ each table the best value is **bold** and rows are sorted best-first.
 - **Where the client hydration time goes** — Chrome-profiled reconciling span, ms, lower is better. Time for React to
   **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
   existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
-- **Where the interaction time goes** — Chrome-profiled in-place re-render, ms, lower is better. A state change
-  triggers a synchronous re-render (\`flushSync\`) of the whole mounted workload, then waits for the
-  next paint — click→paint latency, with active work separated from frame-alignment idle. This is where **runtime** CSS-in-JS re-runs
-  its per-element styling on every update; build-time lanes do almost none.
+- **Where the interaction time goes** — Chrome-profiled update, ms, lower is better. Each mounted
+  instance changes its input from \`i\` to \`i + 1\`, with stable instance identities. React updates
+  state with \`flushSync\`; Solid updates a signal with \`flush\`. Both states warm up before sampling;
+  reset to \`i\` and settling take place outside the interaction timer. The ordinary \`__inp\` timer
+  covers the synchronous update and the wait to the first animation frame callback, not a real input
+  event or completed paint. WPD's \`inp:frame\` span adds a second callback to include rendering work,
+  with active work separate from idle. Its outer \`run\` span includes reset and is not interaction timing.
 - **Where the cold-mount time goes** — Chrome-profiled blank screen → first render, ms, lower is better. From a
   **blank root** (no SSR markup) a "click" renders the whole workload from scratch
   (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
@@ -261,7 +264,7 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
         wpdTable(s.hydWpdRows),
       ],
       [
-        "### Interaction re-render — profiled active work, lower is better",
+        "### Interaction update — profiled active work, lower is better",
         wpdTable(s.inpWpdRows),
       ],
       [

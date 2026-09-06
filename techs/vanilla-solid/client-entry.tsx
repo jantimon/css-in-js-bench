@@ -1,23 +1,9 @@
-// Browser entry for the hydrate + inp + mount measurements — the Solid twin of the
-// React lanes' client-entry. It hydrates the SAME n instances the SSR markup contains
-// and records the hydration time (window.__hydrateMs). It also exposes window.__inp
-// (drive the mounted workload's reactive graph, click→next-paint) and window.__mount
-// (render the workload into an EMPTY root from scratch — a cold client mount whose
-// first paint includes any first-time style injection).
-//
-// Where it necessarily differs from the React entry: Solid has no re-render. React
-// forces one with setState + flushSync, which re-runs every component and lets the
-// styling library recompute. The Solid analogue of "the user did something and the
-// styles must follow" is a VALUE CHANGE, so every case takes its instance index as an
-// accessor and __inp bumps the signal behind it: yak's per-component memo re-runs for
-// the props the CSS actually reads and updates the class/style bindings in place. A
-// case with no dynamic interpolation legitimately costs nothing here — that is the
-// measurement, not a gap in it.
-//
-// UNIFORM across both Solid lanes — only the case modules it discovers differ.
+// Hydrate or mount the case, then measure a warm input change from i to i + 1.
+// The index accessor reads a signal; __prepareInp resets it outside the timed sample.
 import { createSignal, flush } from "solid-js";
 import { hydrate, render } from "@solidjs/web";
 import type { SolidRenderCase } from "../../report/types";
+import { installInteraction } from "../../scripts/interaction";
 
 // Solid's hydration bootstrap. In production this ships as an inline <script> in the
 // document (generateHydrationScript): it creates the `_$HY` store the client runtime
@@ -104,18 +90,8 @@ if (!renderCase) {
 else if (params.get("manual") === "1") window.__hydrate = hydrateRoot;
 else hydrateRoot();
 
-// flush() forces the synchronous update pass (the flushSync analogue): the signal write
-// propagates through every instance's memos and DOM bindings before it returns, then rAF
-// waits for the paint → click-to-next-paint latency.
-window.__inp = () =>
-  new Promise<number>((resolve) => {
-    const t0 = performance.now();
-    performance.mark("inp:start");
-    flush(() => setOffset((o) => o + 1));
-    requestAnimationFrame(() => {
-      const wall = performance.now() - t0;
-      performance.mark("inp:end");
-      performance.measure("inp", "inp:start", "inp:end");
-      resolve(wall);
-    });
-  });
+installInteraction((value) => {
+  if (window.__hydrateMs === undefined && window.__mountMs === undefined)
+    throw new Error("Interaction requires a mounted workload");
+  flush(() => setOffset(value));
+});

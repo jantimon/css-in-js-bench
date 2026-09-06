@@ -52,6 +52,13 @@ export interface TechInfo {
 /** The render-function contract a `case/<id>/index.tsx` default-exports (§6). */
 export type RenderCase = (i: number) => unknown; // ReactElement; unknown to avoid a react dep here
 
+/** The measured transition is i → i + 1, with reset and warmup outside the timer. */
+export const INTERACTION_PROTOCOL = "index-shift-0-to-1";
+export interface InteractionSamples {
+  protocol: typeof INTERACTION_PROTOCOL;
+  samples: number[];
+}
+
 /** The same contract for the Solid lanes: the instance index arrives as an ACCESSOR.
  * Solid has no re-render, so an interaction is a value change flowing through the
  * reactive graph — the client entry drives this accessor from a signal. */
@@ -141,6 +148,7 @@ export interface WpdSpanSample {
 }
 
 export interface WpdBrowserSample {
+  interactionProtocol?: typeof INTERACTION_PROTOCOL;
   span: WpdSpanSample | null;
   runSpan: WpdSpanSample | null;
   timing: {

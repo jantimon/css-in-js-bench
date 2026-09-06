@@ -13,7 +13,8 @@
     "verify": "node ./verify.ts",
     "dev": "vite",
     "lint": "node ./report/lint.ts",
-    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs"
+    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs",
+    "test:interaction": "node --test ./report/interaction.test.ts ./scripts/interaction.test.mjs"
   },
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {
