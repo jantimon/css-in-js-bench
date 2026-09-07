@@ -374,7 +374,7 @@ async function main() {
             </div>
             {techGroups.map((g) => (
               <div className="tp-row" key={g.group}>
-                <span className="tp-group">{g.group}</span>
+                <button type="button" className="tp-group active" data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
                 <div className="tp-engines">
                   {g.rows.map((row) => (
                     <div className="tp-engine-row" key={row.engine}>
@@ -384,7 +384,7 @@ async function main() {
                       </button>
                       <div className="tp-pills">
                         {row.items.map((it) => (
-                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
                             <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
                             <TechLabel tech={it.tech} label={it.short} />
                           </button>
@@ -670,7 +670,9 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tp-engine:hover{color:#adbac7}
 .tp-engine:not(.active){opacity:.45}
 .tp-engine-logo{height:12px;width:auto}
-.tp-group{flex:0 0 150px;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
+.tp-group{flex:0 0 150px;background:none;border:0;padding:0;text-align:left;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;cursor:pointer}
+.tp-group:hover{color:#adbac7}
+.tp-group:not(.active){opacity:.45}
 .tp-pills{display:flex;flex-wrap:wrap;gap:7px}
 .tech-pill{display:inline-flex;align-items:center;gap:7px;background:#161b22;color:#adbac7;border:1px solid #21262d;border-radius:999px;padding:4px 12px 4px 9px;font-size:12.5px;cursor:pointer;user-select:none}
 .tech-pill:hover{border-color:#30363d}
@@ -919,6 +921,7 @@ function syncLanesQuery() {
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
   for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
+  for (const b of groupPills) b.classList.toggle('active', lanesOfGroup(b.dataset.groupFilter).some(p => p.classList.contains('active')));
   for (const ed of document.querySelectorAll('[data-ed]')) {
     const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
     if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
@@ -933,12 +936,17 @@ for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains(
 // so they keep their own pills. All on already means the click turns them off again.
 const enginePills = [...document.querySelectorAll('[data-engine-filter]')];
 const lanesOfEngine = eng => techPills.filter(p => p.dataset.engine === eng && p.dataset.floor !== '1');
-for (const b of enginePills) b.onclick = () => {
-  const lanes = lanesOfEngine(b.dataset.engineFilter);
+// A group label does the same for one styling technique, both engines at once — the group IS
+// the thing you are asking for, so the baselines are included when you ask for Baseline.
+const groupPills = [...document.querySelectorAll('[data-group-filter]')];
+const lanesOfGroup = name => techPills.filter(p => p.dataset.group === name);
+const toggleAll = lanes => {
   const allOn = lanes.every(p => p.classList.contains('active'));
   for (const p of lanes) setTech(p, !allOn);
   afterTech();
 };
+for (const b of enginePills) b.onclick = () => toggleAll(lanesOfEngine(b.dataset.engineFilter));
+for (const b of groupPills) b.onclick = () => toggleAll(lanesOfGroup(b.dataset.groupFilter));
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
 // Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
