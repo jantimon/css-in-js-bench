@@ -9,24 +9,28 @@
 // React and Solid lanes side by side, which is the comparison the report is for.
 export interface Family {
   group: string;
+  /** The bare-framework lanes. They sit out the engine filter, which selects styling techniques. */
+  floor?: boolean;
   items: { tech: string; short: string }[];
 }
 
 export interface FamilyRow {
-  /** Engine id (bench.framework), null when the group holds one engine and needs no row label. */
-  engine: string | null;
-  label: string | null;
+  /** Engine id, from bench.framework. */
+  engine: string;
+  label: string;
   items: { tech: string; short: string }[];
 }
 
 export interface GroupedFamily {
   group: string;
+  floor?: boolean;
   rows: FamilyRow[];
 }
 
 export const FAMILIES: Family[] = [
   {
     group: "Baseline",
+    floor: true,
     items: [
       { tech: "vanilla", short: "vanilla" },
       { tech: "vanilla-solid", short: "vanilla" },
@@ -81,14 +85,14 @@ export const FAMILIES: Family[] = [
 const ENGINE_ORDER = ["react", "solid"];
 const ENGINE_LABEL: Record<string, string> = { react: "React", solid: "Solid" };
 
-/** One row per render engine, labelled only where a group holds more than one. */
+/** One labelled row per render engine — always labelled, so the engine reads the same in a
+ *  group that holds one as in a group that holds both, and every row can act as its filter. */
 function engineRows(items: Family["items"], engineOf: (tech: string) => string): FamilyRow[] {
   const byEngine = new Map<string, Family["items"]>();
   for (const item of items) {
     const engine = engineOf(item.tech);
     (byEngine.get(engine) ?? byEngine.set(engine, []).get(engine)!).push(item);
   }
-  if (byEngine.size < 2) return [{ engine: null, label: null, items }];
   return [...byEngine.entries()]
     .sort((a, b) => ENGINE_ORDER.indexOf(a[0]) - ENGINE_ORDER.indexOf(b[0]))
     .map(([engine, rowItems]) => ({ engine, label: ENGINE_LABEL[engine] ?? engine, items: rowItems }));
@@ -101,7 +105,7 @@ export function groupTechs(usedTechs: string[], engineOf: (tech: string) => stri
   for (const fam of FAMILIES) {
     const items = fam.items.filter((it) => usedTechs.includes(it.tech));
     items.forEach((it) => placed.add(it.tech));
-    if (items.length) out.push({ group: fam.group, rows: engineRows(items, engineOf) });
+    if (items.length) out.push({ group: fam.group, floor: fam.floor, rows: engineRows(items, engineOf) });
   }
   const rest = usedTechs.filter((t) => !placed.has(t));
   if (rest.length) out.push({ group: "Other", rows: engineRows(rest.map((t) => ({ tech: t, short: t })), engineOf) });

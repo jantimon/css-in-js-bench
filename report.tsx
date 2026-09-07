@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
 import { median, spread } from "./report/stats.ts";
 import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
+import { httpResults, httpMeasurementNote } from "./report/http-results.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -77,7 +78,9 @@ async function main() {
   const wpdVersion = wpdManifest.wpd.version;
   const micro = readJson<Record<string, number[]>>(join(RESULT, "measurement-microbench.json"), {});
   const pay = readJson<Record<string, { js: number; css: number; html: number }[]>>(join(RESULT, "measurement-payload.json"), {});
-  const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
+  const http = httpResults(readJson<Record<string, unknown>>(join(RESULT, "measurement-autocannon.json"), {}));
+  const acan = http.samples;
+  const httpNote = httpMeasurementNote(http.protocol);
   const wpdSsr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-wpd-ssr.json"), {});
   const hyd = readJson<Record<string, number[]>>(join(RESULT, "measurement-hydrate.json"), {});
   const inp = interactionTimings(readJson<Record<string, unknown>>(join(RESULT, "measurement-inp.json"), {}));
@@ -374,14 +377,14 @@ async function main() {
                 <span className="tp-group">{g.group}</span>
                 <div className="tp-engines">
                   {g.rows.map((row) => (
-                    <div className="tp-engine-row" key={row.engine ?? "one"}>
-                      <span className="tp-engine">
-                        {row.engine ? <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" /> : null}
+                    <div className="tp-engine-row" key={row.engine}>
+                      <button type="button" className="tp-engine active" data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
+                        <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" />
                         {row.label}
-                      </span>
+                      </button>
                       <div className="tp-pills">
                         {row.items.map((it) => (
-                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
                             <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
                             <TechLabel tech={it.tech} label={it.short} />
                           </button>
@@ -428,11 +431,12 @@ async function main() {
                 <h3 className="chart-title">
                   SSR throughput under load — requests / sec · higher is better
                   <InfoTip>
-                    The same render behind a real HTTP server, with many clients asking at once. Closer to what a server
-                    actually does than the in-process loop above. Higher is better.
+                    The server renders an HTML fragment for each request while clients keep concurrent connections open.
+                    Higher request throughput is better.
                   </InfoTip>
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
+                <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
@@ -557,7 +561,7 @@ async function main() {
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
               <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
-              <li><b>autocannon</b> — an HTTP load generator that measures requests per second against each lane's SSR server end to end.</li>
+              <li><b>autocannon</b> — {httpNote}</li>
               <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
@@ -582,7 +586,7 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows, http.protocol));
 
   // Machine-readable companion: the same reduced section data the charts render, all lanes,
   // one file. This is what the analysis prompt (scripts/prompts/case-analysis.md) reads.
@@ -590,6 +594,7 @@ async function main() {
     schemaVersion: 1,
     meta,
     wpdVersion,
+    httpProtocol: http.protocol,
     study,
     techs: Object.fromEntries(usedTechs.map((t) => [t, { label: techs[t].label, ...techs[t].bench }])),
     // Lane-level (one client build per tech), so it sits alongside `cases`, not inside it.
@@ -661,7 +666,9 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tp-row{display:flex;align-items:center;gap:16px;padding:10px 0}
 .tp-engines{display:flex;flex-direction:column;gap:6px}
 .tp-engine-row{display:flex;align-items:center;gap:12px}
-.tp-engine{flex:0 0 58px;display:inline-flex;align-items:center;gap:5px;color:#6e7681;font-size:10.5px;letter-spacing:.04em}
+.tp-engine{flex:0 0 58px;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;text-align:left;color:#6e7681;font-size:10.5px;letter-spacing:.04em;cursor:pointer}
+.tp-engine:hover{color:#adbac7}
+.tp-engine:not(.active){opacity:.45}
 .tp-engine-logo{height:12px;width:auto}
 .tp-group{flex:0 0 150px;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
 .tp-pills{display:flex;flex-wrap:wrap;gap:7px}
@@ -894,19 +901,24 @@ function drawSweep() {
     }
   }
 }
+// The view a reader lands on with no ?lanes=: the React lanes, minus the diagnostic ones.
+// Solid is a second axis rather than a longer list, so it starts collapsed — one click on a
+// Solid row opens it, and any selection is then shareable through the query string.
+const isDefaultLane = b => b.dataset.defaultOff !== '1' && b.dataset.engine !== 'solid';
 // Mirror the lane selection into ?lanes=a,b so a filtered view is a shareable URL.
 // No param = all lanes (the default view keeps a clean URL). replaceState can throw
 // on file:// — the filter must keep working there, so it's best-effort.
 function syncLanesQuery() {
   const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
-  // The clean URL is the DEFAULT selection (all lanes minus the data-default-off ones).
-  const def = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
+  // The clean URL is the DEFAULT selection — see isDefaultLane.
+  const def = techPills.filter(isDefaultLane).map(b => b.dataset.techFilter);
   const isDefault = on.length === def.length && on.every((t, i) => t === def[i]);
   const qs = isDefault ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
+  for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
   for (const ed of document.querySelectorAll('[data-ed]')) {
     const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
     if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
@@ -916,18 +928,27 @@ function afterTech() {
   syncLanesQuery();
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
+// An engine row selects that engine's styling techniques in one click. The bare-framework
+// lanes stay out of it — they are the floor you read the others against, not a technique —
+// so they keep their own pills. All on already means the click turns them off again.
+const enginePills = [...document.querySelectorAll('[data-engine-filter]')];
+const lanesOfEngine = eng => techPills.filter(p => p.dataset.engine === eng && p.dataset.floor !== '1');
+for (const b of enginePills) b.onclick = () => {
+  const lanes = lanesOfEngine(b.dataset.engineFilter);
+  const allOn = lanes.every(p => p.classList.contains('active'));
+  for (const p of lanes) setTech(p, !allOn);
+  afterTech();
+};
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
 // Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
 // pre-filtered (and syncLanesQuery then just re-serializes the same selection).
-// Without a lanes param, diagnostic lanes (data-default-off) start hidden — one
-// click on their pill brings them back.
 const lanesParam = new URLSearchParams(location.search).get('lanes');
 if (lanesParam !== null) {
   const want = new Set(lanesParam.split(',').filter(Boolean));
   for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
 } else {
-  for (const b of techPills) if (b.dataset.defaultOff === '1') setTech(b, false);
+  for (const b of techPills) if (!isDefaultLane(b)) setTech(b, false);
 }
 afterTech();
 // measure pills — toggle which measurement sections are visible.
