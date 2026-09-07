@@ -10,7 +10,7 @@ export function logoFor(tech: string): string | null {
   if (tech === "tailwind-merge" || tech === "cnfast" || tech === "cn" || tech === "cn-solid") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
   if (tech === "bamboo") return "assets/logos/bamboo.png";
-  if (tech === "stylex" || tech === "stylex-layers") return "assets/logos/stylex.avif";
+  if (tech.startsWith("stylex")) return "assets/logos/stylex.avif";
   if (tech === "emotion") return "assets/logos/emotion.avif";
   if (tech === "goober") return "assets/logos/goober.avif";
   if (tech === "vanilla" || tech === "vanilla-solid") return "assets/logos/vanilla.avif";
@@ -42,6 +42,7 @@ export const TECH_ALIASES: Record<string, string> = {
   "vanilla-solid": "vanilla-solid",
   "yak-solid": "yak-solid",
   "yak-solid-nofold": "yak-solid-nofold",
+  "stylex-solid": "stylex-solid",
   "cn-solid": "cn-solid",
 };
 

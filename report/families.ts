@@ -70,6 +70,7 @@ export const FAMILIES: Family[] = [
     items: [
       { tech: "stylex-layers", short: "layers" },
       { tech: "stylex", short: ":not hack" },
+      { tech: "stylex-solid", short: "layers" },
     ],
   },
   {
