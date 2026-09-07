@@ -14,7 +14,7 @@ test("interaction timings require the shared transition and valid samples", () =
 });
 
 test("interaction profiles require the same transition as the timing bars", () => {
-  const profile: WpdBrowserSample = { span: null, runSpan: null, timing: { wallMs: null, perIteration: [], stats: null } };
+  const profile: WpdBrowserSample = { span: null, runSpan: null, timing: null };
   const valid = { ...profile, interactionProtocol: INTERACTION_PROTOCOL };
   assert.deepEqual(interactionProfiles({ valid: [valid], untagged: [profile], empty: [] }), { valid: [valid] });
 });

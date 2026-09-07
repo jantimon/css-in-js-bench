@@ -90,13 +90,15 @@ const payloadTable = (rows: StackRow[]): string => {
   );
 };
 
+// A table cell for a number an engine may not report: "—" when the field is absent.
+const cell = (v: number | null | undefined, f: (n: number) => string) => (typeof v === "number" ? f(v) : "—");
+
 // Browser render-work on a cold mount (from wpd), best-first by Chrome style-recalc count.
 // Chrome's authoritative axis is counts; Firefox's is Gecko ms — cells are "—" when an engine
 // doesn't report that field (Firefox has no paint / per-element counts).
 const rtTable = (rows: RenderTimingRow[]): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.chrome?.styleCount ?? Infinity) - (b.chrome?.styleCount ?? Infinity));
   if (!picked.length) return "";
-  const cell = (v: number | null | undefined, f: (n: number) => string) => (typeof v === "number" ? f(v) : "—");
   return table(
     ["Technique", "Chrome recalcs", "Chrome layout ms", "Chrome paint ms", "Firefox style ms", "Firefox forced ms"],
     picked.map((r, i) => [
@@ -114,10 +116,10 @@ const wpdTable = (rows: WpdBreakdownRow[]): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.span.wallMs - a.span.slices.idle) - (b.span.wallMs - b.span.slices.idle));
   if (!picked.length) return "";
   return table(
-    ["Technique", "active ms", "span ms", "timing median", "p95", "JS", "style", "layout", "paint", "idle"],
+    ["Technique", "active ms", "span ms", "profiled timing median", "samples", "JS", "style", "layout", "paint", "idle"],
     picked.map((r, i) => {
       const active = r.span.wallMs - r.span.slices.idle;
-      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), r.p95Ms === undefined ? "—" : ms(r.p95Ms), ms(r.span.slices.js), ms(r.span.slices.style), ms(r.span.slices.layout), ms(r.span.slices.paint), ms(r.span.slices.idle)];
+      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), r.timing ? String(r.timing.samplesMs.length) : "—", ms(r.span.slices.js), cell(r.span.slices.style, ms), cell(r.span.slices.layout, ms), cell(r.span.slices.paint, ms), ms(r.span.slices.idle)];
     }),
   );
 };

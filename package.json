@@ -13,13 +13,13 @@
     "verify": "node ./verify.ts",
     "dev": "vite",
     "lint": "node ./report/lint.ts",
-    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs",
+    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs ./scripts/wpd-query.test.ts",
     "test:interaction": "node --test ./report/interaction.test.ts ./scripts/interaction.test.mjs",
     "test:browser": "node --test --test-concurrency=1 ./scripts/browser-styles.test.ts ./scripts/browser-validation.test.mjs ./scripts/browser-styles-browser.test.ts ./scripts/hydration-handoff.test.mjs"
   },
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {
-    "@jantimon/web-performance-debugger": "1.3.0",
+    "@jantimon/web-performance-debugger": "1.5.0",
     "@playwright/test": "^1.61.1",
     "@vitejs/plugin-react": "^6.0.1",
     "autocannon": "^8.0.0",

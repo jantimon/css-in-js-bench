@@ -1,6 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
-import type { WpdSpanSample } from "../types.ts";
+import type { WpdBrowserSample, WpdSpanSample } from "../types.ts";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface WpdBreakdownRow {
@@ -8,9 +8,7 @@ export interface WpdBreakdownRow {
   label: string;
   span: WpdSpanSample;
   medianMs?: number;
-  /** tail latency over the repeated iterations — the frames a user actually notices */
-  p75Ms?: number;
-  p95Ms?: number;
+  timing: WpdBrowserSample["timing"];
 }
 
 const SEGMENTS = [
@@ -43,18 +41,19 @@ export function WpdBreakdownChart({ rows, wpdVersion }: { rows: WpdBreakdownRow[
           <span className="bar-track">
             {SEGMENTS.map(([key, color]) => {
               const value = row.span.slices[key];
-              return value > 0 ? <span key={key} className="attr-seg" data-val={value} title={`${key}: ${value.toFixed(2)} ms`} style={{ width: `${(value / max) * 100}%`, background: color }} /> : null;
+              return value !== null && value > 0 ? <span key={key} className="attr-seg" data-val={value} title={`${key}: ${value.toFixed(2)} ms`} style={{ width: `${(value / max) * 100}%`, background: color }} /> : null;
             })}
           </span>
           <span className="bar-val">
             {activeMs(row).toFixed(2)}<span className="bar-unit"> ms active</span>
-            <span className="bar-breakdown">({row.span.wallMs.toFixed(2)} ms span{row.medianMs !== undefined ? ` · ${row.medianMs.toFixed(2)} ms median` : ""}{row.p95Ms !== undefined ? ` · p95 ${row.p95Ms.toFixed(2)}` : ""})</span>
+            <span className="bar-breakdown" title={row.timing?.stats ? `${row.timing.samplesMs.length} ${row.timing.sampleUnit} samples; ${row.timing.stats.minMs.toFixed(2)}–${row.timing.stats.maxMs.toFixed(2)} ms; ${row.timing.boundary}; ${row.timing.clock ?? "unknown"} clock` : undefined}>({row.span.wallMs.toFixed(2)} ms span{row.medianMs !== undefined ? ` · ${row.medianMs.toFixed(2)} ms profiled median (n=${row.timing?.samplesMs.length})` : ""})</span>
           </span>
         </div>
       ))}
       <p className="rt-note">
-        Chrome-profiled first-span anatomy (web-performance-debugger {wpdVersion}); segments reconcile exactly to span wall. Rank uses active time (wall minus idle).
-        Repeated timing median is shown when available. Each profile bar describes a named action span, including its frame waits.
+        Chrome profile (web-performance-debugger {wpdVersion}); segments sum to the span wall time. Rank uses active time (wall minus idle).
+        Each bar describes one named action, including its frame waits. Repeated actions use the occurrence with the lower-median profile duration.
+        The timing median uses all recorded action durations and includes profiler overhead. The main timing charts use separate measurements.
       </p>
     </div>
   );

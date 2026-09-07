@@ -3,6 +3,8 @@
 // imports the same types so the data it writes and the data the report reads can
 // never drift.
 
+import type { SpanTiming } from "@jantimon/web-performance-debugger";
+
 /** A workload definition — `cases/<id>.ts` default-exports this (§5). */
 export interface CaseMeta {
   /** Human label shown in the report. */
@@ -148,7 +150,7 @@ export interface RenderTimingMetrics {
 /** WPD's unified per-span browser breakdown, normalized by gen-wpd. */
 export interface WpdSpanSample {
   wallMs: number;
-  slices: { js: number; style: number; layout: number; paint: number; gc: number; other: number; idle: number };
+  slices: { js: number; style: number | null; layout: number | null; paint: number | null; gc: number; other: number; idle: number };
   jsByPackage: Record<string, number>;
   frames?: { presented: number; presentedPartial: number; dropped: number; total: number; worstStages?: { name: string; ms: number }[] };
 }
@@ -157,16 +159,12 @@ export interface WpdBrowserSample {
   interactionProtocol?: typeof INTERACTION_PROTOCOL;
   span: WpdSpanSample | null;
   runSpan: WpdSpanSample | null;
-  timing: {
-    wallMs: number | null;
-    perIteration: number[];
-    stats: { samples: number; minMs: number; medianMs: number; meanMs: number; maxMs: number } | null;
-  };
+  timing: SpanTiming | null;
 }
 
 export interface WpdFirefoxSample {
   wallMs: number | null;
-  breakdown: { js: number; style: number; layout: number; browser: number; gc: number; idle: number } | null;
+  breakdown: { js: number; style: number | null; layout: number | null; browser: number; gc: number; idle: number } | null;
   jsByPackage: Record<string, number>;
   forced: { at: string; count: number; durMs: number }[];
   counts: { layout: number | null; style: number | null; forcedLayout: number | null; paint: number | null };
