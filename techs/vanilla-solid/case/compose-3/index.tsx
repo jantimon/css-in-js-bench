@@ -12,6 +12,4 @@ const join = (own: string, rest?: string) => (rest ? `${own} ${rest}` : own);
 const L0 = (props: P) => <button class={join("btn", props.class)}>{props.children}</button>;
 const L1 = (props: P) => <L0 class={join("lvl1", props.class)}>{props.children}</L0>;
 const L2 = (props: P) => <L1 class={join("lvl2", props.class)}>{props.children}</L1>;
-const ComposedButton = L2;
-
-export default (i: () => number) => <ComposedButton>{i()}</ComposedButton>;
+export default (i: () => number) => <L2>{i()}</L2>;

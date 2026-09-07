@@ -14,6 +14,4 @@ const L2 = (props: P) => <L1 class={join("lvl2", props.class)}>{props.children}<
 const L3 = (props: P) => <L2 class={join("lvl3", props.class)}>{props.children}</L2>;
 const L4 = (props: P) => <L3 class={join("lvl4", props.class)}>{props.children}</L3>;
 const L5 = (props: P) => <L4 class={join("lvl5", props.class)}>{props.children}</L4>;
-const ComposedButton = L5;
-
-export default (i: () => number) => <ComposedButton>{i()}</ComposedButton>;
+export default (i: () => number) => <L5>{i()}</L5>;

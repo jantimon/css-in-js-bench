@@ -12,6 +12,4 @@ const L2 = ({ styles, className, children }: Props) => <L1 styles={css.raw({ bor
 const L3 = ({ styles, className, children }: Props) => <L2 styles={css.raw({ borderLeft: "3px solid hsl(159 70% 50%)", paddingLeft: "6px" }, styles)} className={className}>{children}</L2>;
 const L4 = ({ styles, className, children }: Props) => <L3 styles={css.raw({ borderLeft: "4px solid hsl(212 70% 50%)", paddingLeft: "8px" }, styles)} className={className}>{children}</L3>;
 const L5 = ({ styles, className, children }: Props) => <L4 styles={css.raw({ borderLeft: "5px solid hsl(265 70% 50%)", paddingLeft: "10px" }, styles)} className={className}>{children}</L4>;
-const ComposedButton = L5;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L5>{i}</L5>;

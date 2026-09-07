@@ -8,6 +8,4 @@ import { cn } from "cn";
 const L0 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <button className={cn("inline-flex items-center rounded-md px-4 py-2 bg-blue-600 text-white", className)}>{children}</button>;
 const L1 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <L0 className={cn("[border-left:1px_solid_hsl(53_70%_50%)] [padding-left:2px]", className)}>{children}</L0>;
 const L2 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <L1 className={cn("[border-left:2px_solid_hsl(106_70%_50%)] [padding-left:4px]", className)}>{children}</L1>;
-const ComposedButton = L2;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L2>{i}</L2>;
