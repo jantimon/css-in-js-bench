@@ -13,6 +13,7 @@
     "@stylexjs/stylex": "0.19.0",
     "@stylexjs/unplugin": "0.19.0",
     "react": "catalog:dev",
-    "react-dom": "catalog:dev"
+    "react-dom": "catalog:dev",
+    "unplugin": "2.3.11"
   }
 }

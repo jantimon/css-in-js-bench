@@ -23,7 +23,7 @@ export interface TechBench {
   /** Chart colour (hex). */
   color: string;
   /** Build plugin the lane needs — informational; real wiring is in vite configs. */
-  buildPlugin: "yak" | "stylex" | null;
+  buildPlugin: "yak" | "stylex" | "plumeria" | null;
   /** Prebuilt stylesheet the app ships (presentation/legend hint). */
   appStylesheet: "tailwind" | "panda" | "stylex" | "bamboo" | null;
   /** How this lane's CSS exists — drives the report legend. */
