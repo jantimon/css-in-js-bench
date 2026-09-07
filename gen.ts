@@ -453,8 +453,9 @@ function encodeAvif(png: Buffer, dest: string): void {
 }
 
 // ---- screenshots: a rendered preview of each cell (visual parity across lanes) ---
-// Serves the same document and assets as timing, with client JavaScript disabled, in a headless
-// browser and snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
+// Serves the same assets as timing, with client JavaScript disabled and the fixture's preview
+// shell (?preview=1) laying the bare instances out in a bounded grid, in a headless browser, and
+// snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
 // path map (measurement-screenshots.json) the report uses to reference the images from a
 // sibling assets/ folder (§10.6). n is capped so the preview stays readable.
 //
@@ -473,7 +474,7 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
     const page = await browser.newPage({ ...PAGE_OPTS, deviceScaleFactor: 2, javaScriptEnabled: false }); // crisp SSR images
     for (const cell of cells) {
       const n = Math.min(caseMeta[cell.caseId].n, 6); // a handful of instances reads better than 1,000
-      await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
+      await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&preview=1`, { waitUntil: "load" });
       const el = await page.$("#root");
       const png = await (el ?? page).screenshot();
       const hash = createHash("sha1").update(png).digest("hex").slice(0, 8);

@@ -13,6 +13,15 @@ const MIME: Record<string, string> = {
 };
 const escapeAttribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
 
+// The harness renders n bare instances with no parent layout; left to themselves they
+// stack full-bleed down the viewport and a tile's aspect-ratio box grows to match. The
+// preview pass asks for this shell (?preview=1) so each instance gets a real width and
+// reads like the real page. The timing passes never load it — their layout is the one
+// being measured.
+const PREVIEW_SHELL =
+  "*{box-sizing:border-box}body{margin:0}" +
+  "#root{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;align-items:start;width:760px;padding:24px;background:#fff}";
+
 /** Serve the production asset graph for timing, profiles, screenshots and checks. */
 export async function serveBrowserFixture({ directory, ssrMod }: { directory: string; ssrMod: SsrModule }) {
   const root = resolve(directory);
@@ -64,9 +73,11 @@ export async function serveBrowserFixture({ directory, ssrMod }: { directory: st
       if (maxInput !== undefined && n > maxInput) throw new Error(`Browser CSS supports ${caseId} inputs up to ${maxInput}; rebuild for n=${n}`);
       const css = [...new Set([...styles, ...caseStyles.cases[caseId]])];
       const links = css.map((file) => `<link rel="stylesheet" href="/${escapeAttribute(file)}">`).join("");
+      // First, so anything the lane emits still outranks it.
+      const shell = url.searchParams.get("preview") === "1" ? `<style>${PREVIEW_SHELL}</style>` : "";
       const rendered = url.searchParams.get("mount") === "1" ? { html: "", head: "" } : ssrMod.renderCase(caseId, n);
       res.setHeader("content-type", "text/html; charset=utf-8");
-      res.end(`<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="data:,">${links}${rendered.head ?? ""}</head><body><div id="root">${rendered.html}</div><script type="module" src="/${escapeAttribute(entry.file)}"></script></body></html>`);
+      res.end(`<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="data:,">${shell}${links}${rendered.head ?? ""}</head><body><div id="root">${rendered.html}</div><script type="module" src="/${escapeAttribute(entry.file)}"></script></body></html>`);
     } catch (error) {
       res.writeHead(req.url?.startsWith("/?") ? 500 : 404).end(String(error));
     }
