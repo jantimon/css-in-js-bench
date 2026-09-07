@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
-import { median, percentile, spread } from "./report/stats.ts";
+import { median, spread } from "./report/stats.ts";
 import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
@@ -136,7 +136,7 @@ async function main() {
     .sort((a, b) => (CASE_PRIORITY[b] ?? 0) - (CASE_PRIORITY[a] ?? 0) || a.localeCompare(b));
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
-  const techGroups = groupTechs(usedTechs);
+  const techGroups = groupTechs(usedTechs, (t) => techs[t].bench.framework ?? "react");
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
@@ -217,12 +217,9 @@ async function main() {
       .map((t) => {
         const sample = data[`${caseId}/${t}`][0];
         const timing = sample.timing;
-        const timingMedian = timing.stats?.medianMs ?? (timing.perIteration.length ? median(timing.perIteration) : undefined);
-        const iters = timing.perIteration;
         return {
-          tech: t, label: techs[t].label, span: sample.span!, medianMs: timingMedian,
-          p75Ms: iters.length >= 4 ? percentile(iters, 0.75) : undefined,
-          p95Ms: iters.length >= 4 ? percentile(iters, 0.95) : undefined,
+          tech: t, label: techs[t].label, span: sample.span!, timing,
+          medianMs: timing?.stats?.medianMs,
         };
       });
     const hydWpdRows = wpdRows(wpdHydrate);
@@ -313,8 +310,8 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                One set of React components, built {usedTechs.length} different ways and measured head-to-head on identical
-                workloads — so the numbers compare by construction, not by claim.
+                One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
+                version renders the same pixels, so the numbers compare by construction, not by claim.
               </p>
               <div className="head-stats">
                 <span>
@@ -323,7 +320,7 @@ async function main() {
                 <span>
                   <b>{caseIds.length}</b> {caseIds.length === 1 ? "workload" : "workloads"}
                 </span>
-                <span>production React · median of repeated runs</span>
+                <span>production builds · median of repeated runs</span>
               </div>
             </div>
           </div>
@@ -375,12 +372,22 @@ async function main() {
             {techGroups.map((g) => (
               <div className="tp-row" key={g.group}>
                 <span className="tp-group">{g.group}</span>
-                <div className="tp-pills">
-                  {g.items.map((it) => (
-                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
-                      <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
-                      <TechLabel tech={it.tech} label={it.short} />
-                    </button>
+                <div className="tp-engines">
+                  {g.rows.map((row) => (
+                    <div className="tp-engine-row" key={row.engine ?? "one"}>
+                      <span className="tp-engine">
+                        {row.engine ? <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" /> : null}
+                        {row.label}
+                      </span>
+                      <div className="tp-pills">
+                        {row.items.map((it) => (
+                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                            <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
+                            <TechLabel tech={it.tech} label={it.short} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -409,9 +416,9 @@ async function main() {
               <h3 className="chart-title">
                 SSR render throughput — renders / sec · higher is better
                 <InfoTip>
-                  How many times per second this lane renders the whole workload to an HTML string in Node
-                  (<code>renderToString</code>), timing the production render only — any build-time CSS collection (a Tailwind
-                  JIT, a Panda sheet slice) is excluded. Higher is better.
+                  How fast the server turns components into HTML. Node renders the whole workload to a string
+                  (<code>renderToString</code>) and we count how many times a second it manages. Work that happens once at
+                  build time, not per request, is left out. Higher is better.
                 </InfoTip>
               </h3>
               <BarChart bars={bars} unit="r/s" higherBetter />
@@ -421,8 +428,8 @@ async function main() {
                 <h3 className="chart-title">
                   SSR throughput under load — requests / sec · higher is better
                   <InfoTip>
-                    Requests/sec the lane sustains under concurrent HTTP load (autocannon) serving the SSR render end-to-end —
-                    a more realistic server measure than the in-process microbench. Higher is better.
+                    The same render behind a real HTTP server, with many clients asking at once. Closer to what a server
+                    actually does than the in-process loop above. Higher is better.
                   </InfoTip>
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
@@ -433,9 +440,10 @@ async function main() {
                 <h3 className="chart-title">
                   Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
-                    The median server <code>renderToString()</code>, split by CPU self-time from a sampled V8 profile mapped
-                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): the <b>UI framework</b> (react-dom, or solid for the Solid lanes — the floor every lane of that framework shares), the <b>styling library</b>'s runtime,
-                    and <b>your component</b>. <b>other</b> is GC / unattributed native work.
+                    One server render, split by who spent the time: the <b>UI framework</b> (React or Solid — the floor every
+                    lane of that framework shares), the <b>styling library</b>'s own runtime, and <b>your components</b>.
+                    <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
+                    (<code>web-performance-debugger</code> {wpdVersion}).
                   </InfoTip>
                 </h3>
                 <AttributionChart rows={attrRows} />
@@ -446,10 +454,10 @@ async function main() {
                 <h3 className="chart-title">
                   Client hydration — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Time for React to <b>hydrate</b> the server HTML in the browser — attach event handlers and build the
-                    fiber tree over the existing DOM (it does not re-create markup). The first chart is the existing repeated
-                    end-to-end timing; the profiled chart then splits one instrumented commit into JS, style, layout, paint,
-                    GC, browser work and idle (recorded with <code>web-performance-debugger</code> {wpdVersion}). Lower is better.
+                    The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
+                    state without rebuilding the markup. That is <b>hydration</b>. The first chart times it end to end, over
+                    and over; the second profiles a single one and shows how much was JavaScript, style, layout and paint
+                    (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
@@ -461,10 +469,11 @@ async function main() {
                 <h3 className="chart-title">
                   Interaction update — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Every sample changes each instance's input from <code>i</code> to <code>i + 1</code>, keeping its identity.
-                    React updates state; Solid updates a signal. Both states are warmed, and reset and settling are outside
-                    the timer. The repeated timing ends at the first animation-frame callback, before repaint; it is not INP.
-                    The profiled action span adds a frame to include rendering work and excludes reset. Lower is better.
+                    Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
+                    React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
+                    is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
+                    to catch the rendering. React and Solid update by such different routes that only React-to-React and
+                    Solid-to-Solid gaps read cleanly here. Lower is better.
                   </InfoTip>
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
@@ -476,11 +485,10 @@ async function main() {
                 <h3 className="chart-title">
                   Cold mount — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Starting from a <b>blank root</b> (no SSR markup), a "click" renders the whole workload from scratch
-                    (<code>createRoot().render()</code>), then we wait for the first paint. Unlike hydration — which attaches to
-                    existing server HTML — this is a cold client mount, so the first paint includes each <b>runtime</b>
-                    library's <b>first style injection</b> into the document. The profiled span shows how much of the
-                    commit is JS, style, layout, paint, GC, browser work and idle. Lower is better.
+                    Nothing on screen to begin with: one "click" renders the whole workload from scratch and we wait for the
+                    first paint. There is no server HTML to reuse here, so this is where a <b>runtime</b> library first has to
+                    put its CSS into the page. The profiled span splits the work into JavaScript, style, layout and paint.
+                    Lower is better.
                   </InfoTip>
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
@@ -492,14 +500,12 @@ async function main() {
                 <h3 className="chart-title">
                   Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
                   <InfoTip>
-                    Where the browser's <b>rendering</b> time goes on a cold mount (not JS — the engine's own style-recalc,
-                    layout and paint), profiled with <a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a> in
-                    two engines. This is where <b>runtime</b> CSS-in-JS pays a tax build-time lanes don't: it injects a style
-                    rule per instance, so the engine recalculates styles once per instance — <b>Chrome</b>'s authoritative
-                    signal is that <b>style-recalc count</b> (the badge; e.g. 50 instances → ~50 recalcs vs 1 for extracted
-                    CSS). <b>Firefox</b> (Gecko) reports sampled style/layout time; a zero sampled slice is not proof of no
-                    work, so its exact counts are retained as diagnostics but the chart never treats zero as absence.
-                    Bars are ms; compare within an engine. Lower is better. Generated via <code>pnpm setup:wpd</code> + <code>pnpm gen:wpd</code>.
+                    The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
+                    where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
+                    instance, so the engine recalculates styles once per instance instead of once for the page.
+                    <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
+                    milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
+                    engine. Lower is better.
                   </InfoTip>
                 </h3>
                 <RenderTimingChart rows={rtRows} />
@@ -510,11 +516,9 @@ async function main() {
                 <h3 className="chart-title">
                   Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
                   <InfoTip>
-                    Gzipped bytes the browser downloads for this page: the client JS runtime the lane ships (over its own
-                    bare-framework floor — <code>vanilla</code> for the React lanes, <code>vanilla-solid</code> for the Solid
-                    ones), the CSS, and the SSR HTML. Lower is better. The Solid lanes' HTML carries Solid's per-element
-                    <code>_hk</code> hydration keys, which no React lane needs — compare HTML across frameworks with that in
-                    mind.
+                    Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
+                    CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
+                    none, so read the HTML column across frameworks with that in mind.
                   </InfoTip>
                 </h3>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
@@ -525,8 +529,8 @@ async function main() {
                 <h3 className="chart-title">
                   Scaling — SSR render time (ms) vs instance count
                   <InfoTip>
-                    SSR render time as the workload grows from a handful to thousands of instances — shows how each lane's
-                    per-element cost compounds. A flatter line scales better.
+                    Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
+                    per element stays put as the page gets bigger.
                   </InfoTip>
                 </h3>
                 <LineChart lines={sweepLines} />
@@ -540,12 +544,10 @@ async function main() {
               <h3 className="chart-title">
                 Build time — full client build · lower is better
                 <InfoTip>
-                  Wall time for a lane's whole <b>production client build</b> — the vite bundle that ships to the browser
-                  (the UI framework + the styling runtime + every workload's components), the same build measured for page
-                  bytes. <b>cold</b> clears that lane's build output, vite's on-disk caches and Panda's generated
-                  <code>styled-system</code> first, so it includes the cache-miss regen; <b>warm</b> is the same build run
-                  again with nothing cleared. Median of 3. This is <b>build-time developer experience</b>, machine-dependent —
-                  not user-facing runtime. Opt-in via <code>pnpm gen:samples --measure=buildtime</code>.
+                  How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
+                  lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
+                  nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
+                  about what users get.
                 </InfoTip>
               </h3>
               <BuildTimeChart rows={buildRows} />
@@ -656,7 +658,11 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tp-actions button{background:none;border:0;color:#58a6ff;cursor:pointer;font-size:12.5px;padding:0}
 .tp-actions button:hover{text-decoration:underline}
 .tp-sep{margin:0 7px;color:#30363d}
-.tp-row{display:flex;align-items:center;gap:16px;padding:5px 0}
+.tp-row{display:flex;align-items:center;gap:16px;padding:10px 0}
+.tp-engines{display:flex;flex-direction:column;gap:6px}
+.tp-engine-row{display:flex;align-items:center;gap:12px}
+.tp-engine{flex:0 0 58px;display:inline-flex;align-items:center;gap:5px;color:#6e7681;font-size:10.5px;letter-spacing:.04em}
+.tp-engine-logo{height:12px;width:auto}
 .tp-group{flex:0 0 150px;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
 .tp-pills{display:flex;flex-wrap:wrap;gap:7px}
 .tech-pill{display:inline-flex;align-items:center;gap:7px;background:#161b22;color:#adbac7;border:1px solid #21262d;border-radius:999px;padding:4px 12px 4px 9px;font-size:12.5px;cursor:pointer;user-select:none}

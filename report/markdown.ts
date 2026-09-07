@@ -153,62 +153,54 @@ const sweepTable = (lines: SweepLine[]): string => {
 
 const MEASUREMENTS = `## Measurements
 
-Every per-case section below reports these as tables. Definitions are given here once. The
-statistic is the **median** where a repeated timing distribution exists; the Chrome-profiled span anatomy
-(recorded with web-performance-debugger WPD_VERSION) is
-the first instrumented iteration and is labelled separately. Each lane uses its framework's production build. In
-each table the best value is **bold** and rows are sorted best-first.
+Every per-case section reports these as tables; they are defined here once. Where a timing repeats,
+the statistic is the **median**. The Chrome-profiled span anatomy (recorded with
+web-performance-debugger WPD_VERSION) is one recorded action, so it carries profiler overhead and
+frame waits that the plain timing charts do not — read the two side by side, not against each other.
+Every lane uses its framework's production build. In each table the best value is **bold** and rows
+sort best-first.
 
-- **SSR render throughput** — renders/sec, higher is better. How many times per second the lane
-  renders the whole workload to an HTML string in Node (\`renderToString\`), timing the production
-  render only — build-time CSS collection (a Tailwind JIT, a Panda sheet slice) is excluded.
-- **SSR throughput under load** — requests/sec, higher is better. Requests/sec sustained under
-  concurrent HTTP load (autocannon) serving the SSR render end-to-end. Includes serializing and
-  writing the full response every request, so a larger HTML/CSS payload costs here even when the
-  render itself is fast (this is why a lane can win render throughput yet lose under load).
-- **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. The median
-  server \`renderToString()\` split by CPU self-time from a sampled V8 profile mapped through
-  source maps: **react-dom** (the floor every lane shares), the **styling library** runtime, and
-  **your component**. *other* is GC / unattributed native work.
-- **Where the client hydration time goes** — Chrome-profiled reconciling span, ms, lower is better. Time for React to
-  **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
-  existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
-- **Where the interaction time goes** — Chrome-profiled update, ms, lower is better. Each mounted
-  instance changes its input from \`i\` to \`i + 1\`, with stable instance identities. React updates
-  state with \`flushSync\`; Solid updates a signal with \`flush\`. Both states warm up before sampling;
-  reset to \`i\` and settling take place outside the interaction timer. The ordinary \`__inp\` timer
-  covers the synchronous update and the wait to the first animation frame callback, not a real input
-  event or completed paint. WPD's \`inp:frame\` span adds a second callback to include rendering work,
-  with active work separate from idle. Its outer \`run\` span includes reset and is not interaction timing.
-- **Where the cold-mount time goes** — Chrome-profiled blank screen → first render, ms, lower is better. From a
-  **blank root** (no SSR markup) a "click" renders the whole workload from scratch
-  (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
-  paint includes each **runtime** library's **first style injection** into the document. The span's
-  JS/style/layout/paint/GC/other/idle slices reconcile exactly to its wall time.
-- **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The
-  browser engine's OWN rendering work (not JS), on a cold mount, measured by \`wpd\` in Chrome and
-  Firefox. Runtime CSS-in-JS injects a style rule per instance, so the engine recalculates styles
-  ~once per instance — **Chrome**'s authoritative signal is that **style-recalc count** (n instances
-  → ~n recalcs vs 1 for extracted CSS). **Firefox** (Gecko) reports sampled style/layout **ms**, no
-  main-thread paint; a sampled zero is not proof of absence. Opt-in (\`pnpm setup:wpd\` + \`pnpm gen:wpd\`).
-- **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. Gzipped bytes the browser
-  downloads: the client JS runtime the lane ships over the bare-React floor, the CSS, and the SSR
-  HTML.
-- **Scaling** — SSR render time (ms) vs instance count. Render time as the workload grows from a
-  handful to thousands of instances; a flatter progression scales better.
-- **Build time** — full client build (ms), lower is better. Wall time for a lane's whole production
-  client build (the vite bundle shipped to the browser). *cold* clears the lane's build output,
-  vite's on-disk caches and Panda's generated \`styled-system\` first, so it includes the cache-miss
-  regen; *warm* runs the same build again with nothing cleared. Median of 3, per lane (a build
-  compiles every workload at once, so this is not per-case). Build-time developer experience and
-  machine-dependent — not user-facing runtime. Opt-in (\`pnpm gen:samples --measure=buildtime\`).
+- **SSR render throughput** — renders/sec, higher is better. How fast the server turns components
+  into HTML: Node renders the whole workload to a string (\`renderToString\`) and we count how many
+  times a second it manages. Work that happens once at build time, not per request, is left out.
+- **SSR throughput under load** — requests/sec, higher is better. The same render behind a real HTTP
+  server with many clients at once. Every request also serializes and writes the full response, so a
+  big HTML or CSS payload costs here even when the render itself is quick — which is how a lane wins
+  on throughput and still loses under load.
+- **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. One server render
+  split by who spent the time: the **UI framework** (React or Solid — the floor every lane of that
+  framework shares), the **styling library**'s runtime, and **your components**. *other* is garbage
+  collection and native work.
+- **Where the client hydration time goes** — ms, lower is better. The browser gets finished HTML and
+  the framework takes it over, attaching handlers and wiring up state without rebuilding the markup.
+  Split into JS, style, layout, paint, GC, browser work and idle.
+- **Where the interaction time goes** — ms, lower is better. Each instance's value changes from \`i\`
+  to \`i + 1\`, so every element really updates; React sets state, Solid sets a signal. Both warm up
+  first and the reset sits outside the timer. This is not INP: the timing stops at the first animation
+  frame, and the profiled span adds one frame to catch the rendering. React and Solid update by such
+  different routes that only React-to-React and Solid-to-Solid gaps read cleanly.
+- **Where the cold-mount time goes** — ms, lower is better. Nothing on screen to begin with: one
+  "click" renders the whole workload from scratch and waits for first paint. No server HTML to reuse,
+  so this is where a **runtime** library first puts its CSS into the page.
+- **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The browser
+  engine's own work rather than JS. A library that writes CSS at runtime adds a style rule per
+  instance, so the engine recalculates styles once per instance instead of once for the page —
+  **Chrome**'s honest signal is that recalc count. **Firefox** reports sampled **ms** instead, where a
+  zero can mean "not sampled" rather than "no work". Compare within one engine.
+- **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. What the browser downloads: the
+  JavaScript this lane adds on top of a bare framework page, its CSS, and the server HTML. Solid marks
+  every element with a hydration key and React needs none, so read the HTML column across frameworks
+  with that in mind.
+- **Scaling** — SSR render time (ms) vs instance count. A flatter progression means the cost per
+  element stays put as the page grows.
+- **Build time** — full client build (ms), lower is better. *cold* clears the lane's build output and
+  caches first, so it pays for regenerating them; *warm* runs the same build again with nothing
+  cleared. Median of 3, per lane — one build compiles every workload, so this is not per-case. This is
+  developer experience and it depends on the machine; it says nothing about what users get.
 
-**Attribution caveat:** next-yak's SWC plugin *inlines* its css-prop resolution, so the styling work
-runs from next-yak's own runtime rather than a call into a package. wpd attributes that runtime to the
-**styling lib** bucket — next-yak ships sourcemaps whose runtime originals are off-disk here, so wpd
-names the cost by that origin and keeps it out of your app, never blaming it on **component**. StyleX
-and styled-components keep their runtime in
-\`node_modules\`, and next-yak's runtime shows under **styling lib** too, not under **component**.`;
+**Attribution caveat:** next-yak's compiler inlines its css-prop resolution, so that styling work runs
+from next-yak's own runtime rather than a call into a package. wpd bills it to the **styling lib**
+bucket, never to **component**.`;
 
 /** Build the full agent-readable markdown report. */
 export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = []): string {
