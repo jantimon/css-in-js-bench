@@ -24,8 +24,8 @@ importers:
   .:
     devDependencies:
       '@jantimon/web-performance-debugger':
-        specifier: 1.3.0
-        version: 1.3.0
+        specifier: 1.5.0
+        version: 1.5.0
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
@@ -86,6 +86,22 @@ importers:
       react-dom:
         specifier: catalog:dev
         version: 19.2.7(react@19.2.7)
+
+  techs/cn-solid:
+    dependencies:
+      '@solidjs/web':
+        specifier: 2.0.0-rc.6
+        version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      cn:
+        specifier: 0.2.4
+        version: 0.2.4
+      solid-js:
+        specifier: 2.0.0-rc.6
+        version: 2.0.0-rc.6
+    devDependencies:
+      '@solidjs/vite-plugin':
+        specifier: 3.0.0-next.38
+        version: 3.0.0-next.38(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
 
   techs/cnfast:
     dependencies:
@@ -296,6 +312,22 @@ importers:
         version: 3.0.0-next.38(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
 
   techs/yak-solid:
+    dependencies:
+      '@solidjs/web':
+        specifier: 2.0.0-rc.6
+        version: 2.0.0-rc.6(solid-js@2.0.0-rc.6)
+      '@yak/solid':
+        specifier: 0.1.0
+        version: 0.1.0(solid-js@2.0.0-rc.6)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+      solid-js:
+        specifier: 2.0.0-rc.6
+        version: 2.0.0-rc.6
+    devDependencies:
+      '@solidjs/vite-plugin':
+        specifier: 3.0.0-next.38
+        version: 3.0.0-next.38(@solidjs/web@2.0.0-rc.6(solid-js@2.0.0-rc.6))(solid-js@2.0.0-rc.6)(vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4))
+
+  techs/yak-solid-nofold:
     dependencies:
       '@solidjs/web':
         specifier: 2.0.0-rc.6
@@ -936,8 +968,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@jantimon/web-performance-debugger@1.3.0':
-    resolution: {integrity: sha512-J2ICUSiD/fGJg3oR4jARaADZxJIiuJDW5ugC0Qswtsdd/hc89d9IYbZVYtGaTh23aIGNM0R9TVyfzD5cv7aLdg==}
+  '@jantimon/web-performance-debugger@1.5.0':
+    resolution: {integrity: sha512-3UgQ5xULc2gGblibhiCLery+33em7LfFHxljRamGavRjFmzOxUw4hnSVwC0PtR/YpCXnuUfiCeLIFNa3wSbZyw==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -2562,10 +2594,6 @@ packages:
     resolution: {integrity: sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA==}
     engines: {node: '>=8.6'}
 
-  picomatch@4.0.4:
-    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
-    engines: {node: '>=12'}
-
   picomatch@4.0.5:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
@@ -3816,7 +3844,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@jantimon/web-performance-debugger@1.3.0':
+  '@jantimon/web-performance-debugger@1.5.0':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@toon-format/toon': 2.3.1
@@ -4860,9 +4888,9 @@ snapshots:
     dependencies:
       reusify: 1.1.0
 
-  fdir@6.5.0(picomatch@4.0.4):
+  fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
-      picomatch: 4.0.4
+      picomatch: 4.0.5
 
   fill-range@7.1.1:
     dependencies:
@@ -5303,8 +5331,6 @@ snapshots:
 
   picomatch@2.3.2: {}
 
-  picomatch@4.0.4: {}
-
   picomatch@4.0.5: {}
 
   pify@2.3.0: {}
@@ -5721,8 +5747,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tldts-core@7.4.9: {}
 
@@ -5829,8 +5855,8 @@ snapshots:
   vite@8.1.0(esbuild@0.28.1)(jiti@1.21.7)(tsx@4.22.4):
     dependencies:
       lightningcss: 1.32.0
-      picomatch: 4.0.4
-      postcss: 8.5.19
+      picomatch: 4.0.5
+      postcss: 8.5.26
       rolldown: 1.1.3
       tinyglobby: 0.2.17
     optionalDependencies:
