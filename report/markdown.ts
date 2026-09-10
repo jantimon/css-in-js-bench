@@ -12,6 +12,7 @@ import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
 import type { WpdBreakdownRow } from "./components/WpdBreakdownChart.tsx";
 import type { BuildTimeRow } from "./components/BuildTimeChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
+import { httpMeasurementNote, type HttpProtocol } from "./http-results.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
@@ -160,13 +161,15 @@ frame waits that the plain timing charts do not — read the two side by side, n
 Every lane uses its framework's production build. In each table the best value is **bold** and rows
 sort best-first.
 
-- **SSR render throughput** — renders/sec, higher is better. How fast the server turns components
-  into HTML: Node renders the whole workload to a string (\`renderToString\`) and we count how many
-  times a second it manages. Work that happens once at build time, not per request, is left out.
-- **SSR throughput under load** — requests/sec, higher is better. The same render behind a real HTTP
-  server with many clients at once. Every request also serializes and writes the full response, so a
-  big HTML or CSS payload costs here even when the render itself is quick — which is how a lane wins
-  on throughput and still loses under load.
+- **SSR render throughput** — renders/sec, higher is better. Uses a microbenchmark to measure how
+  fast Node turns components into an HTML string after warmup. Measures rendering only, excluding
+  build time, HTTP handling, response transfer and browser work. Results count component instances
+  per second: a workload of 400 product tiles counts as 400 renders.
+- **SSR throughput under load** — requests/sec, higher is better. Uses autocannon to measure
+  end-to-end HTTP throughput on this machine: sending a request, rendering the whole workload into
+  an HTML fragment, and transferring and receiving the response. Clients keep concurrent connections
+  open. Each request renders the full workload, so a workload of 400 product tiles counts as one
+  request. Excludes build time, browser rendering and external network latency. HTTP_METHOD
 - **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. One server render
   split by who spent the time: the **UI framework** (React or Solid — the floor every lane of that
   framework shares), the **styling library**'s runtime, and **your components**. *other* is garbage
@@ -203,7 +206,7 @@ from next-yak's own runtime rather than a call into a package. wpd bills it to t
 bucket, never to **component**.`;
 
 /** Build the full agent-readable markdown report. */
-export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = []): string {
+export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = [], httpProtocol: HttpProtocol | null = null): string {
   const shownLabels = MD_TECHS.filter((t) => techs[t]).map((t) => `**${techs[t].label}** (\`${t}\`)`);
   const out: string[] = [
     `# Styling benchmarks`,
@@ -285,10 +288,10 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     "## How this was measured",
     "",
     "- **microbench** — an in-process Node loop that renders each workload to an HTML string (`renderToString`) and counts instance renders per second.",
-    "- **autocannon** — an HTTP load generator that measures requests per second against each lane's SSR server end to end.",
+    "- **autocannon** — HTTP_METHOD",
     "- **[web-performance-debugger](https://github.com/jantimon/web-performance-debugger)** — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.",
     "",
     "Source, raw data and methodology: [github.com/jantimon/css-in-js-bench](https://github.com/jantimon/css-in-js-bench). Run it locally: clone the repo, `pnpm install`, then `pnpm report` renders this report from the committed samples — `pnpm gen` re-measures everything on your own machine.",
   );
-  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion);
+  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion).replaceAll("HTTP_METHOD", httpMeasurementNote(httpProtocol));
 }

@@ -25,9 +25,9 @@ export default {
   } as Record<string, number>,
 
   // Heavy measurements (run via `gen --measure=…` on an idle machine).
-  // autocannon: warmupRounds discarded (cold server JIT), then `rounds` measured rounds →
-  // the report takes the median across measured rounds; longer duration stabilises each round.
-  autocannon: { warmupRounds: 1, rounds: 5, durationSec: 8, connections: 10 }, // SSR req/s under load
+  // Each HTTP block starts fresh server/load processes, warms through HTTP, then measures.
+  // A seeded shuffle interleaves cells across blocks; the report takes the median throughput.
+  autocannon: { warmupRounds: 1, rounds: 5, durationSec: 8, connections: 10, seed: 20260907 }, // SSR req/s under load
   nsweep: { ns: [100, 500, 1000, 2000, 4000], iters: 21 }, // render time vs instance count (median of iters)
 
   // The browser viewport for the Playwright passes (hydrate / inp / screenshots) — a

@@ -20,8 +20,8 @@ import os from "node:os";
 import { createHash } from "node:crypto";
 import benchConfig from "./bench.config.ts";
 import { gzipSync } from "node:zlib";
-import { createServer } from "node:http";
-import autocannon from "autocannon";
+import { runHttpPass } from "./scripts/http-pass.mjs";
+import { writeJsonAtomic } from "./report/wpd-results.ts";
 import { chromium, type Browser } from "@playwright/test";
 import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
 import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
@@ -82,10 +82,11 @@ const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep"
 
 // ---- tiny CLI ------------------------------------------------------------------
 function parseArgs(argv: string[]) {
-  const out: { measure?: string; tech?: string; case?: string } = {};
+  const out: { measure?: string; tech?: string; case?: string; resumeHttp?: boolean } = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a.startsWith("--measure=")) out.measure = a.slice("--measure=".length);
+    if (a === "--resume-http") out.resumeHttp = true;
+    else if (a.startsWith("--measure=")) out.measure = a.slice("--measure=".length);
     else if (a === "--measure") out.measure = argv[++i];
     else if (a === "--tech") out.tech = argv[++i];
     else if (a === "--case") out.case = argv[++i];
@@ -231,33 +232,6 @@ async function payloadJsBytes(tech: string): Promise<number> {
 
 /** The hot-path renderer for a tech: renderHtml if provided, else renderCase().html. */
 const htmlOf = (mod: SsrModule): RenderHtmlFn => mod.renderHtml ?? ((c, n) => mod.renderCase(c, n).html);
-
-// ---- autocannon sampler: SSR throughput under HTTP load (req/sec, higher better) -
-// Boots a tiny server that renders the case per request (the real per-request SSR
-// cost), runs autocannon `rounds` times, returns the per-round mean req/sec. Heavy +
-// machine-dependent → run on an idle box via `gen --measure=autocannon`.
-async function autocannonSample(mod: SsrModule, caseId: string, n: number): Promise<number[]> {
-  const { rounds, durationSec, connections, warmupRounds = 0 } = benchConfig.autocannon;
-  const render = htmlOf(mod);
-  const server = createServer((_req, res) => {
-    res.setHeader("content-type", "text/html");
-    res.end(render(caseId, n));
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const port = (server.address() as { port: number }).port;
-  const url = `http://127.0.0.1:${port}`;
-  const samples: number[] = [];
-  try {
-    for (let i = 0; i < warmupRounds; i++) await autocannon({ url, duration: durationSec, connections }); // discarded: warm the server's JIT
-    for (let i = 0; i < rounds; i++) {
-      const result = await autocannon({ url, duration: durationSec, connections });
-      samples.push(Math.round(result.requests.average));
-    }
-  } finally {
-    await new Promise<void>((r) => server.close(() => r()));
-  }
-  return samples;
-}
 
 const median = (xs: number[]): number => {
   const sorted = [...xs].sort((a, b) => a - b);
@@ -525,6 +499,10 @@ async function main() {
     process.exit(1);
   }
   const measurements = requested.filter((m): m is Measurement => ALL_MEASUREMENTS.includes(m as Measurement));
+  if (args.resumeHttp && (measurements.length !== 1 || measurements[0] !== "autocannon" || args.tech || args.case))
+    throw new Error("--resume-http requires --measure=autocannon without --tech or --case");
+  if (measurements.includes("autocannon") && (args.tech || args.case))
+    throw new Error("HTTP publication requires all lanes and cases; run --measure=autocannon without filters");
   const { techs, cases, cells } = discover(args);
   if (!cells.length) {
     console.error("no cells matched (techs/<t>/case/<c>/index.tsx). Check --tech/--case globs.");
@@ -536,8 +514,10 @@ async function main() {
   // run of a given measurement still refreshes that measurement's whole file (every cell
   // it covers is rewritten), so removed cells fall out of the measurements being run.
   mkdirSync(RESULT_DIR, { recursive: true });
+  if (measurements.includes("autocannon") && !args.resumeHttp)
+    writeJsonAtomic(join(RESULT_DIR, "_http-checkpoint.json"), { status: "preparing", cells: {} });
   const unfiltered = !args.tech && !args.case;
-  if (unfiltered) for (const m of measurements) rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
+  if (unfiltered) for (const m of measurements.filter((m) => m !== "autocannon")) rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
   console.log(`discovered ${cells.length} cell(s) · ${techs.length} tech(s) × ${cases.length} case(s)`);
   if (CPU_THROTTLE > 1) console.log(`⚙ CPU throttle: ${CPU_THROTTLE}× on hydrate/inp/mount (browser wall-clock passes)`);
 
@@ -546,6 +526,8 @@ async function main() {
   for (const c of cases) caseMeta[c] = (await import(pathToFileURL(join(CASES_DIR, `${c}.ts`)).href)).default;
 
   const snapshots: Record<string, Snapshot> = {};
+  const httpJobs: { key: string; modulePath: string; caseId: string; n: number; preflightError?: string }[] = [];
+  const snapshotErrors = new Map<string, string>();
 
   // One isolated build per tech per measurement; reuse it for that tech's cells +
   // (on the first build of a tech) the snapshot triplet.
@@ -556,20 +538,41 @@ async function main() {
     // One isolated build per tech; a broken/in-progress tech is skipped, not fatal.
     let ssrMod: SsrModule;
     try {
-      ssrMod = await buildTech(tech, "microbench");
+      if (args.resumeHttp) {
+        const bundle = join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs");
+        if (!existsSync(bundle)) throw new Error(`Missing SSR bundle for HTTP resume: ${bundle}`);
+        ssrMod = await import(pathToFileURL(bundle).href);
+      } else ssrMod = await buildTech(tech, "microbench");
     } catch (e) {
+      if (measurements.includes("autocannon")) throw e;
       console.error(`  ✗ ${tech}: build failed — skipped (${(e as Error).message.split("\n")[0]})`);
       continue;
     }
     // Snapshots always run, off the microbench build (the SSR { html, css } path).
     for (const cell of techCells) {
-      const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
-      snapshots[`${cell.caseId}/${tech}`] = { files: caseSource(cell.entry), html, css };
+      try {
+        const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
+        snapshots[`${cell.caseId}/${tech}`] = { files: caseSource(cell.entry), html, css };
+      } catch (error) {
+        if (!measurements.includes("autocannon")) throw error;
+        const message = `Snapshot failed: ${error instanceof Error ? error.message : String(error)}`;
+        snapshotErrors.set(`${cell.caseId}/${tech}`, message);
+        console.error(`  ${cell.caseId}/${tech}: ${message}`);
+      }
     }
 
     for (const measurement of measurements) {
       const file = join(RESULT_DIR, `measurement-${measurement}.json`);
       const data: Record<string, unknown> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+      if (measurement === "autocannon") {
+        for (const cell of techCells) httpJobs.push({
+          key: `${cell.caseId}/${tech}`,
+          modulePath: join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs"),
+          caseId: cell.caseId, n: caseMeta[cell.caseId].n,
+          preflightError: snapshotErrors.get(`${cell.caseId}/${tech}`),
+        });
+        continue;
+      }
       // buildtime is a per-LANE pass (one build compiles every workload), so it writes one
       // record keyed by the tech name rather than per cell.
       if (measurement === "buildtime") {
@@ -605,7 +608,6 @@ async function main() {
         if (measurement === "microbench") data[key] = microbench(htmlOf(mod), cell.caseId, n);
         else if (measurement === "payload") data[key] = payload(mod, cell.caseId, n, await payloadJsBytes(tech));
         else if (measurement === "nsweep") data[key] = nsweepSample(mod, cell.caseId);
-        else if (measurement === "autocannon") data[key] = await autocannonSample(mod, cell.caseId, n);
       }
       writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
       console.log(`  ${tech} · ${measurement}: ${techCells.length} cell(s)`);
@@ -626,6 +628,16 @@ async function main() {
   // host describes the hardware, not the machine's network name (the report publishes it).
   const meta: RunMeta = { host: `${os.cpus()[0]?.model ?? "unknown"} (${os.arch()})`, node: process.version, timestamp: new Date().toISOString(), gitSha, techs: allTechs, cases: allCases, snapshotN: benchConfig.snapshotN };
   writeFileSync(join(RESULT_DIR, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
+  if (httpJobs.length) {
+    console.log(`HTTP: ${httpJobs.length} cells × ${benchConfig.autocannon.rounds} shuffled blocks; separate server and load processes`);
+    await runHttpPass(httpJobs, benchConfig.autocannon, {
+      resultDir: RESULT_DIR, resume: Boolean(args.resumeHttp),
+      onCell: (key: string, cell: { rounds: { block: number; result?: { requests: { average: number } }; error?: string }[] }) => {
+        const round = cell.rounds.at(-1);
+        if (round) console.log(`  ${key} · HTTP block ${round.block}: ${round.error ?? `${Math.round(round.result!.requests.average)} req/s`}`);
+      },
+    });
+  }
   console.log(`✓ wrote result/ — ${Object.keys(snapshots).length} snapshot(s), measurements: ${measurements.join(", ")}`);
 
   // Parity gate: prove every lane STILL renders identically (same DOM, clean attributes,

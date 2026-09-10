@@ -13,6 +13,7 @@
     "verify": "node ./verify.ts",
     "dev": "vite",
     "lint": "node ./report/lint.ts",
+    "test:http": "node --test --test-concurrency=1 ./scripts/http-*.test.mjs ./report/http-results.test.ts",
     "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs ./scripts/wpd-query.test.ts",
     "test:interaction": "node --test ./report/interaction.test.ts ./scripts/interaction.test.mjs",
     "test:browser": "node --test --test-concurrency=1 ./scripts/browser-styles.test.ts ./scripts/browser-validation.test.mjs ./scripts/browser-styles-browser.test.ts ./scripts/hydration-handoff.test.mjs"

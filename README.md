@@ -321,3 +321,50 @@ per-request style collection stays inside SSR timing.
 
 The browser test command also checks runtime style adoption without duplicate
 rules and rejects missing server style metadata.
+
+### HTTP throughput process model
+
+`pnpm gen:samples --measure=autocannon` measures each supported cell through HTTP.
+The runner builds the SSR modules before the HTTP stage. Every measured block uses
+one fresh Node server process and a separate autocannon process on the same host.
+The server renders the same HTML fragment for each request; asset loading and
+browser execution are outside this measurement.
+
+Each block checks the response, warms the server through HTTP, then records one
+round. `bench.config.ts` sets five blocks, ten connections, an eight-second warmup
+and an eight-second measured round. A recorded seed shuffles lane/case order in
+each block. Warmup repeats for every fresh server, giving about 80 seconds per
+cell plus startup at these settings. Keep the host idle; separate processes still
+share its CPU and memory bandwidth.
+
+Each cell in `measurement-autocannon.json` has protocol `isolated-http-v2`, the
+settings, workload size, SSR module SHA-256, run identity, and all round results.
+Each round retains process IDs, timestamps, throughput, latency distribution and
+error counts. Response validation preserves UTF-8 characters across network chunks
+and compares complete bodies. HTTP errors and genuine body mismatches fail the cell.
+
+Progress goes to `result/_http-checkpoint.json` after each round. A failed cell
+stops receiving work while healthy cells finish. The pass then exits with an error
+summary. Only a complete, valid pass replaces `measurement-autocannon.json`; the
+report refuses to build while an HTTP checkpoint is unfinished. Snapshots and run
+metadata are saved before the HTTP stage.
+
+Resume an interrupted or failed HTTP pass with:
+
+```sh
+pnpm gen:samples --measure=autocannon --resume-http
+```
+
+Resume reuses the existing SSR bundles and skips successful rounds. It checks the
+workload, bundle hashes, settings, full cell selection and run identity before
+starting workers. It retains failed attempts in the checkpoint. Do not rebuild or
+change dependencies between attempts. A fresh pass without `--resume-http` builds
+all lanes and starts a new checkpoint. HTTP publication requires all lanes and
+cases; filtered HTTP passes are rejected.
+
+The report requires every round to complete without errors, timeouts, non-success
+HTTP responses or body mismatches. It shows median round throughput; it does not
+pool latency percentiles. Numeric-array HTTP results use the shared-process
+protocol. The report labels that setup and refuses to mix protocols or run
+identities. `pnpm test:http` checks process separation, cleanup, Unicode response
+validation, failure handling, resume and publication without running the full suite.

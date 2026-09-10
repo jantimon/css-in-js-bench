@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
 import { median, spread } from "./report/stats.ts";
 import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
-import { httpResults, httpMeasurementNote } from "./report/http-results.ts";
+import { httpResults, httpMeasurementNote, assertHttpCheckpointReady } from "./report/http-results.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -72,6 +72,7 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 }
 
 async function main() {
+  assertHttpCheckpointReady(readJson<unknown>(join(RESULT, "_http-checkpoint.json"), undefined));
   const techs = await loadTechs();
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
@@ -419,9 +420,10 @@ async function main() {
               <h3 className="chart-title">
                 SSR render throughput — renders / sec · higher is better
                 <InfoTip>
-                  How fast the server turns components into HTML. Node renders the whole workload to a string
-                  (<code>renderToString</code>) and we count how many times a second it manages. Work that happens once at
-                  build time, not per request, is left out. Higher is better.
+                  Uses a microbenchmark to measure how fast Node turns components into an HTML string after warmup.
+                  Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
+                  Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
+                  Higher is better.
                 </InfoTip>
               </h3>
               <BarChart bars={bars} unit="r/s" higherBetter />
@@ -431,8 +433,11 @@ async function main() {
                 <h3 className="chart-title">
                   SSR throughput under load — requests / sec · higher is better
                   <InfoTip>
-                    The server renders an HTML fragment for each request while clients keep concurrent connections open.
-                    Higher request throughput is better.
+                    Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
+                    rendering the whole workload into an HTML fragment, and transferring and receiving the response.
+                    Clients keep concurrent connections open. Each request renders the full workload, so a workload
+                    of 400 product tiles counts as one request. Excludes build time, browser rendering and external
+                    network latency. Higher is better.
                   </InfoTip>
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
