@@ -9,7 +9,11 @@ result/_prev/
 result/_*.log
 result/verify/
 # Optional vendored tooling/source trees (created by setup scripts).
-vendor/
+vendor/*
+!vendor/yak-solid/
+vendor/yak-solid/*
+!vendor/yak-solid/README.md
+!vendor/yak-solid/yak-solid-85e0f2b1.tgz
 # wpd's latest-pointer dir + scratch recordings (recordings/.wpd-last.json).
 recordings/
 # Per-tech build output.

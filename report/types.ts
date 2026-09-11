@@ -194,4 +194,6 @@ export interface RunMeta {
   browsers?: { chrome?: string; firefox?: string };
   /** Instances rendered into each snapshot html (bench.config snapshotN) — used to derive per-element costs. */
   snapshotN?: number;
+  /** Source revisions of unpublished packages used for this run. */
+  runtimePackages?: Record<string, { revision: string; sha256: string }>;
 }

@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@solidjs/web": "2.0.0-rc.6",
-    "@yak/solid": "0.1.0",
+    "@yak/solid": "file:../../vendor/yak-solid/yak-solid-85e0f2b1.tgz",
     "solid-js": "2.0.0-rc.6"
   },
   "devDependencies": {

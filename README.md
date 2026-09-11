@@ -99,6 +99,13 @@ param, so a filtered view is a shareable URL
 Some measurements are machine-dependent and noisy (anything that boots a browser or a
 server). Those carry that caveat in the report and live in a collapsible appendix
 
+## Packaged runtime for the Solid lanes
+
+The `yak-solid` and `yak-solid-nofold` lanes use a committed package archive from
+`vendor/yak-solid`. Its README gives the source revision and checksum. A checkout
+can install this exact unpublished runtime without a local next-yak source tree.
+The report records the measured package in `result/meta.json`.
+
 ## Running it
 
 ```bash

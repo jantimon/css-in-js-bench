@@ -317,12 +317,8 @@ async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (brows
   }
 }
 
-// hydrate: fresh page per sample → time the initial hydration commit (window.__hydrateMs).
-// Sampled ROUND-ROBIN across cells (one sample of every cell per round) so a transient load
-// spike spreads across all cells instead of skewing one cell's contiguous block, with a
-// discarded warmup round (r = -1) that populates Chromium's per-URL JS code cache — the
-// counted samples then time a warm-code hydration commit, not a one-shot cold V8 compile
-// (the dominant source of hydrate variance).
+// Time hydration to DOM commit on a ready page. Rotate cases between samples.
+// Page load and two animation frames settle outside the timer in every lane.
 async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
     for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
@@ -333,7 +329,11 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
         const n = caseMeta[cell.caseId].n;
         const page = await browser.newPage(PAGE_OPTS);
         await applyCpuThrottle(page);
-        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
+        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&manual=1`, { waitUntil: "load" });
+        await page.evaluate(async () => {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+          window.__hydrate!();
+        });
         await page.waitForFunction(() => window.__hydrateMs !== undefined, null, { timeout: 30_000 });
         const ms = await page.evaluate(() => window.__hydrateMs as number);
         await page.close();
@@ -370,10 +370,8 @@ async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta:
   });
 }
 
-// mount: fresh page on a BLANK root, then a from-scratch client render on "click" — time the
-// cold-mount commit (window.__mountMs). Unlike hydrate (which attaches to existing markup),
-// the first paint here includes each runtime lib's first style injection into the document.
-// Round-robin across cells with a discarded warmup round, same as hydrateTech.
+// Mount into an empty root on a ready page and stop at DOM commit, before paint.
+// Each sample uses a fresh page; load and two animation frames stay outside the timer.
 async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
     for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
@@ -386,7 +384,10 @@ async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMet
         await applyCpuThrottle(page);
         await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&mount=1`, { waitUntil: "load" });
         await page.waitForFunction(() => typeof window.__mount === "function", null, { timeout: 30_000 });
-        await page.evaluate(() => window.__mount!());
+        await page.evaluate(async () => {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+          window.__mount!();
+        });
         await page.waitForFunction(() => window.__mountMs !== undefined, null, { timeout: 30_000 });
         const ms = await page.evaluate(() => window.__mountMs as number);
         await page.close();

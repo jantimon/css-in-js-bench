@@ -317,6 +317,12 @@ async function main() {
                 One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
                 version renders the same pixels, so the numbers compare by construction, not by claim.
               </p>
+              {Object.entries(meta.runtimePackages ?? {}).map(([name, pkg]) => (
+                <p className="sub" data-runtime-provenance key={name} title={`SHA-256: ${pkg.sha256}`}>
+                  Measured {name} source revision: <code>{pkg.revision.slice(0, 8)}</code>.
+                  Results apply to this packaged revision.
+                </p>
+              ))}
               <div className="head-stats">
                 <span>
                   <b>{usedTechs.length}</b> styling techniques
@@ -449,8 +455,8 @@ async function main() {
                 <h3 className="chart-title">
                   Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
-                    One server render, split by who spent the time: the <b>UI framework</b> (React or Solid — the floor every
-                    lane of that framework shares), the <b>styling library</b>'s own runtime, and <b>your components</b>.
+                    One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
+                    and <b>your components</b>. Framework work can differ when a lane removes component calls.
                     <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
                     (<code>web-performance-debugger</code> {wpdVersion}).
                   </InfoTip>
@@ -464,8 +470,9 @@ async function main() {
                   Client hydration — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
                     The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
-                    state without rebuilding the markup. That is <b>hydration</b>. The first chart times it end to end, over
-                    and over; the second profiles a single one and shows how much was JavaScript, style, layout and paint
+                    state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
+                    and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
+                    profiles a span through the next frame and shows JavaScript, style, layout and paint
                     (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
                 </h3>
@@ -481,8 +488,8 @@ async function main() {
                     Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
                     React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
                     is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
-                    to catch the rendering. React and Solid update by such different routes that only React-to-React and
-                    Solid-to-Solid gaps read cleanly here. Lower is better.
+                    to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
+                    Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
                   </InfoTip>
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
@@ -494,9 +501,9 @@ async function main() {
                 <h3 className="chart-title">
                   Cold mount — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Nothing on screen to begin with: one "click" renders the whole workload from scratch and we wait for the
-                    first paint. There is no server HTML to reuse here, so this is where a <b>runtime</b> library first has to
-                    put its CSS into the page. The profiled span splits the work into JavaScript, style, layout and paint.
+                    The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
+                    before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
+                    during that work. The separate profiled span includes the next frame's rendering work.
                     Lower is better.
                   </InfoTip>
                 </h3>
@@ -937,7 +944,7 @@ function afterTech() {
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
 // An engine row selects that engine's styling techniques in one click. The bare-framework
-// lanes stay out of it — they are the floor you read the others against, not a technique —
+// lanes stay out of it — they are comparison references, not a styling technique —
 // so they keep their own pills. All on already means the click turns them off again.
 const enginePills = [...document.querySelectorAll('[data-engine-filter]')];
 const lanesOfEngine = eng => techPills.filter(p => p.dataset.engine === eng && p.dataset.floor !== '1');

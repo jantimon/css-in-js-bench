@@ -171,20 +171,21 @@ sort best-first.
   open. Each request renders the full workload, so a workload of 400 product tiles counts as one
   request. Excludes build time, browser rendering and external network latency. HTTP_METHOD
 - **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. One server render
-  split by who spent the time: the **UI framework** (React or Solid — the floor every lane of that
-  framework shares), the **styling library**'s runtime, and **your components**. *other* is garbage
+  split into **UI framework** work (React or Solid), **styling library** runtime, and **your components**.
+  Framework work can differ when a lane removes component calls. *other* is garbage
   collection and native work.
 - **Where the client hydration time goes** — ms, lower is better. The browser gets finished HTML and
-  the framework takes it over, attaching handlers and wiring up state without rebuilding the markup.
-  Split into JS, style, layout, paint, GC, browser work and idle.
+  the framework attaches handlers and state without rebuilding the markup. Repeated timing starts on a
+  ready page and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The separate
+  profiled span includes the next frame and splits JS, style, layout, paint, GC, browser work and idle.
 - **Where the interaction time goes** — ms, lower is better. Each instance's value changes from \`i\`
   to \`i + 1\`, so every element really updates; React sets state, Solid sets a signal. Both warm up
   first and the reset sits outside the timer. This is not INP: the timing stops at the first animation
-  frame, and the profiled span adds one frame to catch the rendering. React and Solid update by such
-  different routes that only React-to-React and Solid-to-Solid gaps read cleanly.
-- **Where the cold-mount time goes** — ms, lower is better. Nothing on screen to begin with: one
-  "click" renders the whole workload from scratch and waits for first paint. No server HTML to reuse,
-  so this is where a **runtime** library first puts its CSS into the page.
+  frame, and the profiled span adds one frame to catch rendering work. Cross-framework ratios describe
+  the whole workload. Use vanilla lanes as references; compilers and styled runtimes can also remove component work.
+- **Where the cold-mount time goes** — ms, lower is better. The workload renders into an empty root
+  on a ready page. Repeated timing ends at DOM commit, before paint; page load and network work stay
+  outside the timer. The separate profiled span includes the next frame's rendering work.
 - **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The browser
   engine's own work rather than JS. A library that writes CSS at runtime adds a style rule per
   instance, so the engine recalculates styles once per instance instead of once for the page —
@@ -215,6 +216,10 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     ``,
     `**Techniques shown (${shownLabels.length}):** ${shownLabels.join(" · ")}. Other lanes in the HTML report are omitted here.`,
     meta ? `\n_Run: ${meta.node} · ${meta.host} · ${meta.timestamp}${meta.gitSha ? ` · ${meta.gitSha}` : ""}_` : ``,
+    ``,
+    ...Object.entries(meta?.runtimePackages ?? {}).map(([name, pkg]) =>
+      `Measured ${name} source revision: \`${pkg.revision}\`. Package SHA-256: \`${pkg.sha256}\`.`,
+    ),
     ``,
     MEASUREMENTS,
   ];

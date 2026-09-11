@@ -1,6 +1,6 @@
 // Hydrate or mount the case, then measure a warm input change from i to i + 1.
 // Instance keys stay fixed. __prepareInp resets the input outside the timed sample.
-import React, { useEffect, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import createCache from "@emotion/cache";
@@ -34,12 +34,9 @@ let updateOffset: ((offset: number) => void) | null = null;
 
 function App() {
   const [offset, setOffset] = useState(0);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const ms = performance.now() - start;
-    // A wpd span for the commit: mark the end and measure back to the start mark set in
-    // hydrate()/mount(). Under `wpd record --bench --breakdown` this "hydrate"/"mount" measure
-    // becomes a span with the reconciling seven-slice bar; the wall of the span === this ms, so
-    // the bench's own commit number stays derivable while wpd adds the anatomy.
+    // Stop at DOM commit, before paint, as the Solid entries do after flush.
     const phase = isMount ? "mount" : "hydrate";
     if (isMount) window.__mountMs = ms;
     else window.__hydrateMs = ms;
