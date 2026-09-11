@@ -5,14 +5,14 @@
 //
 //   mount   : url has ?mount=1  -> window.__mount() cold-renders into an empty root
 //   hydrate : url has ?manual=1 -> window.__hydrate() commits the deferred hydration
-//   inp     : url auto-hydrates -> window.__inp() re-renders the mounted tree in place
+//   inp     : url auto-hydrates -> reset, then change each instance's input from i to i + 1
 //
 // The client-entry's own measure ends at commit / inside rAF, which can be BEFORE the browser
 // performs style/layout/paint for that frame. This wrapper adds a `${phase}:frame` measure through
 // the following painted frame, so WPD's breakdown really contains the rendering work we compare.
 //
 // mount/hydrate are single-shot (a second createRoot/hydrateRoot on the same page would double
-// mount), so those run with --iterations 1. inp re-renders in place and is safe to repeat.
+// mount), so those run with --iterations 1. inp repeats one warm transition in place.
 const PHASE = new URLSearchParams(location.search).get("phase") || "mount";
 
 const waitFor = async (predicate, label) => {
@@ -35,10 +35,11 @@ const measureThroughPaint = async (phase, action, extraFrames) => {
 
 export async function prepare() {
   if (PHASE === "inp") {
-    await waitFor(() => window.__hydrateMs !== undefined && typeof window.__inp === "function", "__inp");
-    // Warm the re-render path so the measured samples are not the cold first flushSync.
-    await window.__inp();
-    await window.__inp();
+    await waitFor(() => window.__hydrateMs !== undefined && typeof window.__prepareInp === "function" && typeof window.__inp === "function", "interaction hooks");
+    for (let i = 0; i < 3; i++) {
+      await window.__prepareInp();
+      await window.__inp();
+    }
   }
 }
 
@@ -60,6 +61,9 @@ export async function run() {
     return;
   }
   if (PHASE === "inp") {
+    // Reset is outside inp:frame. The outer run includes setup and is not an
+    // interaction duration; gen-wpd reports only the named action span here.
+    await window.__prepareInp();
     // __inp resolves inside the first rAF callback (before that frame paints); the additional rAF
     // makes the wrapper include its rendering work.
     await measureThroughPaint("inp", () => window.__inp(), 1);

@@ -1,43 +1,25 @@
-// gen-wpd — a PARALLEL measurement path to gen.ts that replaces the hand-rolled profiler
-// plumbing with `wpd` (@jantimon/web-performance-debugger) invocations. It keeps ALL of gen's
-// orchestration philosophy (discover cells from the filesystem, build each tech in isolation,
-// merge per-cell results) but delegates every MEASUREMENT to wpd:
-//
-//   ssr    → wpd record <node-entry> --target node --iterations N ; query cpu --by package --json
-//            per-package SSR self-time, remapped to the report's react/lib/component/other buckets
-//            (a superset: wpd splits every package, not four coarse buckets).
-//   mount  → wpd record bench-flow --bench --url <server> --members breakdown,deep --group  (chrome)
-//            a cold-mount RUN GROUP: the breakdown member gives the reconciling seven-slice bar and
-//            durations, the deep member gives exact counts + forced-layout read-sites. One group join
-//            guarantees both describe the SAME capture; `query span <group> run` stitches them. Emits
-//            the mount result (the bar) AND the blame result (the stitched counts + forced + durations).
-//   hydrate→ a Chrome --breakdown of the SSR hydration commit.
-//   inp    → wpd record bench-flow --bench --url <server> --breakdown  (chrome)
-//            an in-place re-render `performance.measure("inp")` span; the flushSync + rAF frame
-//            wait shows up as an explicit `idle` slice.
-//   firefox→ wpd record bench-flow --bench --url <server> --target firefox
-//            the Gecko reconciling bar (js/style/layout/browser/gc/idle from the CPU model) plus
-//            read-site forced blame with DOM property names.
-//
-// Every record carries `--variant <tech>`, so a diff/cpu-diff gate refuses to compare two techniques
-// that ran through one module path (env-switched), and reports name the technique.
-//
-// Run:  node ./gen-wpd.ts [--lane=ssr,mount,inp,firefox] [--tech 'glob'] [--case 'glob']
-//
-// Results land in result/measurement-wpd-<lane>.json, keyed "case/tech" like every other
-// measurement file. The mount lane also emits measurement-wpd-blame.json (its group's deep member).
-// These files plus their manifest are the canonical attribution and rendering-work data consumed by
-// report and verify.
+// WPD records SSR call timings and CPU attribution, Chrome mount/hydration/interaction
+// profiles, and Firefox rendering work. Named measures bound the browser actions;
+// repeated action durations stay separate from each selected profile bar.
+// Mount uses separate breakdown and deep passes of the same workload. Its run group
+// supplies run-scoped counts and forced sites; the action bar uses mount:frame.
+// --variant identifies each technology for WPD's workload compatibility checks.
+// Results and their manifest go to result/ or WPD_RESULT_DIR.
 import { build } from "vite";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, existsSync, readdirSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createServer } from "node:http";
+import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
+import { validateBrowserFixture } from "./scripts/browser-validation.ts";
+import { chromium } from "@playwright/test";
 import os from "node:os";
 import benchConfig from "./bench.config.ts";
-import type { CaseMeta, SsrModule } from "./report/types.ts";
+import type { CpuOverview, SpanAnatomy, SpanTiming, GroupSpanStitch } from "@jantimon/web-performance-debugger";
+import { runTiming, timingMedian, actionTiming, profileSpan, cpuPackageTimes, forcedSites } from "./scripts/wpd-query.ts";
+import type { CaseMeta, SsrModule, WpdSpanSample } from "./report/types.ts";
+import { INTERACTION_PROTOCOL } from "./report/types.ts";
 import { WPD_MANIFEST, writeJsonAtomic, type WpdManifest, type WpdLane } from "./report/wpd-results.ts";
 
 const execFileP = promisify(execFile);
@@ -46,7 +28,7 @@ process.env.NODE_ENV = "production"; // load-bearing, same reason as gen.ts:33-3
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const TECHS_DIR = join(ROOT, "techs");
 const CASES_DIR = join(ROOT, "cases");
-const RESULT_DIR = join(ROOT, "result");
+const RESULT_DIR = process.env.WPD_RESULT_DIR ?? join(ROOT, "result");
 // Keep WPD + its heavyweight browser downloads isolated from the normal workspace install.
 // `pnpm setup:wpd` creates this pinned vendor tree.
 const WPD_BIN = join(ROOT, "vendor", "wpd", "node_modules", ".bin", "wpd");
@@ -54,7 +36,7 @@ const WPD_PACKAGE = join(ROOT, "vendor", "wpd", "node_modules", "@jantimon", "we
 const PUPPETEER_REVISIONS = join(ROOT, "vendor", "wpd", "node_modules", "puppeteer-core", "lib", "puppeteer", "revisions.js");
 const BENCH_FLOW = join(ROOT, "scripts", "wpd", "bench-flow.mjs");
 const NODE_ENTRY = join(ROOT, "scripts", "wpd", "node-ssr-entry.mjs");
-const TMP = join(os.tmpdir(), "wpd-bench-gen");
+const TMP = mkdtempSync(join(os.tmpdir(), "wpd-bench-gen-"));
 
 // ---- tiny CLI (mirrors gen.ts) -------------------------------------------------
 function parseArgs(argv: string[]) {
@@ -73,10 +55,6 @@ function parseArgs(argv: string[]) {
 const globToRe = (glob: string) => new RegExp("^" + glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
 const matches = (glob: string | undefined, name: string) => !glob || globToRe(glob).test(name);
 const dirsIn = (path: string) => (existsSync(path) ? readdirSync(path, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name) : []);
-const median = (values: number[]): number => {
-  const sorted = [...values].sort((left, right) => left - right);
-  return sorted.length ? sorted[sorted.length >> 1] : 0;
-};
 const round = (value: number, places = 3) => Math.round(value * 10 ** places) / 10 ** places;
 
 interface Cell { tech: string; caseId: string; entry: string }
@@ -107,51 +85,18 @@ async function buildMicrobench(tech: string): Promise<SsrModule> {
 // Un-minified + sourcemapped hydrate bundle so wpd can split the js slice per package (the
 // production hydrate build is minified with no map; a minified single bundle would collapse to one
 // origin bucket). Same trick gen's *-attribution passes use (gen.ts:470-483).
-async function buildHydrateBreakdown(tech: string): Promise<Buffer> {
+async function buildHydrateBreakdown(tech: string): Promise<string> {
   const cfg = await loadViteConfig(join(TECHS_DIR, tech, "vite.hydrate.config.ts"));
   const merged = { ...cfg, build: { ...cfg.build, outDir: "dist/hydrate-bd", minify: false, sourcemap: true } };
   await build({ ...merged, configFile: false, logLevel: "warn" });
   const bundle = join(TECHS_DIR, tech, "dist", "hydrate-bd", "entry.js");
   if (!existsSync(bundle)) throw new Error(`${tech}: hydrate-bd build produced no entry.js`);
-  return readFileSync(bundle);
-}
-
-// ---- static server: SSR markup + the hydrate bundle + its sourcemap ------------
-function serveHydrate(ssrMod: SsrModule, bundleJs: Buffer, mapJson: Buffer | null) {
-  const render = ssrMod.renderHtml ?? ((caseId: string, n: number) => ssrMod.renderCase(caseId, n).html);
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
-    if (url.pathname === "/entry.js") {
-      res.setHeader("content-type", "text/javascript");
-      return res.end(bundleJs);
-    }
-    if (url.pathname === "/entry.js.map" && mapJson) {
-      res.setHeader("content-type", "application/json");
-      return res.end(mapJson);
-    }
-    const caseId = url.searchParams.get("case") ?? "";
-    const n = Number(url.searchParams.get("n") ?? "1");
-    const body = url.searchParams.get("mount") === "1" || !caseId ? "" : render(caseId, n);
-    res.setHeader("content-type", "text/html");
-    res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
-  });
-  return new Promise<{ port: number; close: () => Promise<void> }>((resolve) => {
-    server.listen(0, "127.0.0.1", () => {
-      const port = (server.address() as { port: number }).port;
-      resolve({ port, close: () => new Promise<void>((done) => server.close(() => done())) });
-    });
-  });
+  return join(TECHS_DIR, tech, "dist", "hydrate-bd");
 }
 
 // ---- wpd runner ----------------------------------------------------------------
 const runWpd = (args: string[], env: Record<string, string> = {}) =>
   execFileP(WPD_BIN, args, { cwd: ROOT, encoding: "utf8", env: { ...process.env, ...env }, maxBuffer: 256 * 1024 * 1024 });
-// LOCAL DRIFT FIX (wpd 0.11.0): `query digest` was removed. Its `summary` block (perIteration,
-// stats, counts) is written into the recording file itself, so read it straight from disk.
-const readSummary = (rec: string): Record<string, any> => {
-  try { return (JSON.parse(readFileSync(rec, "utf8")) as { summary?: Record<string, any> }).summary ?? {}; }
-  catch { return {}; }
-};
 const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (error as Error).message) ?? "").toString().split("\n").filter(Boolean).slice(-1)[0] ?? "";
 
 // ---- SSR bucket remap: wpd packages → the report's react/lib/component/other -----
@@ -169,14 +114,19 @@ const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (
 const COMPONENT_PACKAGES = new Set([
   "app", "css-in-js-bench", // wpd's generic first-party bundle buckets
   "emotion", // lib is @emotion/*
-  "stylex", "stylex-layers", // lib is @stylexjs/stylex
+  "stylex", "stylex-layers", "stylex-solid", // lib is @stylexjs/stylex
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
   "bamboo", // lib is @bamboocss/* (+ generated styled-system)
   "next-yak-css", // lib is next-yak (no npm package named next-yak-css)
-  "vanilla", // no styling library
+  "yak-solid", "yak-solid-nofold", // lib is @yak/solid (no npm package named yak-solid)
+  "cn-solid", // lib is cn (no npm package named cn-solid)
+  "vanilla", "vanilla-solid", // no styling library
 ]);
 function bucketForPackage(pkg: string): "react" | "lib" | "component" | "other" {
+  // The `react` bucket is the UI FRAMEWORK's own self-time — the floor every lane of
+  // that framework shares. For the Solid lanes that floor is solid-js + @solidjs/*.
   if (/^(react-dom|react|scheduler|react-is)$/.test(pkg)) return "react";
+  if (/^(solid-js|@solidjs\/.+)$/.test(pkg)) return "react";
   if (COMPONENT_PACKAGES.has(pkg)) return "component";
   if (/^\(node\)|^\(native\)|^\(program\)|^\(gc\)/.test(pkg)) return "other";
   // Every real styling package (@emotion/*, goober, stylis, styled-system, ...) AND wpd's
@@ -203,11 +153,11 @@ async function ssrLane(tech: string, mod: SsrModule, cell: Cell, caseMeta: Recor
   const rec = join(TMP, `ssr__${tech}__${cell.caseId}.json`);
   await runWpd(["record", NODE_ENTRY, "--target", "node", "--variant", tech, "--iterations", String(iterations), "--warmup", "5", "--out", rec],
     { WPD_SSR_MODULE: moduleAbs, WPD_CASE: cell.caseId, WPD_N: String(n) });
-  const cpu = JSON.parse((await runWpd(["query", "cpu", rec, "--by", "package", "--json"])).stdout);
-  const summary = readSummary(rec);
-  const perIteration: number[] = (summary.perIteration ?? []).filter((x: unknown): x is number => typeof x === "number");
-  const renderMs = perIteration.length ? round(median(perIteration)) : round((cpu.totalMs ?? 0) / iterations);
-  const byPackage: Record<string, number> = cpu.breakdown?.slices?.js?.byPackage ?? {};
+  const cpu = JSON.parse((await runWpd(["query", "cpu", rec, "--by", "package", "--format", "json"])).stdout) as CpuOverview;
+  const timing = runTiming(await queryAnatomy(rec, "run"), iterations);
+  const perIteration = timing.samplesMs;
+  const renderMs = round(timingMedian(timing));
+  const byPackage = cpuPackageTimes(cpu);
   const buckets = { react: 0, lib: 0, component: 0, other: 0 };
   for (const [pkg, ms] of Object.entries(byPackage)) buckets[bucketForPackage(pkg)] += ms as number;
   const totalJs = buckets.react + buckets.lib + buckets.component + buckets.other || 1;
@@ -223,74 +173,36 @@ async function ssrLane(tech: string, mod: SsrModule, cell: Cell, caseMeta: Recor
   };
 }
 
-// ---- span shape shared by the chrome breakdown lanes ---------------------------
-interface SpanResult {
-  wallMs: number;
-  slices: { js: number; style: number; layout: number; paint: number; gc: number; other: number; idle: number };
-  jsByPackage: Record<string, number>;
-  frames?: { presented: number; presentedPartial: number; dropped: number; total: number; worstStages?: { name: string; ms: number }[] };
+// ---- public span queries -------------------------------------------------------
+type SpanResult = WpdSpanSample;
+async function queryAnatomy(rec: string, selector: string): Promise<SpanAnatomy> {
+  return JSON.parse((await runWpd(["query", "span", rec, selector, "--format", "json"])).stdout) as SpanAnatomy;
 }
-interface TimingSummary {
-  wallMs: number | null;
-  perIteration: number[];
-  stats: { min: number; median: number; mean: number; max: number } | null;
-}
-interface WpdSpan {
-  label: string;
-  kind: string;
-  wallMs: number;
-  aggregation: "first" | "sum";
-  iterations: number;
-  slices: {
-    js: { ms: number; byPackage?: Record<string, number> };
-    style: { ms: number } | null;
-    layout: { ms: number } | null;
-    paint: { ms: number } | null;
-    gc: { ms: number };
-    other: { ms: number };
-    idle: { ms: number };
-  };
-  frames?: any;
-}
-async function querySpan(rec: string, label: string): Promise<SpanResult | null> {
-  const result = JSON.parse((await runWpd(["query", "spans", rec, "--label", label, "--json"])).stdout) as { spans?: WpdSpan[] };
-  const span = result.spans?.find((entry) => entry.label === label);
-  if (!span) return null;
-  const slices = span.slices;
-  const ms = (slice: { ms?: number } | null | undefined) => round(slice?.ms ?? 0);
-  return {
-    wallMs: round(span.wallMs),
-    slices: { js: ms(slices.js), style: ms(slices.style), layout: ms(slices.layout), paint: ms(slices.paint), gc: ms(slices.gc), other: ms(slices.other), idle: ms(slices.idle) },
-    jsByPackage: Object.fromEntries(Object.entries(slices.js.byPackage ?? {}).map(([pkg, value]) => [pkg, round(value)])),
-    frames: span.frames ? { presented: span.frames.presented, presentedPartial: span.frames.presentedPartial, dropped: span.frames.dropped, total: span.frames.total, worstStages: span.frames.worstStages } : undefined,
-  };
+async function querySpan(rec: string, selector: string): Promise<SpanResult | null> {
+  return profileSpan(await queryAnatomy(rec, selector));
 }
 
-async function breakdownLane(phase: "hydrate" | "inp", tech: string, port: number, cell: Cell): Promise<{ span: SpanResult | null; runSpan: SpanResult | null; timing: TimingSummary }> {
+async function breakdownLane(phase: "hydrate" | "inp", tech: string, port: number, cell: Cell): Promise<{ span: SpanResult | null; runSpan: SpanResult | null; timing: SpanTiming | null }> {
   const n = benchConfig.wpd.n;
   const mode = phase === "hydrate" ? "&manual=1" : "";
   const base = `?case=${cell.caseId}&n=${n}${mode}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
   const rec = join(TMP, `${phase}__${tech}__${cell.caseId}.json`);
-  const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp re-renders in place
+  const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp repeats one warm input change
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
     "--warmup", "0", "--out", rec]);
-  const summary = readSummary(rec);
+  const action = await queryAnatomy(rec, `measure:${phase}:frame`);
   return {
-    span: await querySpan(rec, `${phase}:frame`),
-    runSpan: await querySpan(rec, "run"),
-    timing: {
-      wallMs: typeof summary.wallMs === "number" ? round(summary.wallMs) : null,
-      perIteration: (summary.perIteration ?? []).filter((x: unknown): x is number => typeof x === "number").map((x: number) => round(x)),
-      stats: summary.stats ?? null,
-    },
+    span: profileSpan(action),
+    runSpan: phase === "inp" ? null : await querySpan(rec, "run"),
+    timing: actionTiming(action, phase === "inp" ? iterations : undefined),
   };
 }
 
 interface FirefoxResult {
   wallMs: number | null;
-  breakdown: { js: number; style: number; layout: number; browser: number; gc: number; idle: number } | null;
+  breakdown: { js: number; style: number | null; layout: number | null; browser: number; gc: number; idle: number } | null;
   jsByPackage: Record<string, number>;
   forced: { at: string; count: number; durMs: number }[];
   counts: { layout: number | null; style: number | null; forcedLayout: number | null; paint: number | null };
@@ -310,13 +222,10 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
     console.warn(`  ↻ firefox ${cell.caseId}/${tech}: retrying once (${errLine(firstError)})`);
     await runWpd(args);
   }
-  const span = await querySpan(rec, `${phase}:frame`);
-  let forced: { at: string; count: number; durMs: number }[] = [];
-  try {
-    const blame = JSON.parse((await runWpd(["query", "blame", rec, "--forced", "--json"])).stdout);
-    forced = (Array.isArray(blame) ? blame : blame.entries ?? []).slice(0, 8);
-  } catch {}
-  const summary = readSummary(rec);
+  const span = await querySpan(rec, `measure:${phase}:frame`);
+  const run = await queryAnatomy(rec, "run");
+  const forced = forcedSites(run.forced ?? [], 8);
+  const counts = run.counts;
   return {
     wallMs: span?.wallMs ?? null,
     breakdown: span ? {
@@ -326,28 +235,12 @@ async function firefoxLane(phase: "mount" | "inp", tech: string, port: number, c
     jsByPackage: span?.jsByPackage ?? {},
     forced,
     counts: {
-      layout: typeof summary.layoutCount === "number" ? summary.layoutCount : null,
-      style: typeof summary.styleCount === "number" ? summary.styleCount : null,
-      forcedLayout: typeof summary.forcedLayoutCount === "number" ? summary.forcedLayoutCount : null,
-      paint: typeof summary.paintCount === "number" ? summary.paintCount : null,
+      layout: counts.layoutCount,
+      style: counts.styleCount,
+      forcedLayout: counts.forcedLayoutCount,
+      paint: counts.paintCount,
     },
   };
-}
-
-// The shape of `query span <group> run --json` (a GroupSpanStitch) that gen reads: the reconciling
-// bar's slices from the breakdown member, exact counts + forced read-sites from the deep member.
-interface GroupSpanStitch {
-  slices: {
-    js: { ms: number; byPackage?: Record<string, number> };
-    style: { ms: number } | null;
-    layout: { ms: number } | null;
-    paint: { ms: number } | null;
-    gc: { ms: number };
-    other: { ms: number };
-    idle: { ms: number };
-  } | null;
-  counts: { layoutCount?: number | null; styleCount?: number | null; paintCount?: number | null; forcedLayoutCount?: number | null };
-  forced?: { at: string; count: number; durMs: number }[];
 }
 
 interface BlameResult {
@@ -362,48 +255,35 @@ interface BlameResult {
   paintMs: number | null;
 }
 
-// mount render-timing run group: records ONE run group of the cold-mount workload with two members
-// (`--members breakdown,deep`), so the reconciling bar + durations (the breakdown member) and the
-// exact rendering counts + forced-layout read-sites (the deep member — the only chrome capture mode
-// carrying `.stack` + invalidationTracking) describe the SAME capture. The group join refuses a
-// member whose workload/iterations differ, so the two halves cannot silently drift apart the way two
-// independent records could. `query span <group> run` stitches them into one metric: durations from
-// the breakdown member, counts + forced from the deep member. Emits BOTH the mount result (the
-// cold-mount bar) and the blame result (the stitched render-timing metric + forced sites). `--deep`
-// suppresses slice durations, so forced ms stays not-measured (null), as before.
+// The group supplies run-scoped durations from breakdown and counts/forced sites
+// from a separate deep pass of the same workload. The mount bar uses mount:frame.
+// Deep capture does not measure forced-layout duration, so that value stays null.
 async function mountRenderTimingLane(tech: string, port: number, cell: Cell): Promise<{
-  mount: { span: SpanResult | null; runSpan: SpanResult | null; timing: TimingSummary };
+  mount: { span: SpanResult | null; runSpan: SpanResult | null; timing: SpanTiming | null };
   blame: BlameResult;
 }> {
   const n = benchConfig.wpd.n;
   const url = `http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&mount=1&phase=mount`;
   const groupName = `rt__${tech}__${cell.caseId}`;
   const groupBase = join(TMP, groupName);
-  // A run group refuses to re-record into a complete manifest, so clear any member files a previous
-  // run of this cell left behind before recording afresh.
-  for (const suffix of [".group.json", ".breakdown.json", ".breakdown.cpu.json", ".breakdown.cpuprofile", ".deep.json"]) rmSync(groupBase + suffix, { force: true });
   await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--members", "breakdown,deep", "--group", groupName,
     "--variant", tech, "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs),
     "--iterations", "1", "--warmup", "0", "--out", groupBase]);
 
   const breakdownRec = `${groupBase}.breakdown.json`;
   const manifest = `${groupBase}.group.json`;
-  const summary = readSummary(breakdownRec);
+  const action = await queryAnatomy(breakdownRec, "measure:mount:frame");
   const mount = {
-    span: await querySpan(breakdownRec, "mount:frame"),
+    span: profileSpan(action),
     runSpan: await querySpan(breakdownRec, "run"),
-    timing: {
-      wallMs: typeof summary.wallMs === "number" ? round(summary.wallMs) : null,
-      perIteration: (summary.perIteration ?? []).filter((x: unknown): x is number => typeof x === "number").map((x: number) => round(x)),
-      stats: summary.stats ?? null,
-    } as TimingSummary,
+    timing: actionTiming(action),
   };
 
   const stitch = JSON.parse((await runWpd(["query", "span", manifest, "run", "--json"])).stdout) as GroupSpanStitch;
   const counts = stitch.counts ?? {};
   const num = (value: unknown): number | null => (typeof value === "number" ? value : null);
   const sliceMs = (slice: { ms?: number } | null | undefined): number | null => (typeof slice?.ms === "number" ? round(slice.ms) : null);
-  const forced = (stitch.forced ?? []).slice(0, 10).map((row) => ({ at: row.at ?? "", count: row.count ?? 0, durMs: round(row.durMs ?? 0) }));
+  const forced = forcedSites(stitch.forced ?? [], 10);
   const blame: BlameResult = {
     forced,
     forcedLayoutCount: num(counts.forcedLayoutCount),
@@ -462,12 +342,13 @@ async function main() {
   const manifest: WpdManifest = process.env.WPD_RUN_ID && existsSync(manifestFile)
     ? JSON.parse(readFileSync(manifestFile, "utf8"))
     : {
-      schemaVersion: 1, runId, complete: false, expectedCells: cells.length, lanes: {},
+      schemaVersion: 2, runId, complete: false, expectedCells: cells.length, lanes: {},
       // host describes the hardware, not the machine's network name (the report publishes it).
       environment: { gitSha, host: `${cpu[0]?.model ?? "unknown"} (${os.arch()})`, node: process.version, platform: os.platform(), release: os.release(), arch: os.arch(), cpuModel: cpu[0]?.model ?? "unknown", logicalCpus: cpu.length },
       wpd: toolMeta(), config: { n: benchConfig.wpd.n },
     };
   if (manifest.runId !== runId) throw new Error("WPD manifest belongs to another run");
+  if (manifest.schemaVersion !== 2) throw new Error("WPD manifest has an incompatible result schema");
   if (manifest.expectedCells !== cells.length) throw new Error("WPD lane filters differ within one run");
   for (const lane of lanes) manifest.lanes[lane] = {
     run: 0, ok: 0, fail: 0, startedAt: new Date().toISOString(), finishedAt: "", loadAverageStart: os.loadavg(), loadAverageEnd: [],
@@ -508,14 +389,16 @@ async function main() {
     // ---- browser lanes share one build + one server ----
     const needsBrowser = lanes.some((lane) => lane !== "ssr");
     if (needsBrowser) {
-      let bundleJs: Buffer, mapJson: Buffer | null;
+      let directory: string;
+      try { directory = await buildHydrateBreakdown(tech); }
+      catch (error) { console.error(`  ✗ ${tech}: hydrate-bd build failed — ${errLine(error)}`); continue; }
+      const { port, close } = await serveBrowserFixture({ directory, ssrMod: mod });
       try {
-        bundleJs = await buildHydrateBreakdown(tech);
-        const mapPath = join(TECHS_DIR, tech, "dist", "hydrate-bd", "entry.js.map");
-        mapJson = existsSync(mapPath) ? readFileSync(mapPath) : null;
-      } catch (error) { console.error(`  ✗ ${tech}: hydrate-bd build failed — ${errLine(error)}`); continue; }
-      const { port, close } = await serveHydrate(mod, bundleJs, mapJson);
-      try {
+        // Correctness checks use separate pages before any profile recording.
+        const browser = await chromium.launch();
+        try {
+          for (const cell of techCells) await validateBrowserFixture(browser, { port, ssrMod: mod, caseId: cell.caseId });
+        } finally { await browser.close(); }
         for (const cell of techCells) {
           const key = `${cell.caseId}/${tech}`;
           if (lanes.includes("mount")) {
@@ -535,7 +418,7 @@ async function main() {
             catch (error) { bump("hydrate", false); console.error(`  ✗ hydrate ${key}: ${errLine(error)}`); }
           }
           if (lanes.includes("inp")) {
-            try { const { span, runSpan, timing } = await breakdownLane("inp", tech, port, cell); data.inp[key] = [{ span, runSpan, timing }]; bump("inp", !!span); console.log(`  ${span ? "✓" : "∅"} inp ${key}${span ? ` (wall ${span.wallMs}ms, js ${span.slices.js}ms, idle ${span.slices.idle}ms)` : ""}`); writeResult(files.inp, data.inp); }
+            try { const { span, runSpan, timing } = await breakdownLane("inp", tech, port, cell); data.inp[key] = [{ interactionProtocol: INTERACTION_PROTOCOL, span, runSpan, timing }]; bump("inp", !!span); console.log(`  ${span ? "✓" : "∅"} inp ${key}${span ? ` (wall ${span.wallMs}ms, js ${span.slices.js}ms, idle ${span.slices.idle}ms)` : ""}`); writeResult(files.inp, data.inp); }
             catch (error) { bump("inp", false); console.error(`  ✗ inp ${key}: ${errLine(error)}`); }
           }
           if (lanes.includes("firefox") && firefoxOk) {

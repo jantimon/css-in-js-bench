@@ -12,6 +12,7 @@ import type { RenderTimingRow } from "./components/RenderTimingChart.tsx";
 import type { WpdBreakdownRow } from "./components/WpdBreakdownChart.tsx";
 import type { BuildTimeRow } from "./components/BuildTimeChart.tsx";
 import type { CaseMeta, RunMeta, TechInfo } from "./types.ts";
+import { httpMeasurementNote, type HttpProtocol } from "./http-results.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
@@ -90,13 +91,15 @@ const payloadTable = (rows: StackRow[]): string => {
   );
 };
 
+// A table cell for a number an engine may not report: "—" when the field is absent.
+const cell = (v: number | null | undefined, f: (n: number) => string) => (typeof v === "number" ? f(v) : "—");
+
 // Browser render-work on a cold mount (from wpd), best-first by Chrome style-recalc count.
 // Chrome's authoritative axis is counts; Firefox's is Gecko ms — cells are "—" when an engine
 // doesn't report that field (Firefox has no paint / per-element counts).
 const rtTable = (rows: RenderTimingRow[]): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.chrome?.styleCount ?? Infinity) - (b.chrome?.styleCount ?? Infinity));
   if (!picked.length) return "";
-  const cell = (v: number | null | undefined, f: (n: number) => string) => (typeof v === "number" ? f(v) : "—");
   return table(
     ["Technique", "Chrome recalcs", "Chrome layout ms", "Chrome paint ms", "Firefox style ms", "Firefox forced ms"],
     picked.map((r, i) => [
@@ -114,10 +117,10 @@ const wpdTable = (rows: WpdBreakdownRow[]): string => {
   const picked = pick(rows, (r) => r.tech).sort((a, b) => (a.span.wallMs - a.span.slices.idle) - (b.span.wallMs - b.span.slices.idle));
   if (!picked.length) return "";
   return table(
-    ["Technique", "active ms", "span ms", "timing median", "p95", "JS", "style", "layout", "paint", "idle"],
+    ["Technique", "active ms", "span ms", "profiled timing median", "samples", "JS", "style", "layout", "paint", "idle"],
     picked.map((r, i) => {
       const active = r.span.wallMs - r.span.slices.idle;
-      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), r.p95Ms === undefined ? "—" : ms(r.p95Ms), ms(r.span.slices.js), ms(r.span.slices.style), ms(r.span.slices.layout), ms(r.span.slices.paint), ms(r.span.slices.idle)];
+      return [r.label, (i === 0 ? "**" : "") + ms(active) + (i === 0 ? "**" : ""), ms(r.span.wallMs), r.medianMs === undefined ? "—" : ms(r.medianMs), r.timing ? String(r.timing.samplesMs.length) : "—", ms(r.span.slices.js), cell(r.span.slices.style, ms), cell(r.span.slices.layout, ms), cell(r.span.slices.paint, ms), ms(r.span.slices.idle)];
     }),
   );
 };
@@ -151,62 +154,60 @@ const sweepTable = (lines: SweepLine[]): string => {
 
 const MEASUREMENTS = `## Measurements
 
-Every per-case section below reports these as tables. Definitions are given here once. The
-statistic is the **median** where a repeated timing distribution exists; the Chrome-profiled span anatomy
-(recorded with web-performance-debugger WPD_VERSION) is
-the first instrumented iteration and is labelled separately. Production React in every lane. In
-each table the best value is **bold** and rows are sorted best-first.
+Every per-case section reports these as tables; they are defined here once. Where a timing repeats,
+the statistic is the **median**. The Chrome-profiled span anatomy (recorded with
+web-performance-debugger WPD_VERSION) is one recorded action, so it carries profiler overhead and
+frame waits that the plain timing charts do not — read the two side by side, not against each other.
+Every lane uses its framework's production build. In each table the best value is **bold** and rows
+sort best-first.
 
-- **SSR render throughput** — renders/sec, higher is better. How many times per second the lane
-  renders the whole workload to an HTML string in Node (\`renderToString\`), timing the production
-  render only — build-time CSS collection (a Tailwind JIT, a Panda sheet slice) is excluded.
-- **SSR throughput under load** — requests/sec, higher is better. Requests/sec sustained under
-  concurrent HTTP load (autocannon) serving the SSR render end-to-end. Includes serializing and
-  writing the full response every request, so a larger HTML/CSS payload costs here even when the
-  render itself is fast (this is why a lane can win render throughput yet lose under load).
-- **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. The median
-  server \`renderToString()\` split by CPU self-time from a sampled V8 profile mapped through
-  source maps: **react-dom** (the floor every lane shares), the **styling library** runtime, and
-  **your component**. *other* is GC / unattributed native work.
-- **Where the client hydration time goes** — Chrome-profiled reconciling span, ms, lower is better. Time for React to
-  **hydrate** the server HTML in the browser — attach handlers and build the fiber tree over the
-  existing DOM (no markup re-creation) — split into JS, style, layout, paint, GC, browser work and idle.
-- **Where the interaction time goes** — Chrome-profiled in-place re-render, ms, lower is better. A state change
-  triggers a synchronous re-render (\`flushSync\`) of the whole mounted workload, then waits for the
-  next paint — click→paint latency, with active work separated from frame-alignment idle. This is where **runtime** CSS-in-JS re-runs
-  its per-element styling on every update; build-time lanes do almost none.
-- **Where the cold-mount time goes** — Chrome-profiled blank screen → first render, ms, lower is better. From a
-  **blank root** (no SSR markup) a "click" renders the whole workload from scratch
-  (\`createRoot().render()\`), then waits for first paint. Unlike hydration this cold mount's first
-  paint includes each **runtime** library's **first style injection** into the document. The span's
-  JS/style/layout/paint/GC/other/idle slices reconcile exactly to its wall time.
-- **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The
-  browser engine's OWN rendering work (not JS), on a cold mount, measured by \`wpd\` in Chrome and
-  Firefox. Runtime CSS-in-JS injects a style rule per instance, so the engine recalculates styles
-  ~once per instance — **Chrome**'s authoritative signal is that **style-recalc count** (n instances
-  → ~n recalcs vs 1 for extracted CSS). **Firefox** (Gecko) reports sampled style/layout **ms**, no
-  main-thread paint; a sampled zero is not proof of absence. Opt-in (\`pnpm setup:wpd\` + \`pnpm gen:wpd\`).
-- **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. Gzipped bytes the browser
-  downloads: the client JS runtime the lane ships over the bare-React floor, the CSS, and the SSR
-  HTML.
-- **Scaling** — SSR render time (ms) vs instance count. Render time as the workload grows from a
-  handful to thousands of instances; a flatter progression scales better.
-- **Build time** — full client build (ms), lower is better. Wall time for a lane's whole production
-  client build (the vite bundle shipped to the browser). *cold* clears the lane's build output,
-  vite's on-disk caches and Panda's generated \`styled-system\` first, so it includes the cache-miss
-  regen; *warm* runs the same build again with nothing cleared. Median of 3, per lane (a build
-  compiles every workload at once, so this is not per-case). Build-time developer experience and
-  machine-dependent — not user-facing runtime. Opt-in (\`pnpm gen:samples --measure=buildtime\`).
+- **SSR render throughput** — renders/sec, higher is better. Uses a microbenchmark to measure how
+  fast Node turns components into an HTML string after warmup. Measures rendering only, excluding
+  build time, HTTP handling, response transfer and browser work. Results count component instances
+  per second: a workload of 400 product tiles counts as 400 renders.
+- **SSR throughput under load** — requests/sec, higher is better. Uses autocannon to measure
+  end-to-end HTTP throughput on this machine: sending a request, rendering the whole workload into
+  an HTML fragment, and transferring and receiving the response. Clients keep concurrent connections
+  open. Each request renders the full workload, so a workload of 400 product tiles counts as one
+  request. Excludes build time, browser rendering and external network latency. HTTP_METHOD
+- **Where the SSR render time goes** — CPU self-time, ms/render, lower is better. One server render
+  split into **UI framework** work (React or Solid), **styling library** runtime, and **your components**.
+  Framework work can differ when a lane removes component calls. *other* is garbage
+  collection and native work.
+- **Where the client hydration time goes** — ms, lower is better. The browser gets finished HTML and
+  the framework attaches handlers and state without rebuilding the markup. Repeated timing starts on a
+  ready page and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The separate
+  profiled span includes the next frame and splits JS, style, layout, paint, GC, browser work and idle.
+- **Where the interaction time goes** — ms, lower is better. Each instance's value changes from \`i\`
+  to \`i + 1\`, so every element really updates; React sets state, Solid sets a signal. Both warm up
+  first and the reset sits outside the timer. This is not INP: the timing stops at the first animation
+  frame, and the profiled span adds one frame to catch rendering work. Cross-framework ratios describe
+  the whole workload. Use vanilla lanes as references; compilers and styled runtimes can also remove component work.
+- **Where the cold-mount time goes** — ms, lower is better. The workload renders into an empty root
+  on a ready page. Repeated timing ends at DOM commit, before paint; page load and network work stay
+  outside the timer. The separate profiled span includes the next frame's rendering work.
+- **Browser render-work on cold mount** — style-recalc / layout / paint, lower is better. The browser
+  engine's own work rather than JS. A library that writes CSS at runtime adds a style rule per
+  instance, so the engine recalculates styles once per instance instead of once for the page —
+  **Chrome**'s honest signal is that recalc count. **Firefox** reports sampled **ms** instead, where a
+  zero can mean "not sampled" rather than "no work". Compare within one engine.
+- **Page bytes shipped** — JS + CSS + HTML, gzipped, lower is better. What the browser downloads: the
+  JavaScript this lane adds on top of a bare framework page, its CSS, and the server HTML. Solid marks
+  every element with a hydration key and React needs none, so read the HTML column across frameworks
+  with that in mind.
+- **Scaling** — SSR render time (ms) vs instance count. A flatter progression means the cost per
+  element stays put as the page grows.
+- **Build time** — full client build (ms), lower is better. *cold* clears the lane's build output and
+  caches first, so it pays for regenerating them; *warm* runs the same build again with nothing
+  cleared. Median of 3, per lane — one build compiles every workload, so this is not per-case. This is
+  developer experience and it depends on the machine; it says nothing about what users get.
 
-**Attribution caveat:** next-yak's SWC plugin *inlines* its css-prop resolution, so the styling work
-runs from next-yak's own runtime rather than a call into a package. wpd attributes that runtime to the
-**styling lib** bucket — next-yak ships sourcemaps whose runtime originals are off-disk here, so wpd
-names the cost by that origin and keeps it out of your app, never blaming it on **component**. StyleX
-and styled-components keep their runtime in
-\`node_modules\`, and next-yak's runtime shows under **styling lib** too, not under **component**.`;
+**Attribution caveat:** next-yak's compiler inlines its css-prop resolution, so that styling work runs
+from next-yak's own runtime rather than a call into a package. wpd bills it to the **styling lib**
+bucket, never to **component**.`;
 
 /** Build the full agent-readable markdown report. */
-export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = []): string {
+export function renderMarkdown(sections: MdSection[], techs: Record<string, TechInfo>, meta: RunMeta | null, wpdVersion: string, study: StudyAnalysis | null = null, buildtime: BuildTimeRow[] = [], httpProtocol: HttpProtocol | null = null): string {
   const shownLabels = MD_TECHS.filter((t) => techs[t]).map((t) => `**${techs[t].label}** (\`${t}\`)`);
   const out: string[] = [
     `# Styling benchmarks`,
@@ -215,6 +216,10 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     ``,
     `**Techniques shown (${shownLabels.length}):** ${shownLabels.join(" · ")}. Other lanes in the HTML report are omitted here.`,
     meta ? `\n_Run: ${meta.node} · ${meta.host} · ${meta.timestamp}${meta.gitSha ? ` · ${meta.gitSha}` : ""}_` : ``,
+    ``,
+    ...Object.entries(meta?.runtimePackages ?? {}).map(([name, pkg]) =>
+      `Measured ${name} source revision: \`${pkg.revision}\`. Package SHA-256: \`${pkg.sha256}\`.`,
+    ),
     ``,
     MEASUREMENTS,
   ];
@@ -261,7 +266,7 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
         wpdTable(s.hydWpdRows),
       ],
       [
-        "### Interaction re-render — profiled active work, lower is better",
+        "### Interaction update — profiled active work, lower is better",
         wpdTable(s.inpWpdRows),
       ],
       [
@@ -288,10 +293,10 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     "## How this was measured",
     "",
     "- **microbench** — an in-process Node loop that renders each workload to an HTML string (`renderToString`) and counts instance renders per second.",
-    "- **autocannon** — an HTTP load generator that measures requests per second against each lane's SSR server end to end.",
+    "- **autocannon** — HTTP_METHOD",
     "- **[web-performance-debugger](https://github.com/jantimon/web-performance-debugger)** — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.",
     "",
     "Source, raw data and methodology: [github.com/jantimon/css-in-js-bench](https://github.com/jantimon/css-in-js-bench). Run it locally: clone the repo, `pnpm install`, then `pnpm report` renders this report from the committed samples — `pnpm gen` re-measures everything on your own machine.",
   );
-  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion);
+  return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion).replaceAll("HTTP_METHOD", httpMeasurementNote(httpProtocol));
 }

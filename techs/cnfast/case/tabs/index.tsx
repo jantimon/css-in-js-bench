@@ -13,7 +13,7 @@ const TAB_BASE =
   "relative inline-flex items-center cursor-pointer bg-transparent border-none h-[40px] " +
   "text-[16px] leading-[24px] tracking-[0.01em] font-normal min-[992px]:text-[14px] min-[992px]:leading-[20px] " +
   "text-[rgba(0,0,0,0.6)] " +
-  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-[3px] after:border-solid after:border-b-transparent after:[transition:opacity_150ms_linear] " +
+  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:border-0 after:border-b-[3px] after:border-solid after:border-b-transparent after:[transition:opacity_150ms_linear] " +
   "before:absolute before:content-[''] before:w-full before:min-w-[40px] before:top-0 before:bottom-0 before:h-full " +
   "focus-visible:outline-none focus-visible:after:border-b-[3px] focus-visible:after:border-solid focus-visible:after:border-b-[#007bc7]";
 const TAB_ACTIVE =

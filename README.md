@@ -2,7 +2,8 @@
 
 **Live report: <https://jantimon.github.io/css-in-js-bench/>**
 
-Compares CSS-in-JS and utility styling strategies for React on identical workloads.
+Compares CSS-in-JS and utility styling strategies on identical workloads — React for
+almost every lane, plus a Solid 2 pair with its own framework floor.
 Every strategy ("lane") renders the same components under the same conditions, so the
 numbers are actually comparable
 
@@ -35,14 +36,15 @@ For each case you get:
 - **Page bytes shipped** (JS + CSS + HTML, gzipped, lower better): what the page costs on
   the wire. Runtime libs ship the critical CSS they injected, atomic/extracted libs ship
   the slice of their build-time sheet the page used. JS is the lane's marginal client
-  bundle over the bare-React floor (gzipped `hydrate` build minus vanilla's), so it's the
-  same for every case of a lane
+  bundle over its own bare-framework floor (gzipped `hydrate` build minus `vanilla`'s, or
+  minus `vanilla-solid`'s for the Solid lanes), so it's the same for every case of a lane
 - **SSR throughput under load** (requests/sec, higher better): a real HTTP server renders
   the page per request while autocannon hammers it. Heavy and machine-dependent
-- **Where the SSR render time goes** (CPU attribution): the median render split into
-  react-dom (the floor every lane shares) vs the styling library's own runtime vs your
-  component, profiled in node V8 and mapped back to each package via the bundle
-  sourcemap. This is why a throughput number looks the way it does
+- **Where the SSR render time goes** (CPU attribution): the median render split into the
+  UI framework (react-dom, or solid for the Solid lanes — the floor every lane of that
+  framework shares) vs the styling library's own runtime vs your component, profiled in
+  node V8 and mapped back to each package via the bundle sourcemap. This is why a
+  throughput number looks the way it does
 - **Client hydration time** (ms, lower better): Playwright loads the SSR markup plus a
   per-tech browser build that `hydrateRoot`s it, and times the hydration commit
 - **Where the client hydration time goes** (CPU attribution): the same react /
@@ -50,11 +52,16 @@ For each case you get:
   hydration commit (CDP Profiler + source maps, hydration deferred behind `?manual=1` so
   the samples are clean). Build-time lanes show ~zero styling-lib cost, runtime CSS-in-JS
   shows its client runtime as a real segment
-- **Interaction → next paint** (ms, lower better): a `flushSync` re-render of the mounted
-  workload in place, then a wait for paint. The per-element runtime cost a user actually
-  feels
-- **Where the interaction time goes** (CPU attribution): that re-render, split per package
-  in the browser. This is where runtime libraries re-run their styling on every update
+- **Interaction update** (ms, lower better): each mounted instance changes its input from
+  `i` to `i + 1`, with stable instance identities. React uses state and `flushSync`; Solid
+  uses a signal and `flush`. Both states warm up before sampling. Each sample resets to
+  `i` and lets the page settle outside the timer. The timer covers the synchronous update
+  and the wait to the first `requestAnimationFrame` callback; it does not measure a real
+  input event or completed paint
+- **Where the interaction time goes** (CPU attribution): the same update, split per package
+  in the browser. WPD's `inp:frame` span adds one more animation frame callback to include
+  rendering work. Its outer `run` span also includes reset time and is not the interaction
+  timing
 - **Where the cold-mount time goes** (CPU attribution): starting from a blank root (no SSR
   markup), a "click" renders the whole workload from scratch (`createRoot().render()`),
   then we wait for the first paint. Unlike hydration this is a cold client mount, so the
@@ -92,6 +99,13 @@ param, so a filtered view is a shareable URL
 Some measurements are machine-dependent and noisy (anything that boots a browser or a
 server). Those carry that caveat in the report and live in a collapsible appendix
 
+## Packaged runtime for the Solid lanes
+
+The `yak-solid` and `yak-solid-nofold` lanes use a committed package archive from
+`vendor/yak-solid`. Its README gives the source revision and checksum. A checkout
+can install this exact unpublished runtime without a local next-yak source tree.
+The report records the measured package in `result/meta.json`.
+
 ## Running it
 
 ```bash
@@ -121,6 +135,35 @@ There are two settings, each as a styled + css-prop pair:
   pairs isolate what folding is worth.
 
 Within a pair, styled vs css-prop syntax is the only difference.
+
+### The Solid lanes
+
+`yak-solid` runs [`@yak/solid`](https://www.npmjs.com/package/@yak/solid) — the same yak
+compiler with a Solid 2 runtime — over the same 14 workloads, styled API only.
+`vanilla-solid` is its floor: the identical case tree written by hand with plain class
+names, no styling library, the way `vanilla` is the floor for the React lanes. It's hidden
+by default in the lane filter.
+
+Three things follow from Solid not being React, and they are worth knowing before reading
+a chart that mixes them:
+
+- **Bytes.** The JS number is marginal over `vanilla-solid`, never over the React
+  `vanilla`. Solid tree-shakes per app, so a Solid lane's marginal JS includes the parts of
+  `@solidjs/web` only the styling library pulls in — those bytes ship because you use the
+  library, which is exactly what the number is for. The HTML number is a different story:
+  Solid stamps a unique `_hk` hydration key on every element it may claim, and unique
+  strings don't compress, so the Solid lanes' gzipped HTML runs ~2.5–3× the React lanes'.
+  That is Solid's cost, identical in both Solid lanes, and it has nothing to do with yak.
+- **Interaction.** Both frameworks change every instance's input from `i` to `i + 1`
+  without changing its identity. React updates state and renders the changed input;
+  Solid updates a signal that each case reads through an accessor. Both produce the same
+  requested change through their own update paths. Samples repeat that transition after
+  warmup, with reset and settling outside the timer. The result includes framework work;
+  compare each styling library with its own framework's vanilla lane to assess its cost.
+- **Hydration bootstrap.** In production Solid ships an inline `<script>` that creates the
+  `_$HY` store and starts capturing pre-hydration events. The benchmark's html is component
+  markup only, so both Solid lanes run that same bootstrap from the top of their client
+  bundle instead — where the shared framework floor cancels it out.
 
 ### gen and verify
 
@@ -184,7 +227,8 @@ Create `techs/<name>/`:
 
 1. `package.json`: `name` MUST equal the dirname, `description` is the chart label
    (npm names can't hold spaces or `()`), `"type": "module"`, a `bench` block
-   (`color`, `buildPlugin`, `appStylesheet`, `cssKind`), your dependencies
+   (`color`, `buildPlugin`, `appStylesheet`, `cssKind`, and `framework: "solid"` if the
+   lane doesn't render React), your dependencies
 2. `vite.microbench.config.ts`: a standalone SSR build → `dist/microbench/entry.mjs`.
    Copy the closest existing lane and swap the `plugins` array (runtime libs: just
    `react()`, build-plugin libs: add `viteYak`/`stylexVite` + `ssrEmitAssets:true`)
@@ -193,7 +237,9 @@ Create `techs/<name>/`:
    microbench times rendering, not extraction). Discover cases with
    `import.meta.glob("./case/*/index.tsx")`
 4. `case/<id>/index.tsx` for each case the lane covers, default-exporting
-   `(i) => ReactElement`
+   `(i) => ReactElement` — or, on a lane whose `bench.framework` is `"solid"`,
+   `(i: () => number) => JSX.Element`, taking the index as an accessor so the interaction
+   pass can drive it from a signal
 
 No registry edits anywhere. `pnpm lint` then validates the package, `pnpm gen:samples` builds it
 
@@ -211,9 +257,9 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 
 | family | lanes | how `css` is produced |
 |---|---|---|
-| author | vanilla | the co-located `styles.css`, read `?raw` |
+| author | vanilla, vanilla-solid | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×4: styled + css-prop, folding on and off) | the viteYak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | next-yak (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |
@@ -243,3 +289,89 @@ never the lane sources). Every lane is isolated to its own package under `techs/
 library authors can tune their lane via a PR that touches only `techs/<their-lib>/`, see
 "Add a lane" above. Lane PRs don't need Rust unless they touch the next-yak lanes, and
 `pnpm gen:samples --tech '<your-lane>'` only builds your lane
+
+### Interaction samples
+
+`pnpm gen:samples --measure=inp` stores each cell as
+`{ protocol: "index-shift-0-to-1", samples: [...] }`. WPD interaction records carry
+the same protocol in `interactionProtocol`. Case and study analyses also include
+`provenance.interactionProtocol`. The report requires this protocol for interaction
+records and analysis prose. Run `pnpm gen:wpd` for the full profile set before building a report.
+
+`pnpm test:interaction` checks repeated state changes and resets in Chromium using
+the React and Solid baselines. It builds temporary browser bundles and leaves
+measurement files untouched.
+
+### Browser pages and style checks
+
+Timing, WPD profiles, screenshots and browser verification use one document and
+asset server. The browser build supplies stylesheet links through Vite's manifest
+and `browser-styles.json`. Vanilla loads one case stylesheet to keep reused class
+names separate. Utility builds include the finite `dyn-translate` input range,
+including the last changed input; the server rejects sizes beyond that range.
+
+Before collecting browser samples, each runner checks a small fixture on separate,
+untimed pages. It compares key computed styles and text before JavaScript, after
+hydration, after the changed-input update, and after a cold mount. Hydration must
+keep the server-rendered elements and complete without browser errors. These checks
+compare each lane with its own SSR/CSS reference; screenshot checks compare lanes.
+
+`pnpm test:browser` checks CSS emission for every lane, failure detection, and
+representative styled pages without writing measurement files. Set
+`BROWSER_STYLES_CASES=all` to check every supported case in the browser test lanes.
+
+Runtime lanes return complete style tags in `renderCase().head`: Emotion keeps its
+style IDs and shares a cache key with the client; styled-components keeps its
+adoption metadata; Goober keeps its style element ID. These tags style SSR pages
+before JavaScript. Cold mounts start without runtime server styles. Required
+per-request style collection stays inside SSR timing.
+
+The browser test command also checks runtime style adoption without duplicate
+rules and rejects missing server style metadata.
+
+### HTTP throughput process model
+
+`pnpm gen:samples --measure=autocannon` measures each supported cell through HTTP.
+The runner builds the SSR modules before the HTTP stage. Every measured block uses
+one fresh Node server process and a separate autocannon process on the same host.
+The server renders the same HTML fragment for each request; asset loading and
+browser execution are outside this measurement.
+
+Each block checks the response, warms the server through HTTP, then records one
+round. `bench.config.ts` sets five blocks, ten connections, an eight-second warmup
+and an eight-second measured round. A recorded seed shuffles lane/case order in
+each block. Warmup repeats for every fresh server, giving about 80 seconds per
+cell plus startup at these settings. Keep the host idle; separate processes still
+share its CPU and memory bandwidth.
+
+Each cell in `measurement-autocannon.json` has protocol `isolated-http-v2`, the
+settings, workload size, SSR module SHA-256, run identity, and all round results.
+Each round retains process IDs, timestamps, throughput, latency distribution and
+error counts. Response validation preserves UTF-8 characters across network chunks
+and compares complete bodies. HTTP errors and genuine body mismatches fail the cell.
+
+Progress goes to `result/_http-checkpoint.json` after each round. A failed cell
+stops receiving work while healthy cells finish. The pass then exits with an error
+summary. Only a complete, valid pass replaces `measurement-autocannon.json`; the
+report refuses to build while an HTTP checkpoint is unfinished. Snapshots and run
+metadata are saved before the HTTP stage.
+
+Resume an interrupted or failed HTTP pass with:
+
+```sh
+pnpm gen:samples --measure=autocannon --resume-http
+```
+
+Resume reuses the existing SSR bundles and skips successful rounds. It checks the
+workload, bundle hashes, settings, full cell selection and run identity before
+starting workers. It retains failed attempts in the checkpoint. Do not rebuild or
+change dependencies between attempts. A fresh pass without `--resume-http` builds
+all lanes and starts a new checkpoint. HTTP publication requires all lanes and
+cases; filtered HTTP passes are rejected.
+
+The report requires every round to complete without errors, timeouts, non-success
+HTTP responses or body mismatches. It shows median round throughput; it does not
+pool latency percentiles. Numeric-array HTTP results use the shared-process
+protocol. The report labels that setup and refuses to mix protocols or run
+identities. `pnpm test:http` checks process separation, cleanup, Unicode response
+validation, failure handling, resume and publication without running the full suite.

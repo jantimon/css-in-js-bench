@@ -3,6 +3,8 @@
 // imports the same types so the data it writes and the data the report reads can
 // never drift.
 
+import type { SpanTiming } from "@jantimon/web-performance-debugger";
+
 /** A workload definition — `cases/<id>.ts` default-exports this (§5). */
 export interface CaseMeta {
   /** Human label shown in the report. */
@@ -28,6 +30,11 @@ export interface TechBench {
   appStylesheet: "tailwind" | "panda" | "stylex" | "bamboo" | null;
   /** How this lane's CSS exists — drives the report legend. */
   cssKind: "extracted" | "atomic" | "utility" | "runtime" | "none";
+  /** UI framework the lane renders with. Absent means React (the default for this
+   * suite). A Solid lane is measured on the same workloads but against its own
+   * framework floor — the marginal-JS subtraction and the attribution's framework
+   * bucket both key on this. */
+  framework?: "solid";
   /** Hidden by default in the report's lane filter (one click to show), left out of the
    * Key-findings panel. For diagnostic variants that matter to one library's maintainers
    * more than to a cross-library comparison, and for extreme outliers that would skew the
@@ -47,8 +54,26 @@ export interface TechInfo {
 /** The render-function contract a `case/<id>/index.tsx` default-exports (§6). */
 export type RenderCase = (i: number) => unknown; // ReactElement; unknown to avoid a react dep here
 
+/** The measured transition is i → i + 1, with reset and warmup outside the timer. */
+export const INTERACTION_PROTOCOL = "index-shift-0-to-1";
+export interface InteractionSamples {
+  protocol: typeof INTERACTION_PROTOCOL;
+  samples: number[];
+}
+
+/** The same contract for the Solid lanes: the instance index arrives as an ACCESSOR.
+ * Solid has no re-render, so an interaction is a value change flowing through the
+ * reactive graph — the client entry drives this accessor from a signal. */
+export type SolidRenderCase = (i: () => number) => unknown; // JSX.Element
+
 /** Uniform SSR entry every tech build exposes (§6.1). */
-export type RenderCaseFn = (caseId: string, n: number) => { html: string; css: string };
+export interface RenderResult {
+  html: string;
+  css: string;
+  /** Complete runtime style tags, including the IDs the client needs for hydration. */
+  head?: string;
+}
+export type RenderCaseFn = (caseId: string, n: number) => RenderResult;
 
 /**
  * Optional hot-path render for the microbench: the production SSR work ONLY (no
@@ -99,7 +124,7 @@ export interface NsweepSample {
 /** Attribution: the median SSR render split into per-bucket self-time (ms). */
 export interface AttributionSample {
   renderMs: number;
-  react: number; // react-dom + react + scheduler (the floor every lane shares)
+  react: number; // the UI framework's own self-time — react-dom + react + scheduler, or solid-js + @solidjs/* (the floor every lane of that framework shares)
   lib: number; // the styling library's own self-time
   component: number; // the case component + ssr-entry
   other: number; // node / native / gc
@@ -125,24 +150,21 @@ export interface RenderTimingMetrics {
 /** WPD's unified per-span browser breakdown, normalized by gen-wpd. */
 export interface WpdSpanSample {
   wallMs: number;
-  slices: { js: number; style: number; layout: number; paint: number; gc: number; other: number; idle: number };
+  slices: { js: number; style: number | null; layout: number | null; paint: number | null; gc: number; other: number; idle: number };
   jsByPackage: Record<string, number>;
   frames?: { presented: number; presentedPartial: number; dropped: number; total: number; worstStages?: { name: string; ms: number }[] };
 }
 
 export interface WpdBrowserSample {
+  interactionProtocol?: typeof INTERACTION_PROTOCOL;
   span: WpdSpanSample | null;
   runSpan: WpdSpanSample | null;
-  timing: {
-    wallMs: number | null;
-    perIteration: number[];
-    stats: { samples: number; minMs: number; medianMs: number; meanMs: number; maxMs: number } | null;
-  };
+  timing: SpanTiming | null;
 }
 
 export interface WpdFirefoxSample {
   wallMs: number | null;
-  breakdown: { js: number; style: number; layout: number; browser: number; gc: number; idle: number } | null;
+  breakdown: { js: number; style: number | null; layout: number | null; browser: number; gc: number; idle: number } | null;
   jsByPackage: Record<string, number>;
   forced: { at: string; count: number; durMs: number }[];
   counts: { layout: number | null; style: number | null; forcedLayout: number | null; paint: number | null };
@@ -172,4 +194,6 @@ export interface RunMeta {
   browsers?: { chrome?: string; firefox?: string };
   /** Instances rendered into each snapshot html (bench.config snapshotN) — used to derive per-element costs. */
   snapshotN?: number;
+  /** Source revisions of unpublished packages used for this run. */
+  runtimePackages?: Record<string, { revision: string; sha256: string }>;
 }

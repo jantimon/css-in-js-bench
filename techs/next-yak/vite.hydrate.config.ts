@@ -1,7 +1,7 @@
 // Hydrate (browser) build for the next-yak lanes — same viteYak plugin as the
 // microbench build (so the client's compiled css-prop classes match the SSR markup it
-// hydrates), but a browser target over client-entry.tsx. No CSS emission needed: the
-// client only re-attaches to the SSR DOM; hydration cares about structure, not styles.
+// hydrates), with a browser target and a manifest for its script and CSS assets.
+import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { viteYak } from "next-yak/vite";
@@ -13,12 +13,13 @@ const REPO_ROOT = resolve(here, "../..");
 
 export default defineConfig(async () => ({
   root: here,
-  plugins: [await viteYak({ basePath: REPO_ROOT }), react()],
+  plugins: [browserStyles(here, "native"), await viteYak({ basePath: REPO_ROOT }), react()],
   define: { "process.env.NODE_ENV": '"production"' },
   // next-yak (link:) brings its own react — dedupe to one copy (single dispatcher).
   resolve: { dedupe: ["react", "react-dom"] },
   build: {
     outDir: "dist/hydrate",
+    manifest: true,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",

@@ -14,6 +14,4 @@ const join = (own: string, rest?: string) => (rest ? `${own} ${rest}` : own);
 const L0: FunctionComponent<P> = ({ className, children }) => <button className={join("btn", className)}>{children}</button>;
 const L1: FunctionComponent<P> = ({ className, children }) => <L0 className={join("lvl1", className)}>{children}</L0>;
 const L2: FunctionComponent<P> = ({ className, children }) => <L1 className={join("lvl2", className)}>{children}</L1>;
-const ComposedButton = L2;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L2>{i}</L2>;

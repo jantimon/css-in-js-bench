@@ -48,6 +48,8 @@ export interface CaseAnalysis {
     generatedAt: string;
     /** model that wrote it, e.g. "claude-opus-4-…" */
     model: string;
+    /** The interaction workload that any timings or conclusions describe. */
+    interactionProtocol?: string;
   };
   /** one-sentence case takeaway */
   headline: string;

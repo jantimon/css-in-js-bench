@@ -11,7 +11,9 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
-import { median, percentile, spread } from "./report/stats.ts";
+import { median, spread } from "./report/stats.ts";
+import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
+import { httpResults, httpMeasurementNote, assertHttpCheckpointReady } from "./report/http-results.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -70,20 +72,23 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 }
 
 async function main() {
+  assertHttpCheckpointReady(readJson<unknown>(join(RESULT, "_http-checkpoint.json"), undefined));
   const techs = await loadTechs();
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
   const wpdVersion = wpdManifest.wpd.version;
   const micro = readJson<Record<string, number[]>>(join(RESULT, "measurement-microbench.json"), {});
   const pay = readJson<Record<string, { js: number; css: number; html: number }[]>>(join(RESULT, "measurement-payload.json"), {});
-  const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
+  const http = httpResults(readJson<Record<string, unknown>>(join(RESULT, "measurement-autocannon.json"), {}));
+  const acan = http.samples;
+  const httpNote = httpMeasurementNote(http.protocol);
   const wpdSsr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-wpd-ssr.json"), {});
   const hyd = readJson<Record<string, number[]>>(join(RESULT, "measurement-hydrate.json"), {});
-  const inp = readJson<Record<string, number[]>>(join(RESULT, "measurement-inp.json"), {});
+  const inp = interactionTimings(readJson<Record<string, unknown>>(join(RESULT, "measurement-inp.json"), {}));
   const mount = readJson<Record<string, number[]>>(join(RESULT, "measurement-mount.json"), {});
   const nsweep = readJson<Record<string, NsweepSample[]>>(join(RESULT, "measurement-nsweep.json"), {});
   const wpdHydrate = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-hydrate.json"), {});
-  const wpdInp = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {});
+  const wpdInp = interactionProfiles(readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {}));
   const wpdMount = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-mount.json"), {});
   const wpdFirefox = readJson<Record<string, WpdFirefoxSample[]>>(join(RESULT, "measurement-wpd-firefox.json"), {});
   const wpdBlame = readJson<Record<string, WpdBlameSample[]>>(join(RESULT, "measurement-wpd-blame.json"), {});
@@ -92,17 +97,18 @@ async function main() {
   const buildtime = readJson<Record<string, { cold: number[]; warm?: number[] }>>(join(RESULT, "measurement-buildtime.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
   // LLM-written per-case analyses (result/analysis/<caseId>.json) — optional like any
-  // other result file; validated only by shape (schemaVersion + matching caseId).
+  // other result file; require matching interaction provenance as well as case identity.
   const analysisDir = join(RESULT, "analysis");
   const analyses: Record<string, CaseAnalysis> = {};
   if (existsSync(analysisDir)) {
     for (const f of readdirSync(analysisDir)) {
       if (!f.endsWith(".json")) continue;
       const a = readJson<CaseAnalysis | null>(join(analysisDir, f), null);
-      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "")) analyses[a.caseId] = a;
+      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "") && hasInteractionProvenance(a)) analyses[a.caseId] = a;
     }
   }
-  const study = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const studyData = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const study = hasInteractionProvenance(studyData) ? studyData : null;
 
   // Screenshots live in result/assets/; mirror them next to BENCHMARK.html so the
   // self-contained report can reference assets/<…>.avif (§10.6 — single file except images).
@@ -134,7 +140,7 @@ async function main() {
     .sort((a, b) => (CASE_PRIORITY[b] ?? 0) - (CASE_PRIORITY[a] ?? 0) || a.localeCompare(b));
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
-  const techGroups = groupTechs(usedTechs);
+  const techGroups = groupTechs(usedTechs, (t) => techs[t].bench.framework ?? "react");
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
@@ -196,7 +202,7 @@ async function main() {
         const xs = hyd[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
-    // inp: click→next-paint of an in-place re-render (ms, lower better) — optional/heavy.
+    // inp: warm input change through the first rAF callback (ms, lower better).
     const inpBars: Bar[] = usedTechs
       .filter((t) => inp[`${caseId}/${t}`]?.length)
       .map((t) => {
@@ -215,12 +221,9 @@ async function main() {
       .map((t) => {
         const sample = data[`${caseId}/${t}`][0];
         const timing = sample.timing;
-        const timingMedian = timing.stats?.medianMs ?? (timing.perIteration.length ? median(timing.perIteration) : undefined);
-        const iters = timing.perIteration;
         return {
-          tech: t, label: techs[t].label, span: sample.span!, medianMs: timingMedian,
-          p75Ms: iters.length >= 4 ? percentile(iters, 0.75) : undefined,
-          p95Ms: iters.length >= 4 ? percentile(iters, 0.95) : undefined,
+          tech: t, label: techs[t].label, span: sample.span!, timing,
+          medianMs: timing?.stats?.medianMs,
         };
       });
     const hydWpdRows = wpdRows(wpdHydrate);
@@ -311,9 +314,15 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                One set of React components, built {usedTechs.length} different ways and measured head-to-head on identical
-                workloads — so the numbers compare by construction, not by claim.
+                One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
+                version renders the same pixels, so the numbers compare by construction, not by claim.
               </p>
+              {Object.entries(meta.runtimePackages ?? {}).map(([name, pkg]) => (
+                <p className="sub" data-runtime-provenance key={name} title={`SHA-256: ${pkg.sha256}`}>
+                  Measured {name} source revision: <code>{pkg.revision.slice(0, 8)}</code>.
+                  Results apply to this packaged revision.
+                </p>
+              ))}
               <div className="head-stats">
                 <span>
                   <b>{usedTechs.length}</b> styling techniques
@@ -321,7 +330,7 @@ async function main() {
                 <span>
                   <b>{caseIds.length}</b> {caseIds.length === 1 ? "workload" : "workloads"}
                 </span>
-                <span>production React · median of repeated runs</span>
+                <span>production builds · median of repeated runs</span>
               </div>
             </div>
           </div>
@@ -372,13 +381,23 @@ async function main() {
             </div>
             {techGroups.map((g) => (
               <div className="tp-row" key={g.group}>
-                <span className="tp-group">{g.group}</span>
-                <div className="tp-pills">
-                  {g.items.map((it) => (
-                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
-                      <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
-                      <TechLabel tech={it.tech} label={it.short} />
-                    </button>
+                <button type="button" className="tp-group active" data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
+                <div className="tp-engines">
+                  {g.rows.map((row) => (
+                    <div className="tp-engine-row" key={row.engine}>
+                      <button type="button" className="tp-engine active" data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
+                        <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" />
+                        {row.label}
+                      </button>
+                      <div className="tp-pills">
+                        {row.items.map((it) => (
+                          <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                            <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
+                            <TechLabel tech={it.tech} label={it.short} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -407,9 +426,10 @@ async function main() {
               <h3 className="chart-title">
                 SSR render throughput — renders / sec · higher is better
                 <InfoTip>
-                  How many times per second this lane renders the whole workload to an HTML string in Node
-                  (<code>renderToString</code>), timing the production render only — any build-time CSS collection (a Tailwind
-                  JIT, a Panda sheet slice) is excluded. Higher is better.
+                  Uses a microbenchmark to measure how fast Node turns components into an HTML string after warmup.
+                  Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
+                  Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
+                  Higher is better.
                 </InfoTip>
               </h3>
               <BarChart bars={bars} unit="r/s" higherBetter />
@@ -419,11 +439,15 @@ async function main() {
                 <h3 className="chart-title">
                   SSR throughput under load — requests / sec · higher is better
                   <InfoTip>
-                    Requests/sec the lane sustains under concurrent HTTP load (autocannon) serving the SSR render end-to-end —
-                    a more realistic server measure than the in-process microbench. Higher is better.
+                    Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
+                    rendering the whole workload into an HTML fragment, and transferring and receiving the response.
+                    Clients keep concurrent connections open. Each request renders the full workload, so a workload
+                    of 400 product tiles counts as one request. Excludes build time, browser rendering and external
+                    network latency. Higher is better.
                   </InfoTip>
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
+                <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
@@ -431,9 +455,10 @@ async function main() {
                 <h3 className="chart-title">
                   Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
-                    The median server <code>renderToString()</code>, split by CPU self-time from a sampled V8 profile mapped
-                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
-                    and <b>your component</b>. <b>other</b> is GC / unattributed native work.
+                    One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
+                    and <b>your components</b>. Framework work can differ when a lane removes component calls.
+                    <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
+                    (<code>web-performance-debugger</code> {wpdVersion}).
                   </InfoTip>
                 </h3>
                 <AttributionChart rows={attrRows} />
@@ -444,10 +469,11 @@ async function main() {
                 <h3 className="chart-title">
                   Client hydration — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Time for React to <b>hydrate</b> the server HTML in the browser — attach event handlers and build the
-                    fiber tree over the existing DOM (it does not re-create markup). The first chart is the existing repeated
-                    end-to-end timing; the profiled chart then splits one instrumented commit into JS, style, layout, paint,
-                    GC, browser work and idle (recorded with <code>web-performance-debugger</code> {wpdVersion}). Lower is better.
+                    The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
+                    state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
+                    and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
+                    profiles a span through the next frame and shows JavaScript, style, layout and paint
+                    (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
@@ -457,13 +483,13 @@ async function main() {
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction re-render — repeated timing + Chrome-profiled span anatomy
+                  Interaction update — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    A state change triggers a <b>synchronous re-render</b> (<code>flushSync</code>) of the whole mounted
-                    workload, then we wait for the next paint — click→paint latency. The profile separates active work from the
-                    frame-alignment idle that used to dominate this number. This
-                    is where <b>runtime</b> CSS-in-JS libraries re-run their per-element styling on every update; build-time
-                    lanes (next-yak / Panda / Tailwind / vanilla) do almost none. Lower is better.
+                    Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
+                    React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
+                    is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
+                    to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
+                    Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
                   </InfoTip>
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
@@ -475,11 +501,10 @@ async function main() {
                 <h3 className="chart-title">
                   Cold mount — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Starting from a <b>blank root</b> (no SSR markup), a "click" renders the whole workload from scratch
-                    (<code>createRoot().render()</code>), then we wait for the first paint. Unlike hydration — which attaches to
-                    existing server HTML — this is a cold client mount, so the first paint includes each <b>runtime</b>
-                    library's <b>first style injection</b> into the document. The profiled span shows how much of the
-                    commit is JS, style, layout, paint, GC, browser work and idle. Lower is better.
+                    The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
+                    before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
+                    during that work. The separate profiled span includes the next frame's rendering work.
+                    Lower is better.
                   </InfoTip>
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
@@ -491,14 +516,12 @@ async function main() {
                 <h3 className="chart-title">
                   Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
                   <InfoTip>
-                    Where the browser's <b>rendering</b> time goes on a cold mount (not JS — the engine's own style-recalc,
-                    layout and paint), profiled with <a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a> in
-                    two engines. This is where <b>runtime</b> CSS-in-JS pays a tax build-time lanes don't: it injects a style
-                    rule per instance, so the engine recalculates styles once per instance — <b>Chrome</b>'s authoritative
-                    signal is that <b>style-recalc count</b> (the badge; e.g. 50 instances → ~50 recalcs vs 1 for extracted
-                    CSS). <b>Firefox</b> (Gecko) reports sampled style/layout time; a zero sampled slice is not proof of no
-                    work, so its exact counts are retained as diagnostics but the chart never treats zero as absence.
-                    Bars are ms; compare within an engine. Lower is better. Generated via <code>pnpm setup:wpd</code> + <code>pnpm gen:wpd</code>.
+                    The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
+                    where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
+                    instance, so the engine recalculates styles once per instance instead of once for the page.
+                    <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
+                    milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
+                    engine. Lower is better.
                   </InfoTip>
                 </h3>
                 <RenderTimingChart rows={rtRows} />
@@ -509,8 +532,9 @@ async function main() {
                 <h3 className="chart-title">
                   Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
                   <InfoTip>
-                    Gzipped bytes the browser downloads for this page: the client JS runtime the lane ships (over the bare
-                    React floor), the CSS, and the SSR HTML. Lower is better.
+                    Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
+                    CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
+                    none, so read the HTML column across frameworks with that in mind.
                   </InfoTip>
                 </h3>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
@@ -521,8 +545,8 @@ async function main() {
                 <h3 className="chart-title">
                   Scaling — SSR render time (ms) vs instance count
                   <InfoTip>
-                    SSR render time as the workload grows from a handful to thousands of instances — shows how each lane's
-                    per-element cost compounds. A flatter line scales better.
+                    Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
+                    per element stays put as the page gets bigger.
                   </InfoTip>
                 </h3>
                 <LineChart lines={sweepLines} />
@@ -536,12 +560,10 @@ async function main() {
               <h3 className="chart-title">
                 Build time — full client build · lower is better
                 <InfoTip>
-                  Wall time for a lane's whole <b>production client build</b> — the vite bundle that ships to the browser
-                  (react + react-dom + the styling runtime + every workload's components), the same build measured for page
-                  bytes. <b>cold</b> clears that lane's build output, vite's on-disk caches and Panda's generated
-                  <code>styled-system</code> first, so it includes the cache-miss regen; <b>warm</b> is the same build run
-                  again with nothing cleared. Median of 3. This is <b>build-time developer experience</b>, machine-dependent —
-                  not user-facing runtime. Opt-in via <code>pnpm gen:samples --measure=buildtime</code>.
+                  How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
+                  lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
+                  nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
+                  about what users get.
                 </InfoTip>
               </h3>
               <BuildTimeChart rows={buildRows} />
@@ -551,7 +573,7 @@ async function main() {
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
               <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
-              <li><b>autocannon</b> — an HTTP load generator that measures requests per second against each lane's SSR server end to end.</li>
+              <li><b>autocannon</b> — {httpNote}</li>
               <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
@@ -576,7 +598,7 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows, http.protocol));
 
   // Machine-readable companion: the same reduced section data the charts render, all lanes,
   // one file. This is what the analysis prompt (scripts/prompts/case-analysis.md) reads.
@@ -584,6 +606,7 @@ async function main() {
     schemaVersion: 1,
     meta,
     wpdVersion,
+    httpProtocol: http.protocol,
     study,
     techs: Object.fromEntries(usedTechs.map((t) => [t, { label: techs[t].label, ...techs[t].bench }])),
     // Lane-level (one client build per tech), so it sits alongside `cases`, not inside it.
@@ -652,8 +675,16 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tp-actions button{background:none;border:0;color:#58a6ff;cursor:pointer;font-size:12.5px;padding:0}
 .tp-actions button:hover{text-decoration:underline}
 .tp-sep{margin:0 7px;color:#30363d}
-.tp-row{display:flex;align-items:center;gap:16px;padding:5px 0}
-.tp-group{flex:0 0 150px;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
+.tp-row{display:flex;align-items:center;gap:16px;padding:10px 0}
+.tp-engines{display:flex;flex-direction:column;gap:6px}
+.tp-engine-row{display:flex;align-items:center;gap:12px}
+.tp-engine{flex:0 0 58px;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;text-align:left;color:#6e7681;font-size:10.5px;letter-spacing:.04em;cursor:pointer}
+.tp-engine:hover{color:#adbac7}
+.tp-engine:not(.active){opacity:.45}
+.tp-engine-logo{height:12px;width:auto}
+.tp-group{flex:0 0 150px;background:none;border:0;padding:0;text-align:left;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;cursor:pointer}
+.tp-group:hover{color:#adbac7}
+.tp-group:not(.active){opacity:.45}
 .tp-pills{display:flex;flex-wrap:wrap;gap:7px}
 .tech-pill{display:inline-flex;align-items:center;gap:7px;background:#161b22;color:#adbac7;border:1px solid #21262d;border-radius:999px;padding:4px 12px 4px 9px;font-size:12.5px;cursor:pointer;user-select:none}
 .tech-pill:hover{border-color:#30363d}
@@ -884,19 +915,25 @@ function drawSweep() {
     }
   }
 }
+// The view a reader lands on with no ?lanes=: the React lanes, minus the diagnostic ones.
+// Solid is a second axis rather than a longer list, so it starts collapsed — one click on a
+// Solid row opens it, and any selection is then shareable through the query string.
+const isDefaultLane = b => b.dataset.defaultOff !== '1' && b.dataset.engine !== 'solid';
 // Mirror the lane selection into ?lanes=a,b so a filtered view is a shareable URL.
 // No param = all lanes (the default view keeps a clean URL). replaceState can throw
 // on file:// — the filter must keep working there, so it's best-effort.
 function syncLanesQuery() {
   const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
-  // The clean URL is the DEFAULT selection (all lanes minus the data-default-off ones).
-  const def = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
+  // The clean URL is the DEFAULT selection — see isDefaultLane.
+  const def = techPills.filter(isDefaultLane).map(b => b.dataset.techFilter);
   const isDefault = on.length === def.length && on.every((t, i) => t === def[i]);
   const qs = isDefault ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
+  for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
+  for (const b of groupPills) b.classList.toggle('active', lanesOfGroup(b.dataset.groupFilter).some(p => p.classList.contains('active')));
   for (const ed of document.querySelectorAll('[data-ed]')) {
     const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
     if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
@@ -906,18 +943,32 @@ function afterTech() {
   syncLanesQuery();
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
+// An engine row selects that engine's styling techniques in one click. The bare-framework
+// lanes stay out of it — they are comparison references, not a styling technique —
+// so they keep their own pills. All on already means the click turns them off again.
+const enginePills = [...document.querySelectorAll('[data-engine-filter]')];
+const lanesOfEngine = eng => techPills.filter(p => p.dataset.engine === eng && p.dataset.floor !== '1');
+// A group label does the same for one styling technique, both engines at once — the group IS
+// the thing you are asking for, so the baselines are included when you ask for Baseline.
+const groupPills = [...document.querySelectorAll('[data-group-filter]')];
+const lanesOfGroup = name => techPills.filter(p => p.dataset.group === name);
+const toggleAll = lanes => {
+  const allOn = lanes.every(p => p.classList.contains('active'));
+  for (const p of lanes) setTech(p, !allOn);
+  afterTech();
+};
+for (const b of enginePills) b.onclick = () => toggleAll(lanesOfEngine(b.dataset.engineFilter));
+for (const b of groupPills) b.onclick = () => toggleAll(lanesOfGroup(b.dataset.groupFilter));
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
 // Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
 // pre-filtered (and syncLanesQuery then just re-serializes the same selection).
-// Without a lanes param, diagnostic lanes (data-default-off) start hidden — one
-// click on their pill brings them back.
 const lanesParam = new URLSearchParams(location.search).get('lanes');
 if (lanesParam !== null) {
   const want = new Set(lanesParam.split(',').filter(Boolean));
   for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
 } else {
-  for (const b of techPills) if (b.dataset.defaultOff === '1') setTech(b, false);
+  for (const b of techPills) if (!isDefaultLane(b)) setTech(b, false);
 }
 afterTech();
 // measure pills — toggle which measurement sections are visible.

@@ -25,6 +25,4 @@ const L2 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L1
 const L3 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L2 xs={[l3, xs]}>{children}</L2>;
 const L4 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L3 xs={[l4, xs]}>{children}</L3>;
 const L5 = ({ xs, children }: { xs?: any[]; children?: React.ReactNode }) => <L4 xs={[l5, xs]}>{children}</L4>;
-const ComposedButton = L5;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L5>{i}</L5>;

@@ -2,7 +2,7 @@
 import React from "react";
 import { css, cx } from "styled-system/css";
 
-const base = css({
+const base = css.raw({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -20,6 +20,6 @@ const base = css({
   color: "#fff",
 });
 
-export const Button = ({ className, children }: { className?: string; children?: React.ReactNode }) => (
-  <button className={cx(base, className)}>{children}</button>
+export const Button = ({ styles, className, children }: { styles?: Parameters<typeof css>[0]; className?: string; children?: React.ReactNode }) => (
+  <button className={cx(css(base, styles), className)}>{children}</button>
 );

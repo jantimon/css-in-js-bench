@@ -1,6 +1,7 @@
 // Hydrate (browser) build for the Bamboo lane — same bamboo codegen buildStart +
 // compiler plugin as the microbench build (so the client's compiled class strings
 // match the SSR markup), browser target over client-entry.tsx.
+import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import bamboocss from "@bamboocss/vite";
@@ -24,11 +25,12 @@ const bambooCodegen = (): Plugin => ({
 
 export default defineConfig({
   root: here,
-  plugins: [bambooCodegen(), bamboocss({ cwd: here }), react()],
+  plugins: [browserStyles(here, "native"), bambooCodegen(), bamboocss({ cwd: here }), react()],
   define: { "process.env.NODE_ENV": '"production"' },
   resolve: { alias: { "styled-system": resolve(here, "styled-system") } },
   build: {
     outDir: "dist/hydrate",
+    manifest: true,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",

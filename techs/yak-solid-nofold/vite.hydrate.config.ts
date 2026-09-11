@@ -1,0 +1,35 @@
+// Hydrate (browser) build for @yak/solid with folding off — same yak plugin and the same
+// foldStatic: false as the microbench build (so the client's compiled classes and owner
+// tree match the SSR markup it hydrates), with solid({ ssr: true }) so the JSX compiles
+// to HYDRATABLE client code that claims the server's DOM. The manifest lists its browser
+// script and extracted stylesheet.
+// minify: true keeps the generated class names as short as the folded lane's, so the two
+// differ only in the runtime wrapper, not in how many bytes each class name costs.
+import { browserStyles } from "../../scripts/browser-styles.ts";
+import { defineConfig } from "vite";
+import solid from "@solidjs/vite-plugin";
+import { yak } from "@yak/solid/vite";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(here, "../..");
+
+export default defineConfig(async () => ({
+  root: here,
+  plugins: [browserStyles(here, "native"), await yak({ basePath: REPO_ROOT, foldStatic: false, minify: true }), solid({ ssr: true })],
+  define: { "process.env.NODE_ENV": '"production"' },
+  build: {
+    outDir: "dist/hydrate",
+    manifest: true,
+    emptyOutDir: true,
+    sourcemap: false,
+    minify: "esbuild",
+    target: "chrome120",
+    rollupOptions: {
+      input: "./client-entry.tsx",
+      external: [],
+      output: { format: "es", entryFileNames: "entry.js" },
+    },
+  },
+}));

@@ -1,10 +1,12 @@
 {
   "host": "Apple M1 Max (arm64)",
-  "node": "v24.13.0",
-  "timestamp": "2026-08-28T00:44:33.935Z",
-  "gitSha": "5fdc9c1",
+  "node": "v25.8.1",
+  "timestamp": "2026-09-11T03:35:49.303Z",
+  "gitSha": "e3a8415",
   "techs": [
     "bamboo",
+    "cn",
+    "cn-solid",
     "cnfast",
     "emotion",
     "goober",
@@ -18,8 +20,12 @@
     "styled-components",
     "stylex",
     "stylex-layers",
+    "stylex-solid",
     "tailwind-merge",
-    "vanilla"
+    "vanilla",
+    "vanilla-solid",
+    "yak-solid",
+    "yak-solid-nofold"
   ],
   "cases": [
     "btn-variant",
@@ -37,5 +43,11 @@
     "realistic-button",
     "tabs"
   ],
-  "snapshotN": 2
+  "snapshotN": 2,
+  "runtimePackages": {
+    "@yak/solid": {
+      "revision": "85e0f2b18b106598def143c9937b8a2ce88a53d2",
+      "sha256": "8a4ff67e6e70ec12f3fa23d22998f74421c40bcbaee86ec209125064aed0bf48"
+    }
+  }
 }

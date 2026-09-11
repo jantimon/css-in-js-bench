@@ -2,6 +2,7 @@
 // client-entry.tsx → dist/hydrate/entry.js (react/react-dom bundled IN, minified), the
 // client bundle that hydrates the SSR markup. Other techs copy this and swap `plugins`
 // (yak SWC, StyleX, …) exactly like vite.microbench.config.ts.
+import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
@@ -11,10 +12,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [react()],
+  plugins: [browserStyles(here, "native"), react()],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/hydrate",
+    manifest: true,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",

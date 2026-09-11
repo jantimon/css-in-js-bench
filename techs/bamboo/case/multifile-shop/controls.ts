@@ -29,6 +29,7 @@ export const wishlistOn = css({ color: "#ef4444" });
 
 export const addToCart = css({
   marginTop: "auto",
+  _disabled: { background: "#d1d5db", color: "#6b7280", cursor: "not-allowed" },
   position: "relative",
   borderRadius: "6px",
   padding: "8px 12px",
@@ -48,10 +49,4 @@ export const addToCart = css({
   "@media (min-width: 992px)": {
     padding: "9px 12px",
   },
-});
-
-export const addToCartDisabled = css({
-  background: "#d1d5db",
-  color: "#6b7280",
-  cursor: "not-allowed",
 });

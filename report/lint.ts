@@ -14,6 +14,7 @@ const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const BUILD_PLUGINS = new Set([null, "yak", "stylex"]);
 const APP_STYLESHEETS = new Set([null, "tailwind", "panda", "stylex", "bamboo"]);
 const CSS_KINDS = new Set(["extracted", "atomic", "utility", "runtime", "none"]);
+const FRAMEWORKS = new Set([undefined, "solid"]); // absent = react, this suite's default
 
 const problems: string[] = [];
 const fail = (m: string) => problems.push(m);
@@ -45,6 +46,7 @@ for (const tech of readdirSync(TECHS_DIR, { withFileTypes: true }).filter((d) =>
     if (!BUILD_PLUGINS.has(b.buildPlugin ?? null)) fail(`${tech}: bench.buildPlugin "${b.buildPlugin}" invalid`);
     if (!APP_STYLESHEETS.has(b.appStylesheet ?? null)) fail(`${tech}: bench.appStylesheet "${b.appStylesheet}" invalid`);
     if (!CSS_KINDS.has(b.cssKind)) fail(`${tech}: bench.cssKind "${b.cssKind}" invalid`);
+    if (!FRAMEWORKS.has(b.framework)) fail(`${tech}: bench.framework "${b.framework}" invalid`);
   }
 
   // each implemented case must have an index.tsx that default-exports + a matching
