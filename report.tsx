@@ -327,62 +327,111 @@ async function main() {
           </div>
         </header>
 
-        <nav className="measure-nav" aria-label="Report measurements">
-          <div className="measure-inner">
-            <div className="show">
-              <span className="show-label">Show</span>
-              <div className="show-pills">
-                {[
-                  ["code", "Source + preview"],
-                  ["microbench", "Throughput"],
-                  ["autocannon", "Load req/s"],
-                  ["attribution", "CPU split"],
-                  ["hydrate", "Hydration"],
-                  ["inp", "Interaction"],
-                  ["mount", "Cold mount"],
-                  ["render-timing", "Paint/Layout"],
-                  ["payload", "Page bytes"],
-                  ["nsweep", "Scaling"],
-                  ["buildtime", "Build time"],
-                ].map(([k, label]) => (
-                  <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+
+        {/* Contents index. Sits in the gutter beside the measure, so it is hidden below the
+            width where that gutter exists (see the .toc media query). The active entry is set
+            by the controller from an IntersectionObserver, so it tracks scrolling too. */}
+        <nav className="toc" aria-label="Report sections">
+          <span className="toc-title">Contents</span>
+          <ol>
+            <li>
+              <a href="#filters" data-toc="filters">Filters</a>
+            </li>
+            {study ? (
+              <li>
+                <a href="#key-findings" data-toc="key-findings">Key findings</a>
+              </li>
+            ) : null}
+            {sections.map(({ caseId, cm }) => {
+              const [title, sub] = cm.label.split(/\s+—\s+/, 2);
+              return (
+                <li key={caseId}>
+                  <a href={`#${caseId}`} data-toc={caseId} title={cm.label}>
+                    {title}
+                    {sub ? <span className="toc-sub">{sub}</span> : null}
+                  </a>
+                </li>
+              );
+            })}
+            {buildRows.length ? (
+              <li>
+                <a href="#buildtime" data-toc="buildtime">Build time</a>
+              </li>
+            ) : null}
+            <li>
+              <a href="#how-measured" data-toc="how-measured">How this was measured</a>
+            </li>
+          </ol>
         </nav>
 
         <main className="wrap">
-          <section className="tech-panel">
-            <div className="tp-head">
-              <div className="tp-title">
-                Technologies <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
-              </div>
-              <div className="tp-actions">
-                <button type="button" data-tech-all>
-                  All
+          <section className="filter-panel" id="filters">
+            <div className="fp-block fp-toggle">
+              <span className="fp-sub-title">Show source and preview</span>
+              <div className="seg" role="group" aria-label="Show source and preview">
+                <button type="button" className="seg-btn active" data-code-toggle="1" aria-pressed="true">
+                  Yes
                 </button>
-                <span className="tp-sep">·</span>
-                <button type="button" data-tech-none>
-                  None
+                <button type="button" className="seg-btn" data-code-toggle="0" aria-pressed="false">
+                  No
                 </button>
               </div>
             </div>
-            {techGroups.map((g) => (
-              <div className="tp-row" key={g.group}>
-                <span className="tp-group">{g.group}</span>
-                <div className="tp-pills">
-                  {g.items.map((it) => (
-                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
-                      <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
-                      <TechLabel tech={it.tech} label={it.short} />
-                    </button>
-                  ))}
-                </div>
+            <div className="fp-block">
+              <div className="fp-sub">
+                <span className="fp-sub-title">Technologies</span>
+                <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
+                <span className="tp-actions">
+                  <button type="button" data-tech-all>
+                    All
+                  </button>
+                  <span className="tp-sep">·</span>
+                  <button type="button" data-tech-none>
+                    None
+                  </button>
+                </span>
               </div>
-            ))}
+              {techGroups.map((g) => (
+                <div className="tp-row" key={g.group}>
+                  <span className="tp-group">{g.group}</span>
+                  <div className="tp-pills">
+                    {g.items.map((it) => (
+                      <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                        <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
+                        <TechLabel tech={it.tech} label={it.short} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="fp-block">
+              <div className="fp-sub">
+                <span className="fp-sub-title">Benchmarks</span>
+                <span className="tp-count"><span data-measure-count>{MEASURE_COUNT}</span> / {MEASURE_COUNT} shown</span>
+                <span className="tp-actions">
+                  <button type="button" data-measure-all>
+                    All
+                  </button>
+                  <span className="tp-sep">·</span>
+                  <button type="button" data-measure-none>
+                    None
+                  </button>
+                </span>
+              </div>
+              {MEASURE_GROUPS.map((g) => (
+                <div className="tp-row" key={g.group}>
+                  <span className="tp-group">{g.group}</span>
+                  <div className="tp-pills">
+                    {g.items.map(([k, label]) => (
+                      <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           {study ? <StudyFindings study={study} techs={techs} runSha={meta.gitSha} caseIds={caseIds} /> : null}
@@ -532,7 +581,7 @@ async function main() {
             );
           })}
           {buildRows.length ? (
-            <section className="buildtime" data-measure="buildtime">
+            <section className="buildtime" data-measure="buildtime" id="buildtime">
               <h3 className="chart-title">
                 Build time — full client build · lower is better
                 <InfoTip>
@@ -547,7 +596,7 @@ async function main() {
               <BuildTimeChart rows={buildRows} />
             </section>
           ) : null}
-          <section className="outro">
+          <section className="outro" id="how-measured">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
               <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
@@ -625,10 +674,7 @@ const CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:#080a0d;color:#e6edf3;font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
 .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
-.page-head{background:#0d1117}
 .head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
-.measure-nav{position:sticky;top:0;z-index:5;margin-bottom:24px;border-block:1px solid #1c2128;background:#0d1117ee;backdrop-filter:blur(6px)}
-.measure-inner{max-width:1000px;margin:0 auto;padding:8px 24px}
 h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
 .gh-link{display:inline-flex;align-items:center;color:#8b949e;margin-left:2px}
@@ -638,15 +684,33 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .head-stats b{color:#e6edf3;font-weight:600}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
 .show{display:flex;align-items:center;gap:10px;min-width:0}
-.show-label{flex:none;color:#6e7681;text-transform:uppercase;font-size:10px;letter-spacing:.08em}
-.show-pills{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
-.show-pills::-webkit-scrollbar{display:none}
 .show-pill{flex:none;white-space:nowrap;background:#161b22;color:#8b949e;border:1px solid #21262d;border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
 .show-pill:hover{color:#c9d1d9}
 .show-pill.active{background:#21262d;color:#e6edf3;border-color:#30363d}
-.tech-panel{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
-.tp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
-.tp-title{font-size:14px;font-weight:650}
+.filter-panel{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
+.fp-block+.fp-block{margin-top:14px;padding-top:14px;border-top:1px solid #1c2128}
+.fp-sub{display:flex;align-items:baseline;margin-bottom:6px}
+.fp-sub-title{font-size:14px;font-weight:650;color:#c9d1d9}
+.fp-sub .tp-count{margin-left:6px}
+.fp-sub .tp-actions{margin-left:auto}
+.fp-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seg{display:inline-flex;border:1px solid #21262d;border-radius:999px;overflow:hidden;background:#161b22}
+.seg-btn{background:none;border:0;color:#8b949e;padding:4px 15px;font-size:12.5px;cursor:pointer}
+.seg-btn:hover{color:#c9d1d9}
+.seg-btn.active{background:#21262d;color:#e6edf3}
+/* Contents index, fixed in the right gutter. calc() places it just outside the measure
+   rather than at a hardcoded offset, so it tracks the content edge at any width. */
+.toc{position:fixed;top:96px;left:calc(50% + 512px);width:188px;overflow-y:auto;z-index:20;font-size:12.5px;line-height:1.45;scrollbar-width:none}
+.toc::-webkit-scrollbar{width:0}
+.toc-title{display:block;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-bottom:8px}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc li{margin:0}
+.toc a{display:block;padding:3px 0 3px 10px;color:#8b949e;text-decoration:none;border-left:2px solid transparent}
+.toc a:hover{color:#c9d1d9}
+.toc a.active{color:#fff;border-left-color:#fff}
+.toc-sub{display:block;font-size:11px;opacity:.75}
+/* Below this width the gutter is gone and the index would sit on top of the charts. */
+@media(max-width:1420px){.toc{display:none}}
 .tp-count{color:#6e7681;font-weight:400;font-size:12.5px;margin-left:4px}
 .tp-actions{font-size:12.5px;color:#8b949e}
 .tp-actions button{background:none;border:0;color:#58a6ff;cursor:pointer;font-size:12.5px;padding:0}
@@ -704,20 +768,19 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .bars{margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
 .bar-row.tech-off{display:none}
-.bar-row.gap-before{margin-top:6px}
 .bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:#c9d1d9;font-size:13px}
 .bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .tech-logo{width:14px;height:14px;object-fit:contain;vertical-align:-2px;border-radius:3px;flex:none}
 .tech-pill .tech-logo{width:13px;height:13px}
 .ed-file .tech-logo,.lc-legend .tech-logo{margin-right:5px}
-.bar-track{background:#161b22;border-radius:5px;height:18px;overflow:hidden}
+.bar-track{background:#161b22;border-radius:5px;height:16px;overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:5px}
 .bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
 .bar-best{font-weight:700;color:#3fb950}
 .bar-unit,.bar-spread{color:#8b949e;font-size:11px}
 .bar-breakdown{margin-left:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar-breakdown .bd-sep{color:#6e7681}
-.attr .bar-track{display:flex;height:12px}
+.attr .bar-track{display:flex}
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:#8b949e}
@@ -777,9 +840,8 @@ a.mono{color:#58a6ff;text-decoration:none;background:none;padding:0}
 a.mono:hover{text-decoration:underline}
 @media(max-width:767px){
   .wrap{padding-inline:12px}
-  .head-inner,.measure-inner{padding-inline:12px}
-  .measure-nav{position:static}
-  .tech-panel{padding-inline:14px}
+  .head-inner{padding-inline:12px}
+  .filter-panel{padding-inline:14px}
   .case{padding:4px 14px 16px}
   .bars,.attr{display:flex;flex-direction:column;gap:7px;align-items:stretch}
   .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
@@ -799,8 +861,36 @@ a.mono:hover{text-decoration:underline}
   .info .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
   .page-foot{padding-inline:12px}
 }
-@media print{.measure-nav{position:static}}
 `;
+
+const MEASURE_GROUPS: { group: string; items: [string, string][] }[] = [
+  {
+    group: "Server",
+    items: [
+      ["microbench", "Throughput"],
+      ["autocannon", "Load req/s"],
+      ["attribution", "CPU split"],
+      ["nsweep", "Scaling"],
+    ],
+  },
+  {
+    group: "Browser",
+    items: [
+      ["hydrate", "Hydration"],
+      ["inp", "Interaction"],
+      ["mount", "Cold mount"],
+      ["render-timing", "Paint/Layout"],
+    ],
+  },
+  {
+    group: "Size & build",
+    items: [
+      ["payload", "Page bytes"],
+      ["buildtime", "Build time"],
+    ],
+  },
+];
+const MEASURE_COUNT = MEASURE_GROUPS.reduce((n, g) => n + g.items.length, 0);
 
 const CONTROLLER = `
 for (const ed of document.querySelectorAll('[data-ed]')) {
@@ -884,17 +974,36 @@ function drawSweep() {
     }
   }
 }
-// Mirror the lane selection into ?lanes=a,b so a filtered view is a shareable URL.
-// No param = all lanes (the default view keeps a clean URL). replaceState can throw
-// on file:// — the filter must keep working there, so it's best-effort.
-function syncLanesQuery() {
-  const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
+// ---- shared query mirror --------------------------------------------------------
+// Both filters serialize into ONE query string: ?lanes= for the technologies and ?show=
+// for the benchmark sections. The source/preview toggle rides in ?show= as 'code' because
+// it hides the same [data-measure] blocks, so one param restores the whole view. They MUST
+// be written together: two independent replaceState calls would each drop the other's
+// param. A clean URL is the DEFAULT view, so only a deviation from it appears.
+// replaceState can throw on file://, the filters must keep working there, best-effort.
+const measurePills = [...document.querySelectorAll('[data-measure-filter]')];
+const measureCountEl = document.querySelector('[data-measure-count]');
+const codeToggles = [...document.querySelectorAll('[data-code-toggle]')];
+const codeYes = codeToggles.find(b => b.dataset.codeToggle === '1');
+const showKeys = ['code', ...measurePills.map(b => b.dataset.measureFilter)];
+const showOn = k => k === 'code'
+  ? !!codeYes && codeYes.classList.contains('active')
+  : measurePills.some(b => b.dataset.measureFilter === k && b.classList.contains('active'));
+
+function syncQuery() {
+  const parts = [];
+  const lanesOn = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
   // The clean URL is the DEFAULT selection (all lanes minus the data-default-off ones).
-  const def = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
-  const isDefault = on.length === def.length && on.every((t, i) => t === def[i]);
-  const qs = isDefault ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
+  const lanesDef = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
+  if (!(lanesOn.length === lanesDef.length && lanesOn.every((t, i) => t === lanesDef[i])))
+    parts.push('lanes=' + lanesOn.map(encodeURIComponent).join(','));
+  const shown = showKeys.filter(showOn);
+  if (shown.length !== showKeys.length) parts.push('show=' + shown.map(encodeURIComponent).join(','));
+  const qs = parts.length ? '?' + parts.join('&') : '';
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
+
+// ---- technologies ---------------------------------------------------------------
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
   for (const ed of document.querySelectorAll('[data-ed]')) {
@@ -903,29 +1012,92 @@ function afterTech() {
   }
   rescaleBars();
   drawSweep();
-  syncLanesQuery();
+  syncQuery();
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
-// Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
-// pre-filtered (and syncLanesQuery then just re-serializes the same selection).
-// Without a lanes param, diagnostic lanes (data-default-off) start hidden — one
-// click on their pill brings them back.
-const lanesParam = new URLSearchParams(location.search).get('lanes');
+
+// ---- benchmarks + source/preview -------------------------------------------------
+function setMeasure(b, on) {
+  b.classList.toggle('active', on);
+  b.setAttribute('aria-pressed', String(on));
+  for (const el of document.querySelectorAll('[data-measure="'+b.dataset.measureFilter+'"]')) el.classList.toggle('measure-off', !on);
+}
+// Source + preview is a Yes/No toggle, not a filter pill, it reveals authored code
+// rather than a measurement. Drives the same [data-measure="code"] blocks either way.
+function setCode(on) {
+  for (const el of document.querySelectorAll('[data-measure="code"]')) el.classList.toggle('measure-off', !on);
+  for (const b of codeToggles) {
+    const isYes = b.dataset.codeToggle === '1';
+    b.classList.toggle('active', isYes === on);
+    b.setAttribute('aria-pressed', String(isYes === on));
+  }
+}
+// The count covers the benchmark pills only, source/preview has its own control.
+function afterMeasure() {
+  if (measureCountEl) measureCountEl.textContent = measurePills.filter(b => b.classList.contains('active')).length;
+  syncQuery();
+}
+for (const b of measurePills) b.onclick = () => { setMeasure(b, !b.classList.contains('active')); afterMeasure(); };
+document.querySelector('[data-measure-all]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, true); afterMeasure(); });
+document.querySelector('[data-measure-none]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, false); afterMeasure(); });
+for (const b of codeToggles) b.onclick = () => { setCode(b.dataset.codeToggle === '1'); afterMeasure(); };
+
+// ---- apply incoming params BEFORE the first sync, so a shared URL renders
+// pre-filtered and syncQuery then just re-serializes the same selection.
+const params = new URLSearchParams(location.search);
+const lanesParam = params.get('lanes');
 if (lanesParam !== null) {
   const want = new Set(lanesParam.split(',').filter(Boolean));
   for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
 } else {
   for (const b of techPills) if (b.dataset.defaultOff === '1') setTech(b, false);
 }
+const showParam = params.get('show');
+if (showParam !== null) {
+  const want = new Set(showParam.split(',').filter(Boolean));
+  setCode(want.has('code'));
+  for (const b of measurePills) setMeasure(b, want.has(b.dataset.measureFilter));
+}
 afterTech();
-// measure pills — toggle which measurement sections are visible.
-for (const b of document.querySelectorAll('[data-measure-filter]')) b.onclick = () => {
-  const on = b.classList.toggle('active');
-  b.setAttribute('aria-pressed', String(on));
-  for (const el of document.querySelectorAll('[data-measure="'+b.dataset.measureFilter+'"]')) el.classList.toggle('measure-off', !on);
-};
+afterMeasure();
+
+// ---- contents index --------------------------------------------------------------
+// Marks the entry whose section is being read. An IntersectionObserver rather than
+// :target, so scrolling updates it and not only clicking. The rootMargin collapses the
+// viewport to a band under the header, so exactly one tall section qualifies at a time.
+const tocLinks = Array.from(document.querySelectorAll('[data-toc]'));
+if (tocLinks.length && 'IntersectionObserver' in window) {
+  const targets = tocLinks.map((a) => document.getElementById(a.dataset.toc)).filter(Boolean);
+  const inBand = new Set();
+  const setActive = (id) => { for (const a of tocLinks) a.classList.toggle('active', a.dataset.toc === id); };
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) inBand.add(e.target.id);
+      else inBand.delete(e.target.id);
+    }
+    const current = targets.find((t) => inBand.has(t.id));
+    if (current) setActive(current.id);
+  }, { rootMargin: '-88px 0px -70% 0px' });
+  for (const t of targets) io.observe(t);
+  if (targets[0]) setActive(targets[0].id);
+
+  // Line the index up with the top of the first section card. The header's height depends
+  // on its content, so measure it rather than hardcode an offset; max-height follows the
+  // same number so the list never runs past the bottom of the viewport.
+  const tocEl = document.querySelector('.toc');
+  const firstCard = document.getElementById('filters');
+  if (tocEl && firstCard) {
+    const place = () => {
+      const top = firstCard.offsetTop;
+      tocEl.style.top = top + 'px';
+      tocEl.style.maxHeight = 'calc(100vh - ' + (top + 24) + 'px)';
+    };
+    place();
+    addEventListener('resize', place);
+  }
+}
 `;
 
 main().catch((e) => {
