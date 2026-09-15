@@ -10,7 +10,7 @@
     "cssKind": "utility"
   },
   "dependencies": {
-    "tailwind-merge": "3.6.0",
+    "tailwind-merge": "3.7.0",
     "clsx": "2.1.1",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"

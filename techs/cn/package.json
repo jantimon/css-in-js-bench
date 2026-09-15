@@ -10,7 +10,7 @@
     "cssKind": "utility"
   },
   "dependencies": {
-    "cn": "0.2.4",
+    "cn": "0.3.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }

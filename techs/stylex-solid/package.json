@@ -17,6 +17,6 @@
     "solid-js": "2.0.0-rc.8"
   },
   "devDependencies": {
-    "@solidjs/vite-plugin": "3.0.0-next.38"
+    "@solidjs/vite-plugin": "3.0.0-next.43"
   }
 }
