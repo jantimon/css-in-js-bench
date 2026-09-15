@@ -220,6 +220,21 @@ importers:
         specifier: catalog:dev
         version: 19.3.0(react@19.3.0)
 
+  techs/plumeria:
+    dependencies:
+      '@plumeria/core':
+        specifier: 18.3.14
+        version: 18.3.14
+      '@plumeria/unplugin':
+        specifier: 18.3.14
+        version: 18.3.14(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
+      react:
+        specifier: catalog:dev
+        version: 19.3.0
+      react-dom:
+        specifier: catalog:dev
+        version: 19.3.0(react@19.3.0)
+
   techs/styled-components:
     dependencies:
       react:
@@ -246,6 +261,9 @@ importers:
       react-dom:
         specifier: catalog:dev
         version: 19.3.0(react@19.3.0)
+      unplugin:
+        specifier: 2.3.11
+        version: 2.3.11
 
   techs/stylex-layers:
     dependencies:
@@ -261,6 +279,9 @@ importers:
       react-dom:
         specifier: catalog:dev
         version: 19.3.0(react@19.3.0)
+      unplugin:
+        specifier: 2.3.11
+        version: 2.3.11
 
   techs/stylex-solid:
     dependencies:
@@ -276,6 +297,9 @@ importers:
       solid-js:
         specifier: 2.0.0-rc.8
         version: 2.0.0-rc.8
+      unplugin:
+        specifier: 2.3.11
+        version: 2.3.11
     devDependencies:
       '@solidjs/vite-plugin':
         specifier: 3.0.0-next.43
@@ -1284,6 +1308,15 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
+  '@plumeria/core@18.3.14':
+    resolution: {integrity: sha512-P1KOvxXUqoKr/SvfWZqWLnJ7Ye6fqsqnvq25BdNcgBFMfZBqJclzmtFyvT/R06Kax0d70mNMbLLHKtDom4Wn7Q==}
+
+  '@plumeria/unplugin@18.3.14':
+    resolution: {integrity: sha512-soyiHbcBm9tx2eKOnRr1I+TkqgTO//Fe87wn0g/r/GBplGT95JMZQ7I63/ijg2W3uOtc97yCf299e29oO1w9FQ==}
+
+  '@plumeria/utils@18.5.4':
+    resolution: {integrity: sha512-MWhFzoeRck6GTf9lxdErgeQ7cTmT1eaKWk0Lc4j//w5rYclSZKJqvd39zTN1xPexi4aGpma9WNumtCPxMFmCew==}
+
   '@puppeteer/browsers@3.0.6':
     resolution: {integrity: sha512-B/gKoqlFkzhvzsI6jo9K1cZz9o5ypviVv/xu8CwA4grZzyVwN+XfkT+tu8T1zrauuEXv6VhS2oGX+6NL95WcKA==}
     engines: {node: '>=22.12.0'}
@@ -1491,6 +1524,77 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@rollup/pluginutils@5.4.0':
+    resolution: {integrity: sha512-MfPp06CjRLfXQ3wY0R8vJDYBy/MvVcc9OulEfR0B8Iv9ko+GCNaRZ+EpJYFl27LhKsZK0o420sYCRHCjfCgeUg==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rust-gear/glob-darwin-arm64@1.1.1':
+    resolution: {integrity: sha512-CbFos1AwQR955N6FqeMBE3LOTL5BW/jz9H6lFAfB207KsyTEkT+luhqUKfLyW8HXnNKX9LMwNKPHJmWszI/nDg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rust-gear/glob-darwin-x64@1.1.1':
+    resolution: {integrity: sha512-TrhFoxcjMGf+zvlkVVVD2vL1LM68LYXwTlEMU0BPm/XIAK69Dxib8bBN7oXUpVLzRcWk4Lz3IZFWiXqGC493qg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@rust-gear/glob-linux-arm64-gnu@1.1.1':
+    resolution: {integrity: sha512-6EdBoH+sASFJc6BmXcI8+woSB80pRRNMIJgpu4zKU//nodif1QWOzcQTEphTch9GJaSyAnhJO/vrw0hajTXwpg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rust-gear/glob-linux-arm64-musl@1.1.1':
+    resolution: {integrity: sha512-LHJj59/iMqC1z/goPW60DHgNHCP5OzvBMkr0+IoAARY5gqo1/4o3VMvqFVysdLhczJoil4bUoIchEInObZBZ4g==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@rust-gear/glob-linux-x64-gnu@1.1.1':
+    resolution: {integrity: sha512-bMsy2Qk5nD+XTBIQJKbA3m5x8DQZxZxlHz0YuVDYWHeTpaTS0n9vEZhqubiRzSWu5TI4P6Om/YJE0m74/y2TdQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rust-gear/glob-linux-x64-musl@1.1.1':
+    resolution: {integrity: sha512-tCTO4UR3pviyPjRUBpDJKkgFbtvsI4bctPWS2P6XtL2MI6FhT9ppu2tqGqI9SjZXYdVT9xNfs5d3Z6a4BKJRCQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@rust-gear/glob-win32-arm64-msvc@1.1.1':
+    resolution: {integrity: sha512-VxpcHGpV6U+hL+mVeUfYONIh7QVzOs8leoyNwfwce5q7w2/OHDbDk9vrRKADbEDH26ITavbSNUr3dwNGo2yWGA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rust-gear/glob-win32-ia32-msvc@1.1.1':
+    resolution: {integrity: sha512-YaM1Jhjeb200qEK8vZFzqrwhVLyPR81RbO9eYgnqYouaztUaqODn38FcpLSzdgx/9mjxdMAMBtWpH1s73v5yjA==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@rust-gear/glob-win32-x64-msvc@1.1.1':
+    resolution: {integrity: sha512-FWt+0Y2XWu8kxH0NSiVnsGgTRpNt2C0avVc+YQ3pqoZeYBxdw6YqOtoKGd3jBUrgJ3wae55G3jDQxJckb8Lp3A==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@rust-gear/glob@1.1.1':
+    resolution: {integrity: sha512-Y1RWXed7qkXuhSi3ZHpA1qkSFIK9elfns01IbbOjUEuClC6YoCANlMLPT2UW/YGD7kO31LlVXwWRKekjliwCPw==}
+    engines: {node: '>=10'}
 
   '@shikijs/core@3.23.0':
     resolution: {integrity: sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==}
@@ -1705,6 +1809,9 @@ packages:
 
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
+
+  '@types/estree@1.0.9':
+    resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
   '@types/hast@3.0.5':
     resolution: {integrity: sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==}
@@ -3107,6 +3214,39 @@ packages:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
+  unplugin@3.3.0:
+    resolution: {integrity: sha512-qa66K+crbfyE6JK10GjvbJeRrOsuC/JpbnHctfyp/i4oBTxWOzJfRZyDiOk1PtErMFRu8JhsU/wPvOdBNWe5Rg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@farmfe/core': '*'
+      '@rspack/core': '*'
+      bun-types-no-globals: '*'
+      esbuild: '*'
+      rolldown: '*'
+      rollup: '*'
+      unloader: '*'
+      vite: '*'
+      webpack: '*'
+    peerDependenciesMeta:
+      '@farmfe/core':
+        optional: true
+      '@rspack/core':
+        optional: true
+      bun-types-no-globals:
+        optional: true
+      esbuild:
+        optional: true
+      rolldown:
+        optional: true
+      rollup:
+        optional: true
+      unloader:
+        optional: true
+      vite:
+        optional: true
+      webpack:
+        optional: true
+
   update-browserslist-db@1.3.3:
     resolution: {integrity: sha512-pJ2sYawQS0R/WI928Gj5GlPhTGzbMelq0+4INtSYNDV9ErKJcX6xjGWkoG/VnB3dpUm00zALaqkrUD77pO5TDQ==}
     hasBin: true
@@ -3239,6 +3379,9 @@ packages:
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
+  zss-engine@2.8.0:
+    resolution: {integrity: sha512-Vf2aLkqzDgN+8Jy/04nW3ThlZA38kI2IG13O6niF/9/uncUMzuQx+ufGY7CgVlJ3Rt5qzkpydow6axmdwixv3A==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4164,6 +4307,35 @@ snapshots:
     dependencies:
       playwright: 1.63.0
 
+  '@plumeria/core@18.3.14': {}
+
+  '@plumeria/unplugin@18.3.14(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
+    dependencies:
+      '@plumeria/utils': 18.5.4
+      '@rollup/pluginutils': 5.4.0
+      unplugin: 3.3.0(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
+    transitivePeerDependencies:
+      - '@farmfe/core'
+      - '@rspack/core'
+      - '@swc/helpers'
+      - bun-types-no-globals
+      - esbuild
+      - rolldown
+      - rollup
+      - unloader
+      - vite
+      - webpack
+
+  '@plumeria/utils@18.5.4':
+    dependencies:
+      '@rust-gear/glob': 1.1.1
+      '@swc/core': 1.15.47
+      lightningcss: 1.33.0
+      postcss: 8.5.26
+      zss-engine: 2.8.0
+    transitivePeerDependencies:
+      - '@swc/helpers'
+
   '@puppeteer/browsers@3.0.6':
     dependencies:
       modern-tar: 0.7.7
@@ -4260,6 +4432,51 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@rollup/pluginutils@5.4.0':
+    dependencies:
+      '@types/estree': 1.0.9
+      estree-walker: 2.0.2
+      picomatch: 4.0.7
+
+  '@rust-gear/glob-darwin-arm64@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-darwin-x64@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-linux-arm64-gnu@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-linux-arm64-musl@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-linux-x64-gnu@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-linux-x64-musl@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-win32-arm64-msvc@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-win32-ia32-msvc@1.1.1':
+    optional: true
+
+  '@rust-gear/glob-win32-x64-msvc@1.1.1':
+    optional: true
+
+  '@rust-gear/glob@1.1.1':
+    optionalDependencies:
+      '@rust-gear/glob-darwin-arm64': 1.1.1
+      '@rust-gear/glob-darwin-x64': 1.1.1
+      '@rust-gear/glob-linux-arm64-gnu': 1.1.1
+      '@rust-gear/glob-linux-arm64-musl': 1.1.1
+      '@rust-gear/glob-linux-x64-gnu': 1.1.1
+      '@rust-gear/glob-linux-x64-musl': 1.1.1
+      '@rust-gear/glob-win32-arm64-msvc': 1.1.1
+      '@rust-gear/glob-win32-ia32-msvc': 1.1.1
+      '@rust-gear/glob-win32-x64-msvc': 1.1.1
 
   '@shikijs/core@3.23.0':
     dependencies:
@@ -4478,6 +4695,8 @@ snapshots:
   '@types/babel__traverse@7.28.0':
     dependencies:
       '@babel/types': 7.29.8
+
+  '@types/estree@1.0.9': {}
 
   '@types/hast@3.0.5':
     dependencies:
@@ -5892,6 +6111,16 @@ snapshots:
       picomatch: 4.0.7
       webpack-virtual-modules: 0.6.2
 
+  unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)):
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      picomatch: 4.0.7
+      webpack-virtual-modules: 0.6.2
+    optionalDependencies:
+      esbuild: 0.28.2
+      rolldown: 1.2.8
+      vite: 8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13)
+
   update-browserslist-db@1.3.3(browserslist@4.28.7):
     dependencies:
       browserslist: 4.28.7
@@ -5979,5 +6208,9 @@ snapshots:
   yocto-queue@1.2.2: {}
 
   zod@3.25.76: {}
+
+  zss-engine@2.8.0:
+    dependencies:
+      csstype: 3.2.3
 
   zwitch@2.0.4: {}
