@@ -23,6 +23,4 @@ const L1: React.FunctionComponent<P> = (props) => (
 const L2: React.FunctionComponent<P> = (props) => (
   <L1 css={css`border-left:2px solid hsl(106 70% 50%);padding-left:4px;`} {...props} />
 );
-const ComposedButton = L2;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L2>{i}</L2>;

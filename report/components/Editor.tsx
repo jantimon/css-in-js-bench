@@ -24,9 +24,10 @@ export interface EditorLane {
 //
 // The body is a single <iframe> (for code) and an <img> (for the preview) whose src the
 // vanilla controller swaps on click. Highlighted files live in assets/code/ (compiled by
-// report/code-assets.ts) and preview PNGs in assets/, so the main report stays small.
+// report/code-assets.ts) and preview images in assets/, so the main report stays small.
 // Since every lane renders identically (parity), the preview is the same image for all of
-// them — the highlighted lane name is what tells you which one you're looking at.
+// them — literally the same file, since screenshots are named by a hash of their pixels.
+// The highlighted lane name is what tells you which one you're looking at.
 const GENERATED = [
   { art: "html", file: "output.html" },
   { art: "css", file: "output.css" },

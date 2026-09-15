@@ -9,7 +9,7 @@ import { TechLabel } from "./TechLabel.tsx";
 export function StudyFindings({ study, techs, runSha, caseIds }: { study: StudyAnalysis; techs: Record<string, TechInfo>; runSha?: string; caseIds: string[] }) {
   const stale = runSha && study.provenance.gitSha !== runSha;
   return (
-    <section className="study">
+    <section className="study" id="key-findings">
       <div className="study-head">
         <span className="study-title">Key findings</span>
         {stale ? <span className="sum-stale">stale — from run {study.provenance.gitSha.slice(0, 7)}</span> : null}

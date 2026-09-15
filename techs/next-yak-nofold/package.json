@@ -11,7 +11,7 @@
     "defaultOff": true
   },
   "dependencies": {
-    "next-yak": "9.7.0",
+    "next-yak": "9.10.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }

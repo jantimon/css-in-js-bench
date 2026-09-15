@@ -13,21 +13,24 @@
     "verify": "node ./verify.ts",
     "dev": "vite",
     "lint": "node ./report/lint.ts",
-    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs"
+    "test:http": "node --test --test-concurrency=1 ./scripts/http-*.test.mjs ./report/http-results.test.ts",
+    "test:wpd": "node --test ./report/wpd-results.test.ts ./scripts/run-wpd.test.mjs ./scripts/wpd-query.test.ts",
+    "test:interaction": "node --test ./report/interaction.test.ts ./scripts/interaction.test.mjs",
+    "test:browser": "node --test --test-concurrency=1 ./scripts/browser-styles.test.ts ./scripts/browser-validation.test.mjs ./scripts/browser-styles-browser.test.ts ./scripts/hydration-handoff.test.mjs"
   },
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {
-    "@jantimon/web-performance-debugger": "1.3.0",
-    "@playwright/test": "^1.61.1",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@jantimon/web-performance-debugger": "1.5.0",
+    "@playwright/test": "^1.63.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "autocannon": "^8.0.0",
-    "postcss": "^8.5.19",
-    "prettier": "^3.6.2",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "postcss": "^8.5.28",
+    "prettier": "^3.9.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "shiki": "^3.23.0",
     "tailwindcss": "^3.4.19",
-    "tsx": "^4.21.0",
-    "vite": "^8.0.10"
+    "tsx": "^4.23.13",
+    "vite": "^8.3.0"
   }
 }

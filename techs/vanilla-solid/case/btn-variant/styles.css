@@ -1,0 +1,31 @@
+/* Author-written CSS for the variant button — the ceiling every lane compiles toward.
+   Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR entry
+   imports it ?raw. Maps the styled-components btn-variant declarations onto vanilla's
+   semantic class names (btn / btnInactive / btnSecondary / btnGhost / btnFull). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  background-color: #2563eb;
+  color: #ffffff;
+}
+.btnInactive {
+  background-color: #d1d5db;
+  color: #6b7280;
+}
+.btnSecondary {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+.btnGhost {
+  background-color: transparent;
+  color: #2563eb;
+}
+.btnFull {
+  width: 100%;
+}

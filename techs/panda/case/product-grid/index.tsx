@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { type FunctionComponent } from "react";
-import { css, cx } from "styled-system/css";
+import { css } from "styled-system/css";
 
 // Panda CSS port of the product grid: 400 product tiles, each composed of ~11
 // elements that mix static styles, conditional variants (sale badge, wishlist,
@@ -30,7 +30,7 @@ const srOnly = css({
 });
 
 /** WCAG 2.5.5 minimum target size — grows the hit area without changing layout. */
-const minTargetSize = css({
+const minTargetSize = css.raw({
   _before: {
     content: '""',
     position: "absolute",
@@ -53,7 +53,7 @@ const minTargetSize = css({
   },
 });
 
-const focusRing = css({
+const focusRing = css.raw({
   _focusVisible: {
     outline: "2px solid #2563eb",
     outlineOffset: "2px",
@@ -114,7 +114,7 @@ const imagePlaceholder = css({
   background: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
 });
 
-const badge = css({
+const badge = css.raw({
   position: "absolute",
   top: "6px",
   left: "6px",
@@ -125,9 +125,9 @@ const badge = css({
   color: "#fff",
   background: "#f59e0b",
 });
-const badgeHigh = css({ background: "#dc2626" });
+const badgeHigh = css.raw({ background: "#dc2626" });
 
-const wishlist = css({
+const wishlist = css.raw({
   position: "absolute",
   top: "6px",
   right: "6px",
@@ -149,7 +149,7 @@ const wishlist = css({
     transition: "none",
   },
 });
-const wishlistOn = css({ color: "#ef4444" });
+const wishlistOn = css.raw({ color: "#ef4444" });
 
 const title = css({
   margin: "8px 0 4px",
@@ -207,7 +207,7 @@ const nowPrice = css({
   color: "#111827",
 });
 
-const addToCart = css({
+const addToCart = css.raw({
   marginTop: "auto",
   position: "relative",
   border: "none",
@@ -231,7 +231,7 @@ const addToCart = css({
     padding: "9px 12px",
   },
 });
-const addToCartDisabled = css({
+const addToCartDisabled = css.raw({
   background: "#d1d5db",
   color: "#6b7280",
   cursor: "not-allowed",
@@ -252,7 +252,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <div className={imageWrap}>
       <div aria-hidden="true" className={imagePlaceholder} />
       {p.discount > 0 && (
-        <span className={cx(badge, p.discount >= 30 && badgeHigh)}>
+        <span className={css(badge, p.discount >= 30 && badgeHigh)}>
           <span className={srOnly}>Reduced by </span>-{p.discount}%
         </span>
       )}
@@ -260,7 +260,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
         type="button"
         aria-pressed={p.wishlisted}
         aria-label={p.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className={cx(wishlist, focusRing, minTargetSize, p.wishlisted && wishlistOn)}
+        className={css(wishlist, focusRing, minTargetSize, p.wishlisted && wishlistOn)}
       >
         <span aria-hidden="true">♥</span>
       </button>
@@ -286,7 +286,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <button
       disabled={!p.inStock}
       aria-label={p.inStock ? `Add ${p.title} to cart` : `${p.title} is sold out`}
-      className={cx(addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
+      className={css(addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
     >
       {p.inStock ? "Add to cart" : "Sold out"}
     </button>

@@ -162,9 +162,9 @@ const title = css({
   "@media (min-width: 992px)": {
     fontSize: "15px",
   },
-  // Wider columns get a slightly larger title.
+  // The container rule takes priority over the viewport title size.
   "@container tile (min-width: 240px)": {
-    fontSize: "16px",
+    "&&": { fontSize: "16px" },
   },
 });
 
@@ -210,6 +210,7 @@ const nowPrice = css({
 
 const addToCart = css({
   marginTop: "auto",
+  _disabled: { background: "#d1d5db", color: "#6b7280", cursor: "not-allowed" },
   position: "relative",
   border: "none",
   borderRadius: "6px",
@@ -231,11 +232,6 @@ const addToCart = css({
   "@media (min-width: 992px)": {
     padding: "9px 12px",
   },
-});
-const addToCartDisabled = css({
-  background: "#d1d5db",
-  color: "#6b7280",
-  cursor: "not-allowed",
 });
 
 interface Product {
@@ -287,7 +283,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <button
       disabled={!p.inStock}
       aria-label={p.inStock ? `Add ${p.title} to cart` : `${p.title} is sold out`}
-      className={cx(addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
+      className={cx(addToCart, focusRing, minTargetSize)}
     >
       {p.inStock ? "Add to cart" : "Sold out"}
     </button>
