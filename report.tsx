@@ -346,43 +346,47 @@ async function main() {
         </header>
 
 
-        {/* Contents index. Sits in the gutter beside the measure, so it is hidden below the
-            width where that gutter exists (see the .toc media query). The active entry is set
-            by the controller from an IntersectionObserver, so it tracks scrolling too. */}
-        <nav className="toc" aria-label="Report sections" data-screen-only>
-          <span className="toc-title">Contents</span>
-          <ol>
-            <li>
-              <a href="#filters" data-toc="filters">Filters</a>
-            </li>
-            {study ? (
-              <li>
-                <a href="#key-findings" data-toc="key-findings">Key findings</a>
-              </li>
-            ) : null}
-            {sections.map(({ caseId, cm }) => {
-              const [title, sub] = cm.label.split(/\s+—\s+/, 2);
-              return (
-                <li key={caseId}>
-                  <a href={`#${caseId}`} data-toc={caseId} title={cm.label}>
-                    {title}
-                    {sub ? <span className="toc-sub">{sub}</span> : null}
-                  </a>
-                </li>
-              );
-            })}
-            {buildRows.length ? (
-              <li>
-                <a href="#buildtime" data-toc="buildtime">Build time</a>
-              </li>
-            ) : null}
-            <li>
-              <a href="#how-measured" data-toc="how-measured">How this was measured</a>
-            </li>
-          </ol>
-        </nav>
 
         <main className="wrap">
+          {/* Contents index. The rail is absolute, so it takes no room in the flow and the
+              filter panel stays where it is; the nav inside is sticky, so it rides along and
+              stops at the end of the measure. Hidden below the width where the gutter exists
+              (see the .toc-rail media query). The controller marks the active entry from an
+              IntersectionObserver, so it tracks scrolling too. */}
+          <div className="toc-rail" data-screen-only>
+            <nav className="toc" aria-label="Report sections">
+              <span className="toc-title">Contents</span>
+              <ol>
+                <li>
+                  <a href="#filters" data-toc="filters">Filters</a>
+                </li>
+                {study ? (
+                  <li>
+                    <a href="#key-findings" data-toc="key-findings">Key findings</a>
+                  </li>
+                ) : null}
+                {sections.map(({ caseId, cm }) => {
+                  const [title, sub] = cm.label.split(/\s+—\s+/, 2);
+                  return (
+                    <li key={caseId}>
+                      <a href={`#${caseId}`} data-toc={caseId} title={cm.label}>
+                        {title}
+                        {sub ? <span className="toc-sub">{sub}</span> : null}
+                      </a>
+                    </li>
+                  );
+                })}
+                {buildRows.length ? (
+                  <li>
+                    <a href="#buildtime" data-toc="buildtime">Build time</a>
+                  </li>
+                ) : null}
+                <li>
+                  <a href="#how-measured" data-toc="how-measured">How this was measured</a>
+                </li>
+              </ol>
+            </nav>
+          </div>
           <section className="filter-panel" id="filters" data-screen-only>
             <div className="fp-block fp-toggle">
               <span className="fp-sub-title">Show source and preview</span>
@@ -716,7 +720,7 @@ const CSS = `
 :root{color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
-.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px;position:relative}
 .head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
 h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
@@ -741,9 +745,10 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .seg-btn{background:none;border:0;color:var(--muted);padding:4px 15px;font-size:12.5px;cursor:pointer}
 .seg-btn:hover{color:var(--fg-2)}
 .seg-btn.active{background:var(--raised-2);color:var(--fg)}
-/* Contents index, fixed in the right gutter. calc() places it just outside the measure
-   rather than at a hardcoded offset, so it tracks the content edge at any width. */
-.toc{position:fixed;top:96px;left:calc(50% + 512px);width:188px;overflow-y:auto;z-index:20;font-size:12.5px;line-height:1.45;scrollbar-width:none}
+/* Contents index. The rail spans the measure's full height just outside its right edge
+   and takes no room in the flow; the nav sticks inside it. */
+.toc-rail{position:absolute;top:0;bottom:0;left:calc(100% + 12px);width:188px}
+.toc{position:sticky;top:20px;max-height:calc(100vh - 20px);overflow-y:auto;font-size:12.5px;line-height:1.45;scrollbar-width:none}
 .toc::-webkit-scrollbar{width:0}
 .toc-title{display:block;color:var(--muted-2);text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-bottom:8px}
 .toc ol{list-style:none;margin:0;padding:0}
@@ -753,7 +758,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .toc a.active{color:#fff;border-left-color:#fff}
 .toc-sub{display:block;font-size:11px;opacity:.75}
 /* Below this width the gutter is gone and the index would sit on top of the charts. */
-@media(max-width:1420px){.toc{display:none}}
+@media(max-width:1420px){.toc-rail{display:none}}
 .tp-count{color:var(--muted-2);font-weight:400;font-size:12.5px;margin-left:4px}
 .tp-actions{font-size:12.5px;color:var(--muted)}
 .tp-actions button{background:none;border:0;color:var(--link);cursor:pointer;font-size:12.5px;padding:0}
@@ -1204,20 +1209,6 @@ if (tocLinks.length && 'IntersectionObserver' in window) {
     if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) setActive(targets[targets.length - 1].id);
   }, { passive: true });
 
-  // Line the index up with the top of the first section card. The header's height depends
-  // on its content, so measure it rather than hardcode an offset; max-height follows the
-  // same number so the list never runs past the bottom of the viewport.
-  const tocEl = document.querySelector('.toc');
-  const firstCard = document.getElementById('filters');
-  if (tocEl && firstCard) {
-    const place = () => {
-      const top = firstCard.offsetTop;
-      tocEl.style.top = top + 'px';
-      tocEl.style.maxHeight = 'calc(100vh - ' + (top + 24) + 'px)';
-    };
-    place();
-    addEventListener('resize', place);
-  }
 }
 `;
 
