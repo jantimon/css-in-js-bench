@@ -114,6 +114,10 @@ async function main() {
   // resolves both from BENCHMARK.html on disk and inside BENCHMARK.zip.
   const logosSrc = join(ROOT, "report", "logos");
   if (existsSync(logosSrc)) cpSync(logosSrc, join(assetsDst, "logos"), { recursive: true });
+  // The social card (report/social-card.jpg, 1200×630) — mirrored next to the logos so the
+  // absolute og:image URL below resolves on the deployed site. JPEG, not AVIF: link
+  // unfurlers (Twitter, Discord, Slack) only fetch PNG/JPEG cards.
+  cpSync(join(ROOT, "report", "social-card.jpg"), join(assetsDst, "social-card.jpg"));
   const baseMeta = readJson<RunMeta | null>(join(RESULT, "meta.json"), null);
   const meta: RunMeta = {
     ...(baseMeta ?? { techs: [], cases: [] }),
@@ -287,6 +291,17 @@ async function main() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://jantimon.github.io/css-in-js-bench/" />
+        <meta property="og:image" content="https://jantimon.github.io/css-in-js-bench/assets/social-card.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="CSS-in-JS Bench: a product-grid preview beside a blurred SSR render throughput chart" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="CSS-in-JS benchmarks" />
+        <meta
+          name="twitter:description"
+          content="styled-components, Emotion, Goober, next-yak, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
+        />
+        <meta name="twitter:image" content="https://jantimon.github.io/css-in-js-bench/assets/social-card.jpg" />
         <link rel="canonical" href="https://jantimon.github.io/css-in-js-bench/" />
         <style dangerouslySetInnerHTML={{ __html: CSS }} />
       </head>
