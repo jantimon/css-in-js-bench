@@ -60,7 +60,6 @@ export const FAMILIES: Family[] = [
     group: "Tailwind",
     items: [
       { tech: "cn", short: "cn" },
-      { tech: "cnfast", short: "cnfast" },
       { tech: "tailwind-merge", short: "tailwind-merge" },
       { tech: "cn-solid", short: "cn" },
     ],

@@ -3,9 +3,7 @@
 // the @supports-gated anchor-positioned underline, the ::after fallback underline, the
 // ::before WCAG target, the hidden scrollbar and the full-width composition — becomes a
 // prefixed utility resolved on EVERY render (next-yak did it all at build time).
-// Default-exports a single-instance render(i) (§6); the harness loops it. Class
-// strings, sub-components, helpers and the per-group data formula are verbatim from the
-// cnfast lane.
+// Default-exports a single-instance render(i) (§6); the harness loops it.
 import React, { type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "cn";
 

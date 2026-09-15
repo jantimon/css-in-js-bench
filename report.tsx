@@ -317,12 +317,6 @@ async function main() {
                 One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
                 version renders the same pixels, so the numbers compare by construction, not by claim.
               </p>
-              {Object.entries(meta.runtimePackages ?? {}).map(([name, pkg]) => (
-                <p className="sub" data-runtime-provenance key={name} title={`SHA-256: ${pkg.sha256}`}>
-                  Measured {name} source revision: <code>{pkg.revision.slice(0, 8)}</code>.
-                  Results apply to this packaged revision.
-                </p>
-              ))}
               <div className="head-stats">
                 <span>
                   <b>{usedTechs.length}</b> styling techniques

@@ -1,8 +1,7 @@
 // cn — the same long Tailwind class list as the tailwind-merge lane, resolved by
 // cn's cn() on EVERY render (next-yak did all of this at build time). Default-
 // exports a single-instance render(i) (§6); the harness loops it. realistic-button
-// varies variant/disabled/icon by index. Class strings are verbatim from the original
-// cnfast lane.
+// varies variant/disabled/icon by index.
 import React from "react";
 import { cn } from "cn";
 

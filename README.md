@@ -99,13 +99,6 @@ param, so a filtered view is a shareable URL
 Some measurements are machine-dependent and noisy (anything that boots a browser or a
 server). Those carry that caveat in the report and live in a collapsible appendix
 
-## Packaged runtime for the Solid lanes
-
-The `yak-solid` and `yak-solid-nofold` lanes use a committed package archive from
-`vendor/yak-solid`. Its README gives the source revision and checksum. A checkout
-can install this exact unpublished runtime without a local next-yak source tree.
-The report records the measured package in `result/meta.json`.
-
 ## Running it
 
 ```bash
@@ -262,7 +255,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 | build-extracted | next-yak (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
-| utility | tailwind-merge, cnfast | real Tailwind JIT over the rendered HTML |
+| utility | cn, tailwind-merge | real Tailwind JIT over the rendered HTML |
 
 ## How the site is published
 

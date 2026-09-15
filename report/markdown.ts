@@ -16,7 +16,7 @@ import { httpMeasurementNote, type HttpProtocol } from "./http-results.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
-const MD_TECHS = ["next-yak", "next-yak-css", "stylex-layers", "bamboo", "cnfast", "styled-components"] as const;
+const MD_TECHS = ["next-yak", "next-yak-css", "stylex-layers", "bamboo", "cn", "styled-components"] as const;
 
 export interface MdSection {
   caseId: string;
@@ -216,10 +216,6 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     ``,
     `**Techniques shown (${shownLabels.length}):** ${shownLabels.join(" · ")}. Other lanes in the HTML report are omitted here.`,
     meta ? `\n_Run: ${meta.node} · ${meta.host} · ${meta.timestamp}${meta.gitSha ? ` · ${meta.gitSha}` : ""}_` : ``,
-    ``,
-    ...Object.entries(meta?.runtimePackages ?? {}).map(([name, pkg]) =>
-      `Measured ${name} source revision: \`${pkg.revision}\`. Package SHA-256: \`${pkg.sha256}\`.`,
-    ),
     ``,
     MEASUREMENTS,
   ];

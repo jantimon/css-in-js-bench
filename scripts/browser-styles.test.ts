@@ -8,7 +8,7 @@ import { utilityMaxInput } from "./browser-styles.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeLanes = new Set(["styled-components", "emotion", "goober"]);
-const utilityLanes = new Set(["tailwind-merge", "cn", "cnfast"]);
+const utilityLanes = new Set(["tailwind-merge", "cn"]);
 
 for (const tech of readdirSync(resolve(root, "techs"))) {
   test(`${tech} emits linked browser styles for every supported case`, { timeout: 120_000 }, async () => {
