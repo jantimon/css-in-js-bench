@@ -1,0 +1,20 @@
+/* Author-written CSS for the 3-level composition — the ceiling every lane compiles
+   toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR
+   entry imports it ?raw. Maps the styled-components L0→L1→L2 chain onto three flat class
+   names (btn / lvl1 / lvl2) on one element — what next-yak flattens the wrapper chain to. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background: #2563eb;
+  color: #fff;
+}
+.lvl1 {
+  border-left: 1px solid hsl(53 70% 50%);
+  padding-left: 2px;
+}
+.lvl2 {
+  border-left: 2px solid hsl(106 70% 50%);
+  padding-left: 4px;
+}

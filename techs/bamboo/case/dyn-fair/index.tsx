@@ -1,9 +1,9 @@
 // bench-strategy: inline-style
 // Bamboo — the only expressible pattern for a value unknown at build time: keep the
 // css() object static (compiled to one class-string literal) and pass the per-instance
-// transform as an inline style. Bamboo rejects open runtime values at build time, so
-// this file and the lane's dyn-translate are the same code: the library has exactly
-// one dynamic path.
+// transform as an inline style. Bamboo rejects open runtime values at build time and
+// delegates them to `style=` by design, so this is the lane's single dynamic path —
+// and the reason it sits out dyn-translate, which asks for the other one.
 // Default-exports render(i) (§6); the harness loops it.
 import React, { type FunctionComponent } from 'react';
 import { css } from 'styled-system/css';

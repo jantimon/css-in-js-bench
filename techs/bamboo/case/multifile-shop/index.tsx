@@ -2,15 +2,15 @@
 // Bamboo — multifile-shop. The SAME tile as product-grid (same DOM, same CSS, same
 // product data), laid out the way a design system ships it: shared fragments in
 // tokens.ts, a base button in button.ts, and the primitives split by role over
-// layout / controls / text. Bamboo folds css() to a class literal per module, but its cx() merge only
-// resolves arguments declared in the SAME file, so the joins below stay at runtime.
+// layout / controls / text. Bamboo folds css() to class literals; cx() joins the
+// classes from these modules at runtime.
 // @ts-nocheck
 import React, { type FunctionComponent } from "react";
 import { cx } from "styled-system/css";
 import { buttonBase } from "./button";
 import { srOnly, minTargetSize, focusRing } from "./tokens";
 import { grid, card, imageWrap, imagePlaceholder } from "./layout";
-import { wishlist, wishlistOn, addToCart, addToCartDisabled } from "./controls";
+import { wishlist, wishlistOn, addToCart } from "./controls";
 import { badge, badgeHigh, title, rating, ratingFill, priceRow, oldPrice, nowPrice } from "./text";
 
 interface Product {
@@ -62,7 +62,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <button
       disabled={!p.inStock}
       aria-label={p.inStock ? `Add ${p.title} to cart` : `${p.title} is sold out`}
-      className={cx(buttonBase, addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
+      className={cx(buttonBase, addToCart, focusRing, minTargetSize)}
     >
       {p.inStock ? "Add to cart" : "Sold out"}
     </button>

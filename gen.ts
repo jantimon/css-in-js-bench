@@ -20,12 +20,14 @@ import os from "node:os";
 import { createHash } from "node:crypto";
 import benchConfig from "./bench.config.ts";
 import { gzipSync } from "node:zlib";
-import { createServer } from "node:http";
-import autocannon from "autocannon";
+import { runHttpPass } from "./scripts/http-pass.mjs";
+import { writeJsonAtomic } from "./report/wpd-results.ts";
 import { chromium, type Browser } from "@playwright/test";
-import type { CaseMeta, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
-import { SOURCE_EXT } from "./report/types.ts";
+import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderHtmlFn, RunMeta, Snapshot, SourceFile, SsrModule } from "./report/types.ts";
+import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
+import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
+import { validateBrowserFixture } from "./scripts/browser-validation.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
@@ -80,10 +82,11 @@ const SSR_MEASUREMENTS = new Set<Measurement>(["microbench", "payload", "nsweep"
 
 // ---- tiny CLI ------------------------------------------------------------------
 function parseArgs(argv: string[]) {
-  const out: { measure?: string; tech?: string; case?: string } = {};
+  const out: { measure?: string; tech?: string; case?: string; resumeHttp?: boolean } = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a.startsWith("--measure=")) out.measure = a.slice("--measure=".length);
+    if (a === "--resume-http") out.resumeHttp = true;
+    else if (a.startsWith("--measure=")) out.measure = a.slice("--measure=".length);
     else if (a === "--measure") out.measure = argv[++i];
     else if (a === "--tech") out.tech = argv[++i];
     else if (a === "--case") out.case = argv[++i];
@@ -177,12 +180,25 @@ function payload(mod: SsrModule, caseId: string, n: number, js: number): Payload
   return [{ js, css: gzipSync(css).length, html: gzipSync(html).length }];
 }
 
-// JS bytes a lane ships, as the MARGINAL gzipped client bundle over the bare-React
+// JS bytes a lane ships, as the MARGINAL gzipped client bundle over the bare-framework
 // floor. Each tech's hydrate browser build (vite.hydrate.config) is its real client
-// bundle — react + react-dom + the styling runtime + the case components. The vanilla
-// lane is the framework floor (react only, no styling runtime), so subtracting it
-// leaves the lane's own runtime cost. It's per-TECH (the bundle isn't case-split), so
-// every case of a tech reports the same js — the lane's footprint, not a per-page split.
+// bundle — the UI framework + the styling runtime + the case components. The floor is
+// the lane's OWN framework: `vanilla` (react only) for the React lanes, `vanilla-solid`
+// (solid only) for the Solid ones, so subtracting it leaves the lane's own runtime cost
+// either way. It's per-TECH (the bundle isn't case-split), so every case of a tech
+// reports the same js — the lane's footprint, not a per-page split.
+// Which UI framework a lane renders with (techs/<t>/package.json bench.framework;
+// absent = react, this suite's default). Drives the marginal-JS floor below.
+const frameworkCache = new Map<string, "react" | "solid">();
+function frameworkOf(tech: string): "react" | "solid" {
+  const cached = frameworkCache.get(tech);
+  if (cached) return cached;
+  const pkg = JSON.parse(readFileSync(join(TECHS_DIR, tech, "package.json"), "utf8")) as { bench?: { framework?: "solid" } };
+  const fw = pkg.bench?.framework ?? "react";
+  frameworkCache.set(tech, fw);
+  return fw;
+}
+
 const hydrateGzCache = new Map<string, number>();
 async function hydrateBundleGz(tech: string): Promise<number> {
   const cached = hydrateGzCache.get(tech);
@@ -194,15 +210,20 @@ async function hydrateBundleGz(tech: string): Promise<number> {
   hydrateGzCache.set(tech, gz);
   return gz;
 }
-let frameworkFloor: number | null = null;
-async function frameworkFloorGz(): Promise<number> {
-  if (frameworkFloor === null)
-    frameworkFloor = existsSync(join(TECHS_DIR, "vanilla", "vite.hydrate.config.ts")) ? await hydrateBundleGz("vanilla") : 0;
-  return frameworkFloor;
+// The baseline lane per framework: the same client-entry with no styling library at all.
+const FLOOR_LANE = { react: "vanilla", solid: "vanilla-solid" } as const;
+const frameworkFloors = new Map<string, number>();
+async function frameworkFloorGz(tech: string): Promise<number> {
+  const lane = FLOOR_LANE[frameworkOf(tech)];
+  const cached = frameworkFloors.get(lane);
+  if (cached !== undefined) return cached;
+  const gz = existsSync(join(TECHS_DIR, lane, "vite.hydrate.config.ts")) ? await hydrateBundleGz(lane) : 0;
+  frameworkFloors.set(lane, gz);
+  return gz;
 }
 async function payloadJsBytes(tech: string): Promise<number> {
   try {
-    return Math.max(0, (await hydrateBundleGz(tech)) - (await frameworkFloorGz()));
+    return Math.max(0, (await hydrateBundleGz(tech)) - (await frameworkFloorGz(tech)));
   } catch (e) {
     console.error(`  ! ${tech}: payload js unavailable (${(e as Error).message.split("\n")[0]}) — js=0`);
     return 0;
@@ -211,33 +232,6 @@ async function payloadJsBytes(tech: string): Promise<number> {
 
 /** The hot-path renderer for a tech: renderHtml if provided, else renderCase().html. */
 const htmlOf = (mod: SsrModule): RenderHtmlFn => mod.renderHtml ?? ((c, n) => mod.renderCase(c, n).html);
-
-// ---- autocannon sampler: SSR throughput under HTTP load (req/sec, higher better) -
-// Boots a tiny server that renders the case per request (the real per-request SSR
-// cost), runs autocannon `rounds` times, returns the per-round mean req/sec. Heavy +
-// machine-dependent → run on an idle box via `gen --measure=autocannon`.
-async function autocannonSample(mod: SsrModule, caseId: string, n: number): Promise<number[]> {
-  const { rounds, durationSec, connections, warmupRounds = 0 } = benchConfig.autocannon;
-  const render = htmlOf(mod);
-  const server = createServer((_req, res) => {
-    res.setHeader("content-type", "text/html");
-    res.end(render(caseId, n));
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const port = (server.address() as { port: number }).port;
-  const url = `http://127.0.0.1:${port}`;
-  const samples: number[] = [];
-  try {
-    for (let i = 0; i < warmupRounds; i++) await autocannon({ url, duration: durationSec, connections }); // discarded: warm the server's JIT
-    for (let i = 0; i < rounds; i++) {
-      const result = await autocannon({ url, duration: durationSec, connections });
-      samples.push(Math.round(result.requests.average));
-    }
-  } finally {
-    await new Promise<void>((r) => server.close(() => r()));
-  }
-  return samples;
-}
 
 const median = (xs: number[]): number => {
   const sorted = [...xs].sort((a, b) => a - b);
@@ -307,28 +301,7 @@ async function buildtimeSample(tech: string): Promise<{ cold: number[]; warm: nu
 // Shared by the hydrate, INP, and mount Playwright passes.
 async function serveHydrate(tech: string, ssrMod: SsrModule): Promise<{ port: number; close: () => Promise<void> }> {
   await buildOnly(tech, "hydrate");
-  const bundle = join(TECHS_DIR, tech, "dist", "hydrate", "entry.js");
-  if (!existsSync(bundle)) throw new Error(`${tech}: hydrate build produced no entry.js`);
-  const bundleJs = readFileSync(bundle);
-  const render = htmlOf(ssrMod);
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? "/", "http://x");
-    if (url.pathname === "/entry.js") {
-      res.setHeader("content-type", "text/javascript");
-      return res.end(bundleJs);
-    }
-    const caseId = url.searchParams.get("case") ?? "";
-    const n = Number(url.searchParams.get("n") ?? "1");
-    // mount mode renders into an EMPTY root from scratch (cold client mount); every other
-    // consumer hydrates the SSR markup, so the root carries it. Guard a missing case (e.g. a
-    // stray favicon request from wpd's browser) so the handler never throws and kills gen.
-    const body = url.searchParams.get("mount") === "1" || !caseId ? "" : render(caseId, n);
-    res.setHeader("content-type", "text/html");
-    res.end(`<!doctype html><meta charset=utf-8><div id="root">${body}</div><script type="module" src="/entry.js"></script>`);
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  const port = (server.address() as { port: number }).port;
-  return { port, close: () => new Promise<void>((r) => server.close(() => r())) };
+  return serveBrowserFixture({ directory: join(TECHS_DIR, tech, "dist", "hydrate"), ssrMod });
 }
 
 // Serve the hydrate bundle, launch a browser, and hand (browser, port) to `run`. Shared by
@@ -344,14 +317,11 @@ async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (brows
   }
 }
 
-// hydrate: fresh page per sample → time the initial hydration commit (window.__hydrateMs).
-// Sampled ROUND-ROBIN across cells (one sample of every cell per round) so a transient load
-// spike spreads across all cells instead of skewing one cell's contiguous block, with a
-// discarded warmup round (r = -1) that populates Chromium's per-URL JS code cache — the
-// counted samples then time a warm-code hydration commit, not a one-shot cold V8 compile
-// (the dominant source of hydrate variance).
+// Time hydration to DOM commit on a ready page. Rotate cases between samples.
+// Page load and two animation frames settle outside the timer in every lane.
 async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("hydrate");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {
@@ -359,7 +329,11 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
         const n = caseMeta[cell.caseId].n;
         const page = await browser.newPage(PAGE_OPTS);
         await applyCpuThrottle(page);
-        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
+        await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&manual=1`, { waitUntil: "load" });
+        await page.evaluate(async () => {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+          window.__hydrate!();
+        });
         await page.waitForFunction(() => window.__hydrateMs !== undefined, null, { timeout: 30_000 });
         const ms = await page.evaluate(() => window.__hydrateMs as number);
         await page.close();
@@ -370,33 +344,37 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
   });
 }
 
-// inp: hydrate once per cell, then re-render the mounted workload in place repeatedly,
-// timing click→next-paint (window.__inp). One page load, many samples — warmup discarded.
-async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
+// inp: hydrate once, warm both input states, then time the same i → i + 1 update.
+// Each reset settles outside the timer. __inp ends at the first rAF callback.
+async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, InteractionSamples>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
-    const out: Record<string, number[]> = {};
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
+    const out: Record<string, InteractionSamples> = {};
     for (const cell of cells) {
       const n = caseMeta[cell.caseId].n;
       const page = await browser.newPage(PAGE_OPTS);
       await applyCpuThrottle(page);
       await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}`, { waitUntil: "load" });
-      await page.waitForFunction(() => window.__inp !== undefined && window.__hydrateMs !== undefined, null, { timeout: 30_000 });
-      for (let w = 0; w < 3; w++) await page.evaluate(() => window.__inp!()); // warmup, discarded
+      await page.waitForFunction(() => window.__prepareInp !== undefined && window.__inp !== undefined && window.__hydrateMs !== undefined, null, { timeout: 30_000 });
+      const sample = () => page.evaluate(async () => {
+        await window.__prepareInp!();
+        return window.__inp!();
+      });
+      for (let w = 0; w < 3; w++) await sample();
       const samples: number[] = [];
-      for (let s = 0; s < samplesFor("inp"); s++) samples.push(await page.evaluate(() => window.__inp!()));
+      for (let s = 0; s < samplesFor("inp"); s++) samples.push(await sample());
       await page.close();
-      out[`${cell.caseId}/${tech}`] = samples.map((x) => Math.round(x * 100) / 100);
+      out[`${cell.caseId}/${tech}`] = { protocol: INTERACTION_PROTOCOL, samples: samples.map((x) => Math.round(x * 100) / 100) };
     }
     return out;
   });
 }
 
-// mount: fresh page on a BLANK root, then a from-scratch client render on "click" — time the
-// cold-mount commit (window.__mountMs). Unlike hydrate (which attaches to existing markup),
-// the first paint here includes each runtime lib's first style injection into the document.
-// Round-robin across cells with a discarded warmup round, same as hydrateTech.
+// Mount into an empty root on a ready page and stop at DOM commit, before paint.
+// Each sample uses a fresh page; load and two animation frames stay outside the timer.
 async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
+    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("mount");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {
@@ -406,7 +384,10 @@ async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMet
         await applyCpuThrottle(page);
         await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&mount=1`, { waitUntil: "load" });
         await page.waitForFunction(() => typeof window.__mount === "function", null, { timeout: 30_000 });
-        await page.evaluate(() => window.__mount!());
+        await page.evaluate(async () => {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+          window.__mount!();
+        });
         await page.waitForFunction(() => window.__mountMs !== undefined, null, { timeout: 30_000 });
         const ms = await page.evaluate(() => window.__mountMs as number);
         await page.close();
@@ -447,8 +428,9 @@ function encodeAvif(png: Buffer, dest: string): void {
 }
 
 // ---- screenshots: a rendered preview of each cell (visual parity across lanes) ---
-// Serves the SSR { html, css } (no hydration needed for a static preview) in a headless
-// browser and snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
+// Serves the same assets as timing, with client JavaScript disabled and the fixture's preview
+// shell (?preview=1) laying the bare instances out in a bounded grid, in a headless browser, and
+// snapshots the rendered root → result/assets/<case>__<hash>.avif. Writes a
 // path map (measurement-screenshots.json) the report uses to reference the images from a
 // sibling assets/ folder (§10.6). n is capped so the preview stays readable.
 //
@@ -460,21 +442,14 @@ function encodeAvif(png: Buffer, dest: string): void {
 async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, string[]>> {
   const assetsDir = join(RESULT_DIR, "assets");
   mkdirSync(assetsDir, { recursive: true });
+  const { port, close } = await serveHydrate(tech, ssrMod);
   const browser = await chromium.launch();
   try {
     const out: Record<string, string[]> = {};
-    const page = await browser.newPage({ ...PAGE_OPTS, deviceScaleFactor: 2 }); // crisp images
+    const page = await browser.newPage({ ...PAGE_OPTS, deviceScaleFactor: 2, javaScriptEnabled: false }); // crisp SSR images
     for (const cell of cells) {
       const n = Math.min(caseMeta[cell.caseId].n, 6); // a handful of instances reads better than 1,000
-      const { html, css } = ssrMod.renderCase(cell.caseId, n);
-      // The harness renders n bare instances with no parent layout; left as inline-block
-      // they collapse to min-content (a tall, text-wrapped strip). Lay them out in a bounded
-      // responsive grid so each instance gets a real width and reads like the real page.
-      const doc =
-        `<!doctype html><meta charset=utf-8><style>*{box-sizing:border-box}body{margin:0}` +
-        `#root{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;align-items:start;width:760px;padding:24px;background:#fff}` +
-        `${css}</style><div id="root">${html}</div>`;
-      await page.setContent(doc, { waitUntil: "load" });
+      await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&preview=1`, { waitUntil: "load" });
       const el = await page.$("#root");
       const png = await (el ?? page).screenshot();
       const hash = createHash("sha1").update(png).digest("hex").slice(0, 8);
@@ -486,6 +461,7 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
     return out;
   } finally {
     await browser.close();
+    await close();
   }
 }
 
@@ -524,6 +500,10 @@ async function main() {
     process.exit(1);
   }
   const measurements = requested.filter((m): m is Measurement => ALL_MEASUREMENTS.includes(m as Measurement));
+  if (args.resumeHttp && (measurements.length !== 1 || measurements[0] !== "autocannon" || args.tech || args.case))
+    throw new Error("--resume-http requires --measure=autocannon without --tech or --case");
+  if (measurements.includes("autocannon") && (args.tech || args.case))
+    throw new Error("HTTP publication requires all lanes and cases; run --measure=autocannon without filters");
   const { techs, cases, cells } = discover(args);
   if (!cells.length) {
     console.error("no cells matched (techs/<t>/case/<c>/index.tsx). Check --tech/--case globs.");
@@ -535,8 +515,10 @@ async function main() {
   // run of a given measurement still refreshes that measurement's whole file (every cell
   // it covers is rewritten), so removed cells fall out of the measurements being run.
   mkdirSync(RESULT_DIR, { recursive: true });
+  if (measurements.includes("autocannon") && !args.resumeHttp)
+    writeJsonAtomic(join(RESULT_DIR, "_http-checkpoint.json"), { status: "preparing", cells: {} });
   const unfiltered = !args.tech && !args.case;
-  if (unfiltered) for (const m of measurements) rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
+  if (unfiltered) for (const m of measurements.filter((m) => m !== "autocannon")) rmSync(join(RESULT_DIR, `measurement-${m}.json`), { force: true });
   console.log(`discovered ${cells.length} cell(s) · ${techs.length} tech(s) × ${cases.length} case(s)`);
   if (CPU_THROTTLE > 1) console.log(`⚙ CPU throttle: ${CPU_THROTTLE}× on hydrate/inp/mount (browser wall-clock passes)`);
 
@@ -545,6 +527,8 @@ async function main() {
   for (const c of cases) caseMeta[c] = (await import(pathToFileURL(join(CASES_DIR, `${c}.ts`)).href)).default;
 
   const snapshots: Record<string, Snapshot> = {};
+  const httpJobs: { key: string; modulePath: string; caseId: string; n: number; preflightError?: string }[] = [];
+  const snapshotErrors = new Map<string, string>();
 
   // One isolated build per tech per measurement; reuse it for that tech's cells +
   // (on the first build of a tech) the snapshot triplet.
@@ -555,20 +539,41 @@ async function main() {
     // One isolated build per tech; a broken/in-progress tech is skipped, not fatal.
     let ssrMod: SsrModule;
     try {
-      ssrMod = await buildTech(tech, "microbench");
+      if (args.resumeHttp) {
+        const bundle = join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs");
+        if (!existsSync(bundle)) throw new Error(`Missing SSR bundle for HTTP resume: ${bundle}`);
+        ssrMod = await import(pathToFileURL(bundle).href);
+      } else ssrMod = await buildTech(tech, "microbench");
     } catch (e) {
+      if (measurements.includes("autocannon")) throw e;
       console.error(`  ✗ ${tech}: build failed — skipped (${(e as Error).message.split("\n")[0]})`);
       continue;
     }
     // Snapshots always run, off the microbench build (the SSR { html, css } path).
     for (const cell of techCells) {
-      const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
-      snapshots[`${cell.caseId}/${tech}`] = { files: caseSource(cell.entry), html, css };
+      try {
+        const { html, css } = ssrMod.renderCase(cell.caseId, benchConfig.snapshotN);
+        snapshots[`${cell.caseId}/${tech}`] = { files: caseSource(cell.entry), html, css };
+      } catch (error) {
+        if (!measurements.includes("autocannon")) throw error;
+        const message = `Snapshot failed: ${error instanceof Error ? error.message : String(error)}`;
+        snapshotErrors.set(`${cell.caseId}/${tech}`, message);
+        console.error(`  ${cell.caseId}/${tech}: ${message}`);
+      }
     }
 
     for (const measurement of measurements) {
       const file = join(RESULT_DIR, `measurement-${measurement}.json`);
       const data: Record<string, unknown> = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+      if (measurement === "autocannon") {
+        for (const cell of techCells) httpJobs.push({
+          key: `${cell.caseId}/${tech}`,
+          modulePath: join(TECHS_DIR, tech, "dist", "microbench", "entry.mjs"),
+          caseId: cell.caseId, n: caseMeta[cell.caseId].n,
+          preflightError: snapshotErrors.get(`${cell.caseId}/${tech}`),
+        });
+        continue;
+      }
       // buildtime is a per-LANE pass (one build compiles every workload), so it writes one
       // record keyed by the tech name rather than per cell.
       if (measurement === "buildtime") {
@@ -604,7 +609,6 @@ async function main() {
         if (measurement === "microbench") data[key] = microbench(htmlOf(mod), cell.caseId, n);
         else if (measurement === "payload") data[key] = payload(mod, cell.caseId, n, await payloadJsBytes(tech));
         else if (measurement === "nsweep") data[key] = nsweepSample(mod, cell.caseId);
-        else if (measurement === "autocannon") data[key] = await autocannonSample(mod, cell.caseId, n);
       }
       writeFileSync(file, JSON.stringify(data, null, 0) + "\n");
       console.log(`  ${tech} · ${measurement}: ${techCells.length} cell(s)`);
@@ -625,6 +629,16 @@ async function main() {
   // host describes the hardware, not the machine's network name (the report publishes it).
   const meta: RunMeta = { host: `${os.cpus()[0]?.model ?? "unknown"} (${os.arch()})`, node: process.version, timestamp: new Date().toISOString(), gitSha, techs: allTechs, cases: allCases, snapshotN: benchConfig.snapshotN };
   writeFileSync(join(RESULT_DIR, "meta.json"), JSON.stringify(meta, null, 2) + "\n");
+  if (httpJobs.length) {
+    console.log(`HTTP: ${httpJobs.length} cells × ${benchConfig.autocannon.rounds} shuffled blocks; separate server and load processes`);
+    await runHttpPass(httpJobs, benchConfig.autocannon, {
+      resultDir: RESULT_DIR, resume: Boolean(args.resumeHttp),
+      onCell: (key: string, cell: { rounds: { block: number; result?: { requests: { average: number } }; error?: string }[] }) => {
+        const round = cell.rounds.at(-1);
+        if (round) console.log(`  ${key} · HTTP block ${round.block}: ${round.error ?? `${Math.round(round.result!.requests.average)} req/s`}`);
+      },
+    });
+  }
   console.log(`✓ wrote result/ — ${Object.keys(snapshots).length} snapshot(s), measurements: ${measurements.join(", ")}`);
 
   // Parity gate: prove every lane STILL renders identically (same DOM, clean attributes,

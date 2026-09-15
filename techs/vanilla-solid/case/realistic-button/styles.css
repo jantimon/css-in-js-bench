@@ -1,0 +1,82 @@
+/* Author-written CSS for the DenseButton — the ceiling every lane compiles toward.
+   Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR entry
+   imports it ?raw. This is a flat-class translation of the SAME styled-components/emotion/
+   goober template (base + responsive flip + :active + WCAG ::before tap target + the two
+   variants + :disabled + the icon container), so the rendered pixels match those lanes. */
+.db-btn {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  display: flex;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  padding: 7px 15px;
+  position: relative;
+}
+@media (min-width: 992px) {
+  .db-btn {
+    font-size: 14px;
+    line-height: 20px;
+    padding: 1px 11px;
+    display: inline-flex;
+    width: auto;
+  }
+}
+.db-btn:active:not(:disabled) {
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.16), 0px 2px 4px rgba(0, 0, 0, 0.08);
+}
+.db-btn::before {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  translate: -50% -50%;
+  width: 100%;
+  height: 100%;
+  min-width: 24px;
+  min-height: 24px;
+}
+.db-btn--primary,
+.db-btn--primary:link,
+.db-btn--primary:visited {
+  color: #fff;
+  background-color: #444;
+}
+.db-btn--primary:hover:not(:active, :disabled),
+.db-btn--primary:focus-visible:not(:active, :disabled) {
+  background-color: #000;
+}
+.db-btn--standard,
+.db-btn--standard:link,
+.db-btn--standard:visited {
+  color: #000;
+  background-color: #eee;
+}
+.db-btn--standard:hover:not(:active, :disabled),
+.db-btn--standard:focus-visible:not(:active, :disabled) {
+  background-color: #ddd;
+}
+.db-btn:disabled {
+  color: rgba(0, 0, 0, 0.4);
+  background-color: transparent;
+  border-color: rgba(0, 0, 0, 0.1);
+  cursor: default;
+}
+.db-btn__icon {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  margin-right: 12px;
+}
+@media (min-width: 992px) {
+  .db-btn__icon {
+    min-height: 20px;
+  }
+}

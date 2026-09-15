@@ -5,7 +5,7 @@
 // layout / controls / text. Panda's css() runs at render regardless of file layout, so the split costs it nothing.
 // @ts-nocheck
 import React, { type FunctionComponent } from "react";
-import { cx } from "styled-system/css";
+import { css } from "styled-system/css";
 import { buttonBase } from "./button";
 import { srOnly, minTargetSize, focusRing } from "./tokens";
 import { grid, card, imageWrap, imagePlaceholder } from "./layout";
@@ -27,7 +27,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <div className={imageWrap}>
       <div aria-hidden="true" className={imagePlaceholder} />
       {p.discount > 0 && (
-        <span className={cx(badge, p.discount >= 30 && badgeHigh)}>
+        <span className={css(badge, p.discount >= 30 && badgeHigh)}>
           <span className={srOnly}>Reduced by </span>-{p.discount}%
         </span>
       )}
@@ -35,7 +35,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
         type="button"
         aria-pressed={p.wishlisted}
         aria-label={p.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className={cx(buttonBase, wishlist, focusRing, minTargetSize, p.wishlisted && wishlistOn)}
+        className={css(buttonBase, wishlist, focusRing, minTargetSize, p.wishlisted && wishlistOn)}
       >
         <span aria-hidden="true">♥</span>
       </button>
@@ -61,7 +61,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <button
       disabled={!p.inStock}
       aria-label={p.inStock ? `Add ${p.title} to cart` : `${p.title} is sold out`}
-      className={cx(buttonBase, addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
+      className={css(buttonBase, addToCart, focusRing, minTargetSize, !p.inStock && addToCartDisabled)}
     >
       {p.inStock ? "Add to cart" : "Sold out"}
     </button>

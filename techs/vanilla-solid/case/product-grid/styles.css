@@ -1,0 +1,245 @@
+/* Author-written CSS for the product grid — the ceiling every lane compiles
+   toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla
+   SSR entry imports it ?raw. Mirrors what next-yak/styled extract: a responsive
+   grid, hover guarded behind (hover: hover), :focus-visible rings, WCAG
+   min-target-size ::before pseudo-elements, reduced-motion handling, a per-tile
+   container query and proper a11y semantics. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .pgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 992px) {
+  .pgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+.pcard {
+  display: flex;
+  flex-direction: column;
+  /* Each tile is its own query container, so its children adapt to the column
+     width they land in — not the viewport. */
+  container-type: inline-size;
+  container-name: tile;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  transition: box-shadow 0.15s ease;
+}
+@media (hover: hover) {
+  .pcard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcard {
+    transition: none;
+  }
+}
+.pimg {
+  position: relative;
+  aspect-ratio: 1;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.pimg-ph {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+.pbadge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #f59e0b;
+}
+.pbadge-high {
+  background: #dc2626;
+}
+.pwish {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
+  color: #9ca3af;
+  transition: color 0.15s ease;
+}
+@media (hover: hover) {
+  .pwish:hover {
+    color: #ef4444;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pwish {
+    transition: none;
+  }
+}
+.pwish:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.pwish::before {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  translate: -50% -50%;
+  width: 100%;
+  height: 100%;
+}
+@media (hover: none) and (pointer: coarse) {
+  .pwish::before {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .pwish::before {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+.pwish-on {
+  color: #ef4444;
+}
+.ptitle {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 992px) {
+  .ptitle {
+    font-size: 15px;
+  }
+}
+/* Wider columns get a slightly larger title. */
+@container tile (min-width: 240px) {
+  .ptitle {
+    font-size: 16px;
+  }
+}
+.prating {
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.prating-fill {
+  height: 100%;
+  background: #fbbf24;
+  width: var(--pct);
+}
+.pprice {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+/* Roomier price row in wide columns. */
+@container tile (min-width: 240px) {
+  .pprice {
+    gap: 10px;
+  }
+}
+.pprice-old {
+  font-size: 12px;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+.pprice-now {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+.pcart {
+  margin-top: auto;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+@media (hover: hover) {
+  .pcart:hover:not(:disabled) {
+    background: #1d4ed8;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcart {
+    transition: none;
+  }
+}
+@media (min-width: 992px) {
+  .pcart {
+    padding: 9px 12px;
+  }
+}
+.pcart:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.pcart::before {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  translate: -50% -50%;
+  width: 100%;
+  height: 100%;
+}
+@media (hover: none) and (pointer: coarse) {
+  .pcart::before {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .pcart::before {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+.pcart-disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}

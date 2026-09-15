@@ -9,7 +9,7 @@ import { css, cx } from "styled-system/css";
 // ::before WCAG 40px min-target, hidden-scrollbar overflow, and a composed
 // FullWidthTabs wrapper. Every class is produced by Panda's `css({...})` (object
 // syntax, statically analyzable so `panda cssgen` can scan this file); active-vs-
-// inactive is expressed by choosing between static css() objects at the call site.
+// inactive styles merge as raw objects before css() creates the atomic classes.
 
 // --- style objects (mirror the yak template's css blocks verbatim) ----------
 
@@ -25,7 +25,7 @@ const copyTypography = {
   },
 } as const;
 
-const normalTabStyle = css({
+const normalTabStyle = css.raw({
   position: "relative",
   display: "inline-flex",
   alignItems: "center",
@@ -56,7 +56,7 @@ const normalTabStyle = css({
   },
 });
 
-const activeTabStyle = css({
+const activeTabStyle = css.raw({
   color: "#000",
 
   "@supports (anchor-name: --test)": {
@@ -73,7 +73,7 @@ const activeTabStyle = css({
   },
 });
 
-const hoverDisabledTabStyle = css({
+const hoverDisabledTabStyle = css.raw({
   "&:hover:not(:disabled)": {
     color: "#000",
     _after: {
@@ -86,7 +86,7 @@ const hoverDisabledTabStyle = css({
   },
 });
 
-const focusVisibleTabStyle = css({
+const focusVisibleTabStyle = css.raw({
   _focusVisible: {
     outline: "none",
     "&&::after": {
@@ -95,7 +95,7 @@ const focusVisibleTabStyle = css({
   },
 });
 
-const tabBaseStyle = css({
+const tabBaseStyle = css.raw({
   borderStyle: "none",
 });
 
@@ -131,7 +131,7 @@ const Tab = ({ isActive, ...props }: ITabProps) => (
   <TabInternal
     {...props}
     isActive={isActive}
-    className={cx(
+    className={css(
       tabBaseStyle,
       normalTabStyle,
       focusVisibleTabStyle,

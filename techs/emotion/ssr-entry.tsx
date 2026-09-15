@@ -9,20 +9,22 @@ import { renderToString } from "react-dom/server";
 import createCache from "@emotion/cache";
 import createEmotionServer from "@emotion/server/create-instance";
 import { CacheProvider } from "@emotion/react";
-import type { RenderCase } from "../../report/types";
+import type { RenderCase, RenderResult } from "../../report/types";
+import { cacheKey } from "./cache-key";
 
 const renders = import.meta.glob<{ default: RenderCase }>("./case/*/index.tsx", { eager: true });
 
-export function renderCase(caseId: string, n: number): { html: string; css: string } {
+export function renderCase(caseId: string, n: number): RenderResult {
   const mod = renders[`./case/${caseId}/index.tsx`];
   if (!mod) throw new Error(`emotion: no case/${caseId}/index.tsx`);
   const render = mod.default;
-  const cache = createCache({ key: "e" });
+  const cache = createCache({ key: cacheKey });
   const server = createEmotionServer(cache);
   const children = Array.from({ length: n }, (_, i) => React.createElement(React.Fragment, { key: i }, render(i)));
   const html = renderToString(
     React.createElement(CacheProvider, { value: cache }, React.createElement(React.Fragment, null, children)),
   );
-  const css = server.extractCriticalToChunks(html).styles.map((s) => s.css).join("").trim();
-  return { html, css };
+  const chunks = server.extractCriticalToChunks(html);
+  const css = chunks.styles.map((s) => s.css).join("").trim();
+  return { html, css, head: server.constructStyleTagsFromChunks(chunks) };
 }

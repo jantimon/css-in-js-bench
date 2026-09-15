@@ -27,9 +27,9 @@ export const title = css({
   "@media (min-width: 992px)": {
     fontSize: "15px",
   },
-  // Wider columns get a slightly larger title.
+  // The container rule takes priority over the viewport title size.
   "@container tile (min-width: 240px)": {
-    fontSize: "16px",
+    "&&": { fontSize: "16px" },
   },
 });
 

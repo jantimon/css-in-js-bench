@@ -23,7 +23,7 @@ export interface WpdLaneRun {
 }
 
 export interface WpdManifest {
-  schemaVersion: 1;
+  schemaVersion: 2;
   runId: string;
   complete: boolean;
   expectedCells: number;
@@ -56,7 +56,7 @@ const sameKeys = (expected: string[], actual: string[]) =>
 export function validateWpdResults(resultDir: string, options: { finalize?: boolean } = {}): WpdManifest {
   const manifestFile = join(resultDir, WPD_MANIFEST);
   const manifest = readRequired<WpdManifest>(manifestFile);
-  if (manifest.schemaVersion !== 1) throw new Error(`WPD manifest schema must be 1, got ${String(manifest.schemaVersion)}`);
+  if (manifest.schemaVersion !== 2) throw new Error(`WPD manifest schema must be 2, got ${String(manifest.schemaVersion)}; run pnpm gen:wpd`);
   if (!options.finalize && manifest.complete !== true) throw new Error("WPD results incomplete: manifest is not complete");
   if (options.finalize && manifest.complete !== false) throw new Error("WPD finalization requires an incomplete manifest");
 

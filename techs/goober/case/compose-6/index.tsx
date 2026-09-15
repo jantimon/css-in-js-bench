@@ -19,8 +19,6 @@ const L2 = styled(L1)`border-left:2px solid hsl(106 70% 50%);padding-left:4px;`;
 const L3 = styled(L2)`border-left:3px solid hsl(159 70% 50%);padding-left:6px;`;
 const L4 = styled(L3)`border-left:4px solid hsl(212 70% 50%);padding-left:8px;`;
 const L5 = styled(L4)`border-left:5px solid hsl(265 70% 50%);padding-left:10px;`;
-const ComposedButton = L5;
-
 export default (i: number) => {
-  return <ComposedButton>{i}</ComposedButton>;
+  return <L5>{i}</L5>;
 };
