@@ -5,7 +5,7 @@ import React from "react";
 // the plain-language explanation of what the chart measures.
 export function InfoTip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="info" tabIndex={0}>
+    <span className="info" tabIndex={0} data-screen-only>
       i<span className="tip">{children}</span>
     </span>
   );
