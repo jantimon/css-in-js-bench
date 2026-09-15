@@ -15,6 +15,7 @@ export function logoFor(tech: string): string | null {
   if (tech === "goober") return "assets/logos/goober.avif";
   if (tech === "vanilla" || tech === "vanilla-solid") return "assets/logos/vanilla.avif";
   if (tech === "styled-components") return "assets/logos/styled-components.avif";
+  if (tech === "plumeria") return "assets/logos/plumeria.avif";
   return null;
 }
 
@@ -36,6 +37,8 @@ export const TECH_ALIASES: Record<string, string> = {
   Panda: "panda",
   bamboo: "bamboo",
   Bamboo: "bamboo",
+  plumeria: "plumeria",
+  Plumeria: "plumeria",
   vanilla: "vanilla",
   "@yak/solid": "yak-solid",
   "vanilla-solid": "vanilla-solid",
