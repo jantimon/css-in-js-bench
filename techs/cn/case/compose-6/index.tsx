@@ -12,6 +12,4 @@ const L2 = ({ className, children }: { className?: string; children?: React.Reac
 const L3 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <L2 className={cn("[border-left:3px_solid_hsl(159_70%_50%)] [padding-left:6px]", className)}>{children}</L2>;
 const L4 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <L3 className={cn("[border-left:4px_solid_hsl(212_70%_50%)] [padding-left:8px]", className)}>{children}</L3>;
 const L5 = ({ className, children }: { className?: string; children?: React.ReactNode }) => <L4 className={cn("[border-left:5px_solid_hsl(265_70%_50%)] [padding-left:10px]", className)}>{children}</L4>;
-const ComposedButton = L5;
-
-export default (i: number) => <ComposedButton>{i}</ComposedButton>;
+export default (i: number) => <L5>{i}</L5>;

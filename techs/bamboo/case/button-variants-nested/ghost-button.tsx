@@ -3,10 +3,13 @@ import React from "react";
 import { css, cx } from "styled-system/css";
 import { Button } from "./button";
 
+// Selector specificity gives each wrapper priority over the style it extends.
 const ghost = css({
-  background: "transparent",
-  borderColor: "#d1d5db",
-  color: "#374151",
+  "&&": {
+    background: "transparent",
+    borderColor: "#d1d5db",
+    color: "#374151",
+  },
 });
 
 export const GhostButton = ({ className, children }: { className?: string; children?: React.ReactNode }) => (

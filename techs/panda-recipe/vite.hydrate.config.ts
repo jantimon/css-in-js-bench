@@ -1,6 +1,7 @@
 // Hydrate (browser) build for the Panda lanes — same panda codegen buildStart +
 // styled-system alias as the microbench build (so the client's atomic classes match the
 // SSR markup), browser target over client-entry.tsx.
+import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { execFileSync } from "node:child_process";
@@ -23,11 +24,12 @@ const pandaCodegen = (): Plugin => ({
 
 export default defineConfig({
   root: here,
-  plugins: [pandaCodegen(), react()],
+  plugins: [browserStyles(here, "panda"), pandaCodegen(), react()],
   define: { "process.env.NODE_ENV": '"production"' },
   resolve: { alias: { "styled-system": resolve(here, "styled-system") } },
   build: {
     outDir: "dist/hydrate",
+    manifest: true,
     emptyOutDir: true,
     sourcemap: false,
     minify: "esbuild",

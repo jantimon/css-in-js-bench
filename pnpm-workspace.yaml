@@ -22,7 +22,7 @@ minimumReleaseAge: 0
 
 # Shared dev deps the lanes reference as `catalog:dev`. Library-specific deps
 # (styled-components, @emotion/*, goober, @stylexjs/stylex, @pandacss/dev,
-# tailwind-merge, cnfast) are pinned per-lane in each tech's package.json so each
+# tailwind-merge) are pinned per-lane in each tech's package.json so each
 # lane owns its own versions explicitly.
 catalogs:
   dev:

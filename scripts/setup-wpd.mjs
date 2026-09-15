@@ -9,13 +9,13 @@
 // Then: pnpm gen:wpd  (resolves vendor/wpd/node_modules/.bin/wpd; the WPD lanes require this
 // vendor tree to exist). Needs Node 24+ (wpd requirement).
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WPD_DIR = join(ROOT, "vendor", "wpd");
-const WPD_VERSION = process.env.WPD_VERSION || "0.15.1";
+const WPD_VERSION = process.env.WPD_VERSION || JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).devDependencies["@jantimon/web-performance-debugger"];
 const force = process.argv.includes("--force");
 
 const major = Number(process.versions.node.split(".")[0]);
@@ -25,8 +25,10 @@ if (major < 24) {
 }
 
 const bin = join(WPD_DIR, "node_modules", ".bin", "wpd");
-if (existsSync(bin) && !force) {
-  console.log(`vendor/wpd already installed (${bin}). Use --force to reinstall.`);
+const installedPackage = join(WPD_DIR, "node_modules", "@jantimon", "web-performance-debugger", "package.json");
+const installedVersion = existsSync(installedPackage) ? JSON.parse(readFileSync(installedPackage, "utf8")).version : null;
+if (existsSync(bin) && installedVersion === WPD_VERSION && !force) {
+  console.log(`vendor/wpd ${installedVersion} already installed (${bin}). Use --force to reinstall.`);
   process.exit(0);
 }
 
@@ -44,6 +46,7 @@ execSync("npm install --silent --no-audit --no-fund", { cwd: WPD_DIR, stdio: "in
 // `puppeteer browsers install` uses THIS folder's puppeteer version, so the Firefox build
 // matches what wpd demands — a globally-installed puppeteer may pin a different version).
 console.log("installing Chrome + Firefox for wpd's Puppeteer …");
-execSync("npx --yes puppeteer browsers install chrome firefox", { cwd: WPD_DIR, stdio: "inherit" });
+for (const browser of ["chrome", "firefox"])
+  execSync(`npx --yes puppeteer browsers install ${browser}`, { cwd: WPD_DIR, stdio: "inherit" });
 
 console.log("\n✓ vendor/wpd ready. Now: pnpm gen:wpd && pnpm report");

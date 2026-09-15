@@ -3,9 +3,7 @@
 // the @supports-gated anchor-positioned underline, the ::after fallback underline, the
 // ::before WCAG target, the hidden scrollbar and the full-width composition — becomes a
 // prefixed utility resolved on EVERY render (next-yak did it all at build time).
-// Default-exports a single-instance render(i) (§6); the harness loops it. Class
-// strings, sub-components, helpers and the per-group data formula are verbatim from the
-// cnfast lane.
+// Default-exports a single-instance render(i) (§6); the harness loops it.
 import React, { type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "cn";
 
@@ -13,7 +11,7 @@ const TAB_BASE =
   "relative inline-flex items-center cursor-pointer bg-transparent border-none h-[40px] " +
   "text-[16px] leading-[24px] tracking-[0.01em] font-normal min-[992px]:text-[14px] min-[992px]:leading-[20px] " +
   "text-[rgba(0,0,0,0.6)] " +
-  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-[3px] after:border-solid after:border-b-transparent after:[transition:opacity_150ms_linear] " +
+  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:border-0 after:border-b-[3px] after:border-solid after:border-b-transparent after:[transition:opacity_150ms_linear] " +
   "before:absolute before:content-[''] before:w-full before:min-w-[40px] before:top-0 before:bottom-0 before:h-full " +
   "focus-visible:outline-none focus-visible:after:border-b-[3px] focus-visible:after:border-solid focus-visible:after:border-b-[#007bc7]";
 const TAB_ACTIVE =

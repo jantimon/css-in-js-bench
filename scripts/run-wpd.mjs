@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadavg } from "node:os";
 
@@ -59,7 +59,7 @@ export async function main(argv = process.argv.slice(2)) {
     throw new Error("WPD is required; run `pnpm setup:wpd` first");
   if (full) await waitForIdle();
 
-  const result = join(ROOT, "result");
+  const result = resolve(process.env.WPD_RESULT_DIR ?? join(ROOT, "result"));
   rmSync(join(result, "measurement-wpd-tally.json"), { force: true });
   for (const lane of parsed.lanes) rmSync(join(result, `measurement-wpd-${lane}.json`), { force: true });
   // The blame file rides the mount lane's run group, so clear it whenever mount reruns.

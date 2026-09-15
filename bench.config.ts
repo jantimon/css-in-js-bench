@@ -10,8 +10,8 @@ export default {
   // passes take a fresh page PER sample, so a transient load spike over one cell's
   // contiguous block skews its median — gen samples these ROUND-ROBIN across cells (one
   // sample of every cell per round) AND takes more samples so the median is tight. inp
-  // loads the page once and samples cheaply in place (already stable), so
-  // they only get a small bump, no round-robin.
+  // loads the page once, warms both input states, then repeats i -> i + 1 with stable
+  // instance identities. Reset to i and settling sit outside each interaction timer.
   samples: {
     // microbench is a cheap in-process SSR render (renderToString in node), so a high
     // sample count is nearly free and tightens the median well below single-digit-sample noise.
@@ -25,9 +25,9 @@ export default {
   } as Record<string, number>,
 
   // Heavy measurements (run via `gen --measure=…` on an idle machine).
-  // autocannon: warmupRounds discarded (cold server JIT), then `rounds` measured rounds →
-  // the report takes the median across measured rounds; longer duration stabilises each round.
-  autocannon: { warmupRounds: 1, rounds: 5, durationSec: 8, connections: 10 }, // SSR req/s under load
+  // Each HTTP block starts fresh server/load processes, warms through HTTP, then measures.
+  // A seeded shuffle interleaves cells across blocks; the report takes the median throughput.
+  autocannon: { warmupRounds: 1, rounds: 5, durationSec: 8, connections: 10, seed: 20260907 }, // SSR req/s under load
   nsweep: { ns: [100, 500, 1000, 2000, 4000], iters: 21 }, // render time vs instance count (median of iters)
 
   // The browser viewport for the Playwright passes (hydrate / inp / screenshots) — a
@@ -40,6 +40,7 @@ export default {
   // path; `pnpm gen:wpd` runs the lanes sequentially after `pnpm setup:wpd`.
   // Traced instrumentation is expensive, so a FIXED small `n` (not the case's own n) keeps runs
   // tractable AND the counts comparable across cases (style-recalc count scales with instances).
-  // Only `mount` has real render work — an idempotent inp re-render / SSR-inline hydrate do ~0.
+  // inp changes every instance's input; its inp:frame span includes the update and rendering.
+  // The outer run span includes reset time and must not serve as interaction timing.
   wpd: { n: 50, protocolTimeoutMs: 600_000 },
 };

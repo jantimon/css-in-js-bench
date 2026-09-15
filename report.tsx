@@ -11,7 +11,9 @@ import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { makeHighlighter } from "./report/shiki.ts";
-import { median, percentile, spread } from "./report/stats.ts";
+import { median, spread } from "./report/stats.ts";
+import { interactionTimings, interactionProfiles, hasInteractionProvenance } from "./report/interaction.ts";
+import { httpResults, httpMeasurementNote, assertHttpCheckpointReady } from "./report/http-results.ts";
 import { CASE_PRIORITY } from "./report/priority.ts";
 import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
@@ -70,20 +72,23 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 }
 
 async function main() {
+  assertHttpCheckpointReady(readJson<unknown>(join(RESULT, "_http-checkpoint.json"), undefined));
   const techs = await loadTechs();
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
   const wpdVersion = wpdManifest.wpd.version;
   const micro = readJson<Record<string, number[]>>(join(RESULT, "measurement-microbench.json"), {});
   const pay = readJson<Record<string, { js: number; css: number; html: number }[]>>(join(RESULT, "measurement-payload.json"), {});
-  const acan = readJson<Record<string, number[]>>(join(RESULT, "measurement-autocannon.json"), {});
+  const http = httpResults(readJson<Record<string, unknown>>(join(RESULT, "measurement-autocannon.json"), {}));
+  const acan = http.samples;
+  const httpNote = httpMeasurementNote(http.protocol);
   const wpdSsr = readJson<Record<string, AttributionSample[]>>(join(RESULT, "measurement-wpd-ssr.json"), {});
   const hyd = readJson<Record<string, number[]>>(join(RESULT, "measurement-hydrate.json"), {});
-  const inp = readJson<Record<string, number[]>>(join(RESULT, "measurement-inp.json"), {});
+  const inp = interactionTimings(readJson<Record<string, unknown>>(join(RESULT, "measurement-inp.json"), {}));
   const mount = readJson<Record<string, number[]>>(join(RESULT, "measurement-mount.json"), {});
   const nsweep = readJson<Record<string, NsweepSample[]>>(join(RESULT, "measurement-nsweep.json"), {});
   const wpdHydrate = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-hydrate.json"), {});
-  const wpdInp = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {});
+  const wpdInp = interactionProfiles(readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-inp.json"), {}));
   const wpdMount = readJson<Record<string, WpdBrowserSample[]>>(join(RESULT, "measurement-wpd-mount.json"), {});
   const wpdFirefox = readJson<Record<string, WpdFirefoxSample[]>>(join(RESULT, "measurement-wpd-firefox.json"), {});
   const wpdBlame = readJson<Record<string, WpdBlameSample[]>>(join(RESULT, "measurement-wpd-blame.json"), {});
@@ -92,17 +97,18 @@ async function main() {
   const buildtime = readJson<Record<string, { cold: number[]; warm?: number[] }>>(join(RESULT, "measurement-buildtime.json"), {});
   const snaps = readJson<Record<string, Snapshot>>(join(RESULT, "snapshot.json"), {});
   // LLM-written per-case analyses (result/analysis/<caseId>.json) — optional like any
-  // other result file; validated only by shape (schemaVersion + matching caseId).
+  // other result file; require matching interaction provenance as well as case identity.
   const analysisDir = join(RESULT, "analysis");
   const analyses: Record<string, CaseAnalysis> = {};
   if (existsSync(analysisDir)) {
     for (const f of readdirSync(analysisDir)) {
       if (!f.endsWith(".json")) continue;
       const a = readJson<CaseAnalysis | null>(join(analysisDir, f), null);
-      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "")) analyses[a.caseId] = a;
+      if (a && a.schemaVersion === 1 && a.caseId === f.replace(/\.json$/, "") && hasInteractionProvenance(a)) analyses[a.caseId] = a;
     }
   }
-  const study = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const studyData = readJson<StudyAnalysis | null>(join(analysisDir, "study.json"), null);
+  const study = hasInteractionProvenance(studyData) ? studyData : null;
 
   // Screenshots live in result/assets/; mirror them next to BENCHMARK.html so the
   // self-contained report can reference assets/<…>.avif (§10.6 — single file except images).
@@ -114,6 +120,10 @@ async function main() {
   // resolves both from BENCHMARK.html on disk and inside BENCHMARK.zip.
   const logosSrc = join(ROOT, "report", "logos");
   if (existsSync(logosSrc)) cpSync(logosSrc, join(assetsDst, "logos"), { recursive: true });
+  // The social card (report/social-card.jpg, 1200×630) — mirrored next to the logos so the
+  // absolute og:image URL below resolves on the deployed site. JPEG, not AVIF: link
+  // unfurlers (Twitter, Discord, Slack) only fetch PNG/JPEG cards.
+  cpSync(join(ROOT, "report", "social-card.jpg"), join(assetsDst, "social-card.jpg"));
   const baseMeta = readJson<RunMeta | null>(join(RESULT, "meta.json"), null);
   const meta: RunMeta = {
     ...(baseMeta ?? { techs: [], cases: [] }),
@@ -134,7 +144,7 @@ async function main() {
     .sort((a, b) => (CASE_PRIORITY[b] ?? 0) - (CASE_PRIORITY[a] ?? 0) || a.localeCompare(b));
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
-  const techGroups = groupTechs(usedTechs);
+  const techGroups = groupTechs(usedTechs, (t) => techs[t].bench.framework ?? "react");
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
@@ -196,7 +206,7 @@ async function main() {
         const xs = hyd[`${caseId}/${t}`];
         return { tech: t, label: techs[t].label, color: techs[t].bench.color, value: median(xs), spread: spread(xs) };
       });
-    // inp: click→next-paint of an in-place re-render (ms, lower better) — optional/heavy.
+    // inp: warm input change through the first rAF callback (ms, lower better).
     const inpBars: Bar[] = usedTechs
       .filter((t) => inp[`${caseId}/${t}`]?.length)
       .map((t) => {
@@ -215,12 +225,9 @@ async function main() {
       .map((t) => {
         const sample = data[`${caseId}/${t}`][0];
         const timing = sample.timing;
-        const timingMedian = timing.stats?.medianMs ?? (timing.perIteration.length ? median(timing.perIteration) : undefined);
-        const iters = timing.perIteration;
         return {
-          tech: t, label: techs[t].label, span: sample.span!, medianMs: timingMedian,
-          p75Ms: iters.length >= 4 ? percentile(iters, 0.75) : undefined,
-          p95Ms: iters.length >= 4 ? percentile(iters, 0.95) : undefined,
+          tech: t, label: techs[t].label, span: sample.span!, timing,
+          medianMs: timing?.stats?.medianMs,
         };
       });
     const hydWpdRows = wpdRows(wpdHydrate);
@@ -287,6 +294,17 @@ async function main() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://jantimon.github.io/css-in-js-bench/" />
+        <meta property="og:image" content="https://jantimon.github.io/css-in-js-bench/assets/social-card.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="CSS-in-JS Bench: a product-grid preview beside a blurred SSR render throughput chart" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="CSS-in-JS benchmarks" />
+        <meta
+          name="twitter:description"
+          content="styled-components, Emotion, Goober, next-yak, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
+        />
+        <meta name="twitter:image" content="https://jantimon.github.io/css-in-js-bench/assets/social-card.jpg" />
         <link rel="canonical" href="https://jantimon.github.io/css-in-js-bench/" />
         <style dangerouslySetInnerHTML={{ __html: CSS }} />
       </head>
@@ -311,8 +329,8 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                One set of React components, built {usedTechs.length} different ways and measured head-to-head on identical
-                workloads — so the numbers compare by construction, not by claim.
+                One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
+                version renders the same pixels, so the numbers compare by construction, not by claim.
               </p>
               <div className="head-stats">
                 <span>
@@ -321,68 +339,131 @@ async function main() {
                 <span>
                   <b>{caseIds.length}</b> {caseIds.length === 1 ? "workload" : "workloads"}
                 </span>
-                <span>production React · median of repeated runs</span>
+                <span>production builds · median of repeated runs</span>
               </div>
             </div>
           </div>
         </header>
 
-        <nav className="measure-nav" aria-label="Report measurements">
-          <div className="measure-inner">
-            <div className="show">
-              <span className="show-label">Show</span>
-              <div className="show-pills">
-                {[
-                  ["code", "Source + preview"],
-                  ["microbench", "Throughput"],
-                  ["autocannon", "Load req/s"],
-                  ["attribution", "CPU split"],
-                  ["hydrate", "Hydration"],
-                  ["inp", "Interaction"],
-                  ["mount", "Cold mount"],
-                  ["render-timing", "Paint/Layout"],
-                  ["payload", "Page bytes"],
-                  ["nsweep", "Scaling"],
-                  ["buildtime", "Build time"],
-                ].map(([k, label]) => (
-                  <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </nav>
+
 
         <main className="wrap">
-          <section className="tech-panel">
-            <div className="tp-head">
-              <div className="tp-title">
-                Technologies <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
-              </div>
-              <div className="tp-actions">
-                <button type="button" data-tech-all>
-                  All
+          {/* Contents index. The rail is absolute, so it takes no room in the flow and the
+              filter panel stays where it is; the nav inside is sticky, so it rides along and
+              stops at the end of the measure. Hidden below the width where the gutter exists
+              (see the .toc-rail media query). The controller marks the active entry from an
+              IntersectionObserver, so it tracks scrolling too. */}
+          <div className="toc-rail" data-screen-only>
+            <nav className="toc" aria-label="Report sections">
+              <span className="toc-title">Contents</span>
+              <ol>
+                <li>
+                  <a href="#filters" data-toc="filters">Filters</a>
+                </li>
+                {study ? (
+                  <li>
+                    <a href="#key-findings" data-toc="key-findings">Key findings</a>
+                  </li>
+                ) : null}
+                {sections.map(({ caseId, cm }) => {
+                  const [title, sub] = cm.label.split(/\s+—\s+/, 2);
+                  return (
+                    <li key={caseId}>
+                      <a href={`#${caseId}`} data-toc={caseId} title={cm.label}>
+                        {title}
+                        {sub ? <span className="toc-sub">{sub}</span> : null}
+                      </a>
+                    </li>
+                  );
+                })}
+                {buildRows.length ? (
+                  <li>
+                    <a href="#buildtime" data-toc="buildtime">Build time</a>
+                  </li>
+                ) : null}
+                <li>
+                  <a href="#how-measured" data-toc="how-measured">How this was measured</a>
+                </li>
+              </ol>
+            </nav>
+          </div>
+          <section className="filter-panel" id="filters" data-screen-only>
+            <div className="fp-block fp-toggle">
+              <span className="fp-sub-title">Show source and preview</span>
+              <div className="seg" role="group" aria-label="Show source and preview">
+                <button type="button" className="seg-btn active" data-code-toggle="1" aria-pressed="true">
+                  Yes
                 </button>
-                <span className="tp-sep">·</span>
-                <button type="button" data-tech-none>
-                  None
+                <button type="button" className="seg-btn" data-code-toggle="0" aria-pressed="false">
+                  No
                 </button>
               </div>
             </div>
-            {techGroups.map((g) => (
-              <div className="tp-row" key={g.group}>
-                <span className="tp-group">{g.group}</span>
-                <div className="tp-pills">
-                  {g.items.map((it) => (
-                    <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
-                      <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
-                      <TechLabel tech={it.tech} label={it.short} />
-                    </button>
-                  ))}
-                </div>
+            <div className="fp-block">
+              <div className="fp-sub">
+                <span className="fp-sub-title">Technologies</span>
+                <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
+                <span className="tp-actions">
+                  <button type="button" data-tech-all>
+                    All
+                  </button>
+                  <span className="tp-sep">·</span>
+                  <button type="button" data-tech-none>
+                    None
+                  </button>
+                </span>
               </div>
-            ))}
+              {techGroups.map((g) => (
+                <div className="tp-row" key={g.group}>
+                  <button type="button" className="tp-group active" data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
+                  <div className="tp-engines">
+                    {g.rows.map((row) => (
+                      <div className="tp-engine-row" key={row.engine}>
+                        <button type="button" className="tp-engine active" data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
+                          <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" />
+                          {row.label}
+                        </button>
+                        <div className="tp-pills">
+                          {row.items.map((it) => (
+                            <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                              <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
+                              <TechLabel tech={it.tech} label={it.short} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="fp-block">
+              <div className="fp-sub">
+                <span className="fp-sub-title">Benchmarks</span>
+                <span className="tp-count"><span data-measure-count>{MEASURE_COUNT}</span> / {MEASURE_COUNT} shown</span>
+                <span className="tp-actions">
+                  <button type="button" data-measure-all>
+                    All
+                  </button>
+                  <span className="tp-sep">·</span>
+                  <button type="button" data-measure-none>
+                    None
+                  </button>
+                </span>
+              </div>
+              {MEASURE_GROUPS.map((g) => (
+                <div className="tp-row" key={g.group}>
+                  <span className="tp-group">{g.group}</span>
+                  <div className="tp-pills">
+                    {g.items.map(([k, label]) => (
+                      <button type="button" className="show-pill active" data-measure-filter={k} aria-pressed="true" key={k}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           {study ? <StudyFindings study={study} techs={techs} runSha={meta.gitSha} caseIds={caseIds} /> : null}
@@ -399,18 +480,20 @@ async function main() {
               </summary>
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
-            <div data-measure="code">
-              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview</h3>
+            <div data-measure="code" data-screen-only>
+              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
               <Editor caseId={caseId} lanes={editorLanes} />
             </div>
             <div data-measure="microbench">
               <h3 className="chart-title">
                 SSR render throughput — renders / sec · higher is better
                 <InfoTip>
-                  How many times per second this lane renders the whole workload to an HTML string in Node
-                  (<code>renderToString</code>), timing the production render only — any build-time CSS collection (a Tailwind
-                  JIT, a Panda sheet slice) is excluded. Higher is better.
+                  Uses a microbenchmark to measure how fast Node turns components into an HTML string after warmup.
+                  Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
+                  Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
+                  Higher is better.
                 </InfoTip>
+                <HideMeasure k="microbench" />
               </h3>
               <BarChart bars={bars} unit="r/s" higherBetter />
             </div>
@@ -419,11 +502,16 @@ async function main() {
                 <h3 className="chart-title">
                   SSR throughput under load — requests / sec · higher is better
                   <InfoTip>
-                    Requests/sec the lane sustains under concurrent HTTP load (autocannon) serving the SSR render end-to-end —
-                    a more realistic server measure than the in-process microbench. Higher is better.
+                    Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
+                    rendering the whole workload into an HTML fragment, and transferring and receiving the response.
+                    Clients keep concurrent connections open. Each request renders the full workload, so a workload
+                    of 400 product tiles counts as one request. Excludes build time, browser rendering and external
+                    network latency. Higher is better.
                   </InfoTip>
+                  <HideMeasure k="autocannon" />
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
+                <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
@@ -431,10 +519,12 @@ async function main() {
                 <h3 className="chart-title">
                   Where the SSR render time goes — Node CPU profile · median ms / render
                   <InfoTip>
-                    The median server <code>renderToString()</code>, split by CPU self-time from a sampled V8 profile mapped
-                    through source maps (recorded with <code>web-performance-debugger</code> {wpdVersion}): <b>react-dom</b> (the floor every lane shares), the <b>styling library</b>'s runtime,
-                    and <b>your component</b>. <b>other</b> is GC / unattributed native work.
+                    One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
+                    and <b>your components</b>. Framework work can differ when a lane removes component calls.
+                    <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
+                    (<code>web-performance-debugger</code> {wpdVersion}).
                   </InfoTip>
+                  <HideMeasure k="attribution" />
                 </h3>
                 <AttributionChart rows={attrRows} />
               </div>
@@ -444,11 +534,13 @@ async function main() {
                 <h3 className="chart-title">
                   Client hydration — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Time for React to <b>hydrate</b> the server HTML in the browser — attach event handlers and build the
-                    fiber tree over the existing DOM (it does not re-create markup). The first chart is the existing repeated
-                    end-to-end timing; the profiled chart then splits one instrumented commit into JS, style, layout, paint,
-                    GC, browser work and idle (recorded with <code>web-performance-debugger</code> {wpdVersion}). Lower is better.
+                    The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
+                    state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
+                    and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
+                    profiles a span through the next frame and shows JavaScript, style, layout and paint
+                    (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
+                  <HideMeasure k="hydrate" />
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={hydWpdRows} wpdVersion={wpdVersion} />
@@ -457,14 +549,15 @@ async function main() {
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction re-render — repeated timing + Chrome-profiled span anatomy
+                  Interaction update — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    A state change triggers a <b>synchronous re-render</b> (<code>flushSync</code>) of the whole mounted
-                    workload, then we wait for the next paint — click→paint latency. The profile separates active work from the
-                    frame-alignment idle that used to dominate this number. This
-                    is where <b>runtime</b> CSS-in-JS libraries re-run their per-element styling on every update; build-time
-                    lanes (next-yak / Panda / Tailwind / vanilla) do almost none. Lower is better.
+                    Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
+                    React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
+                    is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
+                    to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
+                    Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
                   </InfoTip>
+                  <HideMeasure k="inp" />
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={inpWpdRows} wpdVersion={wpdVersion} />
@@ -475,12 +568,12 @@ async function main() {
                 <h3 className="chart-title">
                   Cold mount — repeated timing + Chrome-profiled span anatomy
                   <InfoTip>
-                    Starting from a <b>blank root</b> (no SSR markup), a "click" renders the whole workload from scratch
-                    (<code>createRoot().render()</code>), then we wait for the first paint. Unlike hydration — which attaches to
-                    existing server HTML — this is a cold client mount, so the first paint includes each <b>runtime</b>
-                    library's <b>first style injection</b> into the document. The profiled span shows how much of the
-                    commit is JS, style, layout, paint, GC, browser work and idle. Lower is better.
+                    The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
+                    before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
+                    during that work. The separate profiled span includes the next frame's rendering work.
+                    Lower is better.
                   </InfoTip>
+                  <HideMeasure k="mount" />
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={mountWpdRows} wpdVersion={wpdVersion} />
@@ -491,15 +584,14 @@ async function main() {
                 <h3 className="chart-title">
                   Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
                   <InfoTip>
-                    Where the browser's <b>rendering</b> time goes on a cold mount (not JS — the engine's own style-recalc,
-                    layout and paint), profiled with <a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a> in
-                    two engines. This is where <b>runtime</b> CSS-in-JS pays a tax build-time lanes don't: it injects a style
-                    rule per instance, so the engine recalculates styles once per instance — <b>Chrome</b>'s authoritative
-                    signal is that <b>style-recalc count</b> (the badge; e.g. 50 instances → ~50 recalcs vs 1 for extracted
-                    CSS). <b>Firefox</b> (Gecko) reports sampled style/layout time; a zero sampled slice is not proof of no
-                    work, so its exact counts are retained as diagnostics but the chart never treats zero as absence.
-                    Bars are ms; compare within an engine. Lower is better. Generated via <code>pnpm setup:wpd</code> + <code>pnpm gen:wpd</code>.
+                    The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
+                    where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
+                    instance, so the engine recalculates styles once per instance instead of once for the page.
+                    <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
+                    milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
+                    engine. Lower is better.
                   </InfoTip>
+                  <HideMeasure k="render-timing" />
                 </h3>
                 <RenderTimingChart rows={rtRows} />
               </div>
@@ -509,9 +601,11 @@ async function main() {
                 <h3 className="chart-title">
                   Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
                   <InfoTip>
-                    Gzipped bytes the browser downloads for this page: the client JS runtime the lane ships (over the bare
-                    React floor), the CSS, and the SSR HTML. Lower is better.
+                    Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
+                    CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
+                    none, so read the HTML column across frameworks with that in mind.
                   </InfoTip>
+                  <HideMeasure k="payload" />
                 </h3>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
@@ -521,9 +615,10 @@ async function main() {
                 <h3 className="chart-title">
                   Scaling — SSR render time (ms) vs instance count
                   <InfoTip>
-                    SSR render time as the workload grows from a handful to thousands of instances — shows how each lane's
-                    per-element cost compounds. A flatter line scales better.
+                    Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
+                    per element stays put as the page gets bigger.
                   </InfoTip>
+                  <HideMeasure k="nsweep" />
                 </h3>
                 <LineChart lines={sweepLines} />
               </div>
@@ -532,26 +627,25 @@ async function main() {
             );
           })}
           {buildRows.length ? (
-            <section className="buildtime" data-measure="buildtime">
+            <section className="buildtime" data-measure="buildtime" id="buildtime">
               <h3 className="chart-title">
                 Build time — full client build · lower is better
                 <InfoTip>
-                  Wall time for a lane's whole <b>production client build</b> — the vite bundle that ships to the browser
-                  (react + react-dom + the styling runtime + every workload's components), the same build measured for page
-                  bytes. <b>cold</b> clears that lane's build output, vite's on-disk caches and Panda's generated
-                  <code>styled-system</code> first, so it includes the cache-miss regen; <b>warm</b> is the same build run
-                  again with nothing cleared. Median of 3. This is <b>build-time developer experience</b>, machine-dependent —
-                  not user-facing runtime. Opt-in via <code>pnpm gen:samples --measure=buildtime</code>.
+                  How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
+                  lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
+                  nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
+                  about what users get.
                 </InfoTip>
+                <HideMeasure k="buildtime" />
               </h3>
               <BuildTimeChart rows={buildRows} />
             </section>
           ) : null}
-          <section className="outro">
+          <section className="outro" id="how-measured">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
               <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
-              <li><b>autocannon</b> — an HTTP load generator that measures requests per second against each lane's SSR server end to end.</li>
+              <li><b>autocannon</b> — {httpNote}</li>
               <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
@@ -576,7 +670,7 @@ async function main() {
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
   // techs, source links instead of the code editor, and the measurement definitions once up top.
-  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows));
+  writeFileSync(join(ROOT, "BENCHMARK.md"), renderMarkdown(sections, techs, meta, wpdVersion, study, buildRows, http.protocol));
 
   // Machine-readable companion: the same reduced section data the charts render, all lanes,
   // one file. This is what the analysis prompt (scripts/prompts/case-analysis.md) reads.
@@ -584,6 +678,7 @@ async function main() {
     schemaVersion: 1,
     meta,
     wpdVersion,
+    httpProtocol: http.protocol,
     study,
     techs: Object.fromEntries(usedTechs.map((t) => [t, { label: techs[t].label, ...techs[t].bench }])),
     // Lane-level (one client build per tech), so it sits alongside `cases`, not inside it.
@@ -621,165 +716,194 @@ async function main() {
 }
 
 const CSS = `
+:root{--bg:#080a0d;--panel:#0d1117;--panel-2:#11161d;--raised:#161b22;--raised-2:#21262d;--line:#1c2128;--line-2:#30363d;--fg:#e6edf3;--fg-2:#c9d1d9;--fg-3:#adbac7;--muted:#8b949e;--muted-2:#6e7681;--link:#58a6ff}
 :root{color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:#080a0d;color:#e6edf3;font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
-.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
-.page-head{background:#0d1117}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px;position:relative}
 .head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
-.measure-nav{position:sticky;top:0;z-index:5;margin-bottom:24px;border-block:1px solid #1c2128;background:#0d1117ee;backdrop-filter:blur(6px)}
-.measure-inner{max-width:1000px;margin:0 auto;padding:8px 24px}
 h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
-.gh-link{display:inline-flex;align-items:center;color:#8b949e;margin-left:2px}
-.gh-link:hover{color:#e6edf3}
-.sub{margin:0;color:#adbac7;font:13px/1.55 system-ui,sans-serif;max-width:60ch}
-.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:#8b949e}
-.head-stats b{color:#e6edf3;font-weight:600}
+.gh-link{display:inline-flex;align-items:center;color:var(--muted);margin-left:2px}
+.gh-link:hover{color:var(--fg)}
+.sub{margin:0;color:var(--fg-3);font:13px/1.55 system-ui,sans-serif;max-width:60ch}
+.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:var(--muted)}
+.head-stats b{color:var(--fg);font-weight:600}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
 .show{display:flex;align-items:center;gap:10px;min-width:0}
-.show-label{flex:none;color:#6e7681;text-transform:uppercase;font-size:10px;letter-spacing:.08em}
-.show-pills{display:flex;gap:6px;min-width:0;overflow-x:auto;scrollbar-width:none}
-.show-pills::-webkit-scrollbar{display:none}
-.show-pill{flex:none;white-space:nowrap;background:#161b22;color:#8b949e;border:1px solid #21262d;border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
-.show-pill:hover{color:#c9d1d9}
-.show-pill.active{background:#21262d;color:#e6edf3;border-color:#30363d}
-.tech-panel{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
-.tp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
-.tp-title{font-size:14px;font-weight:650}
-.tp-count{color:#6e7681;font-weight:400;font-size:12.5px;margin-left:4px}
-.tp-actions{font-size:12.5px;color:#8b949e}
-.tp-actions button{background:none;border:0;color:#58a6ff;cursor:pointer;font-size:12.5px;padding:0}
+.show-pill{flex:none;white-space:nowrap;background:var(--raised);color:var(--muted);border:1px solid var(--raised-2);border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
+.show-pill:hover{color:var(--fg-2)}
+.show-pill.active{background:var(--raised-2);color:var(--fg);border-color:var(--line-2)}
+.filter-panel{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--panel);margin-bottom:24px}
+.fp-block+.fp-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.fp-sub{display:flex;align-items:baseline;margin-bottom:6px}
+.fp-sub-title{font-size:14px;font-weight:650;color:var(--fg-2)}
+.fp-sub .tp-count{margin-left:6px}
+.fp-sub .tp-actions{margin-left:auto}
+.fp-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--raised-2);border-radius:999px;overflow:hidden;background:var(--raised)}
+.seg-btn{background:none;border:0;color:var(--muted);padding:4px 15px;font-size:12.5px;cursor:pointer}
+.seg-btn:hover{color:var(--fg-2)}
+.seg-btn.active{background:var(--raised-2);color:var(--fg)}
+/* Contents index. The rail spans the measure's full height just outside its right edge
+   and takes no room in the flow; the nav sticks inside it. */
+.toc-rail{position:absolute;top:0;bottom:0;left:calc(100% + 12px);width:188px}
+.toc{position:sticky;top:20px;max-height:calc(100vh - 20px);overflow-y:auto;font-size:12.5px;line-height:1.45;scrollbar-width:none}
+.toc::-webkit-scrollbar{width:0}
+.toc-title{display:block;color:var(--muted-2);text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-bottom:8px}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc li{margin:0}
+.toc a{display:block;padding:3px 0 3px 10px;color:var(--muted);text-decoration:none;border-left:2px solid transparent}
+.toc a:hover{color:var(--fg-2)}
+.toc a.active{color:#fff;border-left-color:#fff}
+.toc-sub{display:block;font-size:11px;opacity:.75}
+/* Below this width the gutter is gone and the index would sit on top of the charts. */
+@media(max-width:1420px){.toc-rail{display:none}}
+.tp-count{color:var(--muted-2);font-weight:400;font-size:12.5px;margin-left:4px}
+.tp-actions{font-size:12.5px;color:var(--muted)}
+.tp-actions button{background:none;border:0;color:var(--link);cursor:pointer;font-size:12.5px;padding:0}
 .tp-actions button:hover{text-decoration:underline}
-.tp-sep{margin:0 7px;color:#30363d}
-.tp-row{display:flex;align-items:center;gap:16px;padding:5px 0}
-.tp-group{flex:0 0 150px;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em}
+.tp-sep{margin:0 7px;color:var(--line-2)}
+.tp-row{display:flex;align-items:center;gap:16px;padding:10px 0}
+.tp-engines{display:flex;flex-direction:column;gap:6px}
+.tp-engine-row{display:flex;align-items:center;gap:12px}
+.tp-engine{flex:0 0 58px;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;text-align:left;color:var(--muted-2);font-size:10.5px;letter-spacing:.04em;cursor:pointer}
+.tp-engine:hover{color:var(--fg-3)}
+.tp-engine:not(.active){opacity:.45}
+.tp-engine-logo{height:12px;width:auto}
+.tp-group{flex:0 0 150px;background:none;border:0;padding:0;text-align:left;color:var(--muted-2);text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;cursor:pointer}
+.tp-group:hover{color:var(--fg-3)}
+.tp-group:not(.active){opacity:.45}
 .tp-pills{display:flex;flex-wrap:wrap;gap:7px}
-.tech-pill{display:inline-flex;align-items:center;gap:7px;background:#161b22;color:#adbac7;border:1px solid #21262d;border-radius:999px;padding:4px 12px 4px 9px;font-size:12.5px;cursor:pointer;user-select:none}
-.tech-pill:hover{border-color:#30363d}
-.tech-pill.active{color:#e6edf3}
+.tech-pill{display:inline-flex;align-items:center;gap:7px;background:var(--raised);color:var(--fg-3);border:1px solid var(--raised-2);border-radius:999px;padding:4px 12px 4px 9px;font-size:12.5px;cursor:pointer;user-select:none}
+.tech-pill:hover{border-color:var(--line-2)}
+.tech-pill.active{color:var(--fg)}
 .tech-pill:not(.active){opacity:.4}
 .tech-pill:not(.active) .tp-swatch{filter:grayscale(1)}
 .tp-swatch{width:9px;height:9px;border-radius:50%;display:inline-block}
 .tp-line{width:3px;height:15px;border-radius:2px;display:inline-block;flex:none;align-self:center}
 .prose-tech{white-space:nowrap}
-.study .prose-tech{font-weight:600;color:#e6edf3}
+.study .prose-tech{font-weight:600;color:var(--fg)}
 .prose-tech .tech-logo{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
 [data-measure].measure-off{display:none}
-.case{margin:0 0 18px;border:1px solid #1c2128;border-radius:12px;padding:4px 22px 18px;background:#0d1117}
+.case{margin:0 0 18px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .case>summary::-webkit-details-marker{display:none}
 .case-title{font-size:19px;font-weight:680}
-.case-sub{color:#8b949e;font-size:14px}
-.chip{font:11.5px/1 ui-monospace,monospace;color:#8b949e;background:#161b22;border:1px solid #21262d;border-radius:6px;padding:4px 8px}
-.case-desc{color:#8b949e;margin:0 0 8px;max-width:92ch;font-size:13.5px}
-.chart-title{font-size:11.5px;color:#6e7681;text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
+.case-sub{color:var(--muted);font-size:14px}
+.chip{font:11.5px/1 ui-monospace,monospace;color:var(--muted);background:var(--raised);border:1px solid var(--raised-2);border-radius:6px;padding:4px 8px}
+.case-desc{color:var(--muted);margin:0 0 8px;max-width:92ch;font-size:13.5px}
+.chart-title{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
 .case-analysis{border-left:3px solid #3fb950;padding:2px 0 2px 14px;margin:0 0 10px}
-.sum-headline{margin:0 0 10px;color:#e6edf3;font-size:13.5px;max-width:92ch}
+.sum-headline{margin:0 0 10px;color:var(--fg);font-size:13.5px;max-width:92ch}
 .case-analysis .sum-headline{margin:0}
 .sum-stale{margin-left:10px;padding:2px 7px;border:1px solid #9e6a03;border-radius:999px;color:#d29922;font-size:11px;white-space:nowrap}
-.sum-winner{display:inline-flex;align-items:center;gap:6px;color:#e6edf3;font-size:13px;font-weight:600;flex:0 0 auto}
-.sum-why{margin:4px 0;color:#adbac7;font-size:13px;max-width:92ch}
-.study{border:1px solid #1c2128;border-radius:12px;padding:18px 20px;background:#0d1117;margin-bottom:24px}
+.sum-winner{display:inline-flex;align-items:center;gap:6px;color:var(--fg);font-size:13px;font-weight:600;flex:0 0 auto}
+.sum-why{margin:4px 0;color:var(--fg-3);font-size:13px;max-width:92ch}
+.study{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--panel);margin-bottom:24px}
 .study-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
 .study-title{font-size:14px;font-weight:650}
-.study-sub{display:block;color:#6e7681;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin:12px 0 6px}
+.study-sub{display:block;color:var(--muted-2);text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin:12px 0 6px}
 .study-finding{margin:10px 0}
-.study-finding b{color:#e6edf3;font-size:13.5px}
+.study-finding b{color:var(--fg);font-size:13.5px}
 .study-finding .sum-why{margin-left:0}
 .study-hint{display:flex;gap:12px;align-items:baseline;padding:3px 0}
 .study-hint .sum-winner{flex:0 0 210px}
-.study-hint-text{color:#adbac7;font-size:13px}
-.study-docs{margin:12px 0 0;color:#8b949e;font-size:12.5px}
-.study-docs a{color:#58a6ff}
-.study-foot{margin:14px 0 0;color:#6e7681;font-size:11px}
-@media(max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
-.sum-cross{margin:8px 0 0;color:#8b949e;font-size:13px;max-width:92ch}
-.study .sum-cross{padding-top:8px;border-top:1px dashed #30363d}
-.info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid #30363d;border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:#8b949e;cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
-.info:hover{color:#c9d1d9;border-color:#6e7681}
-.info .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:#c9d1d9;text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
-.info:hover .tip,.info:focus .tip{display:block}
+.study-hint-text{color:var(--fg-3);font-size:13px}
+.study-docs{margin:12px 0 0;color:var(--muted);font-size:12.5px}
+.study-docs a{color:var(--link)}
+.study-foot{margin:14px 0 0;color:var(--muted-2);font-size:11px}
+@media screen and (max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
+.sum-cross{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:92ch}
+.study .sum-cross{padding-top:8px;border-top:1px dashed var(--line-2)}
+.info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid var(--line-2);border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:var(--muted);cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
+.info:hover{color:var(--fg-2);border-color:var(--muted-2)}
+.hide-measure{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;padding:0;border:1px solid var(--line-2);border-radius:50%;background:none;color:var(--muted);cursor:pointer;position:relative;vertical-align:middle}
+.hide-measure svg{display:block}
+.hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
+.info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
 .bars,.attr{display:grid;grid-template-columns:230px 1fr max-content;column-gap:12px;row-gap:7px;align-items:center}
 .bars{margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
 .bar-row.tech-off{display:none}
-.bar-row.gap-before{margin-top:6px}
-.bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:#c9d1d9;font-size:13px}
+.bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:var(--fg-2);font-size:13px}
 .bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .tech-logo{width:14px;height:14px;object-fit:contain;vertical-align:-2px;border-radius:3px;flex:none}
 .tech-pill .tech-logo{width:13px;height:13px}
 .ed-file .tech-logo,.lc-legend .tech-logo{margin-right:5px}
-.bar-track{background:#161b22;border-radius:5px;height:18px;overflow:hidden}
+.bar-track{background:var(--raised);border-radius:5px;height:16px;overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:5px}
 .bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
 .bar-best{font-weight:700;color:#3fb950}
-.bar-unit,.bar-spread{color:#8b949e;font-size:11px}
+.bar-unit,.bar-spread{color:var(--muted);font-size:11px}
 .bar-breakdown{margin-left:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.bar-breakdown .bd-sep{color:#6e7681}
-.attr .bar-track{display:flex;height:12px}
+.bar-breakdown .bd-sep{color:var(--muted-2)}
+.attr .bar-track{display:flex}
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
-.attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:#8b949e}
+.attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .rt .bar-label{display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
-.rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:#c9d1d9}
-.rt-eng{color:#6e7681;font-size:11px;flex:none}
-.rt-badge{margin-left:8px;padding:1px 6px;border:1px solid #30363d;border-radius:999px;font-size:11px;color:#adbac7;font-variant-numeric:tabular-nums}
-.rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:#6e7681}
+.rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
+.rt-eng{color:var(--muted-2);font-size:11px;flex:none}
+.rt-badge{margin-left:8px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:var(--muted-2)}
 .rt .bar-val{min-width:150px}
-.wpd-breakdown{margin-top:14px;padding-top:12px;border-top:1px dashed #30363d}
+.wpd-breakdown{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line-2)}
 .lchart svg{width:100%;max-width:760px;height:auto}
-.lc-axis{fill:#8b949e;font-size:10px}
+.lc-axis{fill:var(--muted);font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
-.lc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:#adbac7}
+.lc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:var(--fg-3)}
 .lc-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .lc-legend span.tech-off,.lc-line.tech-off,.lc-dot.tech-off{display:none}
-.editor{display:flex;border:1px solid #21262d;border-radius:8px;overflow:hidden;margin-bottom:8px;background:#0d1117}
-.ed-side{flex:0 0 200px;border-right:1px solid #21262d;padding:6px 0;overflow:auto}
-.ed-file{display:block;width:100%;text-align:left;background:none;border:0;color:#8b949e;padding:5px 12px;font:12.5px/1.3 system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ed-file:hover{background:#161b22;color:#c9d1d9}
-.ed-file.active{background:#21262d;color:#e6edf3}
+.editor{display:flex;border:1px solid var(--raised-2);border-radius:8px;overflow:hidden;margin-bottom:8px;background:var(--panel)}
+.ed-side{flex:0 0 200px;border-right:1px solid var(--raised-2);padding:6px 0;overflow:auto}
+.ed-file{display:block;width:100%;text-align:left;background:none;border:0;color:var(--muted);padding:5px 12px;font:12.5px/1.3 system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed-file:hover{background:var(--raised);color:var(--fg-2)}
+.ed-file.active{background:var(--raised-2);color:var(--fg)}
 .ed-file.tech-off{display:none}
 .ed-main{flex:1;min-width:0;display:flex;flex-direction:column}
 /* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
    active, so the first lane's row stays visible and the editor still works. */
-.ed-tabs{display:none;gap:10px;background:#0d1117;border-bottom:1px solid #21262d;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.ed-tabs{display:none;gap:10px;background:var(--panel);border-bottom:1px solid var(--raised-2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
 .ed-tabs::-webkit-scrollbar{display:none}
 .ed-tabs-first{display:flex}
 .editor.ed-js .ed-tabs-first:not(.active){display:none}
 .editor.ed-js .ed-tabs.active{display:flex}
 /* Each group is its own bar; the gap between bars does the grouping, so the row keeps a
    single line weight — thin separators inside a bar, nothing between them. */
-.ed-group{display:flex;background:#11161d}
+.ed-group{display:flex;background:var(--panel-2)}
 .ed-group .ed-tab:last-child{border-right:0}
-.ed-gen::before{content:"→ ";color:#6e7681}
-.ed-tab{background:none;border:0;border-right:1px solid #21262d;color:#8b949e;padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
-.ed-tab:hover{color:#c9d1d9}
-.ed-tab.active{background:#0d1117;color:#e6edf3;box-shadow:inset 0 -2px 0 #1f6feb}
-.ed-frame{width:100%;height:520px;border:0;background:#0d1117}
+.ed-gen::before{content:"→ ";color:var(--muted-2)}
+.ed-tab{background:none;border:0;border-right:1px solid var(--raised-2);color:var(--muted);padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
+.ed-tab:hover{color:var(--fg-2)}
+.ed-tab.active{background:var(--panel);color:var(--fg);box-shadow:inset 0 -2px 0 #1f6feb}
+.ed-frame{width:100%;height:520px;border:0;background:var(--panel)}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
-.buildtime{border:1px solid #1c2128;border-radius:12px;padding:6px 22px 18px;background:#0d1117;margin-top:24px}
-.bd-kind{color:#adbac7}
-.outro{border:1px solid #1c2128;border-radius:12px;padding:6px 20px 16px;background:#0d1117;margin-top:24px}
-.outro-tools{margin:0;padding-left:18px;color:#adbac7;font-size:13px}
+.buildtime{border:1px solid var(--line);border-radius:12px;padding:6px 22px 18px;background:var(--panel);margin-top:24px}
+.bd-kind{color:var(--fg-3)}
+.outro{border:1px solid var(--line);border-radius:12px;padding:6px 20px 16px;background:var(--panel);margin-top:24px}
+.outro-tools{margin:0;padding-left:18px;color:var(--fg-3);font-size:13px}
 .outro-tools li{margin:6px 0;max-width:100ch}
-.outro-tools b{color:#e6edf3}
-.outro-run{color:#8b949e;font-size:13px;margin:12px 0 0;max-width:100ch}
-.outro a{color:#58a6ff}
-.page-foot{color:#6e7681;font-size:12px;max-width:1000px;margin:0 auto;padding:8px 24px}
-code{background:#161b22;padding:1px 5px;border-radius:4px;font-size:12px}
+.outro-tools b{color:var(--fg)}
+.outro-run{color:var(--muted);font-size:13px;margin:12px 0 0;max-width:100ch}
+.outro a{color:var(--link)}
+.page-foot{color:var(--muted-2);font-size:12px;max-width:1000px;margin:0 auto;padding:8px 24px}
+code{background:var(--raised);padding:1px 5px;border-radius:4px;font-size:12px}
 .mono{font-family:ui-monospace,monospace;font-size:.92em}
-code.mono{background:none;padding:0;border-radius:0;color:#c9d1d9}
-a.mono{color:#58a6ff;text-decoration:none;background:none;padding:0}
+code.mono{background:none;padding:0;border-radius:0;color:var(--fg-2)}
+a.mono{color:var(--link);text-decoration:none;background:none;padding:0}
 a.mono:hover{text-decoration:underline}
-@media(max-width:767px){
+@media screen and (max-width:767px){
   .wrap{padding-inline:12px}
-  .head-inner,.measure-inner{padding-inline:12px}
-  .measure-nav{position:static}
-  .tech-panel{padding-inline:14px}
+  .head-inner{padding-inline:12px}
+  .filter-panel{padding-inline:14px}
+  /* No room for a 150px label column beside the pills: stack the label above them. */
+  .tp-row{flex-direction:column;align-items:stretch;gap:6px;padding:8px 0}
+  .tp-group{flex:none}
   .case{padding:4px 14px 16px}
   .bars,.attr{display:flex;flex-direction:column;gap:7px;align-items:stretch}
   .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
@@ -791,16 +915,73 @@ a.mono:hover{text-decoration:underline}
   .rt .bar-label{justify-content:flex-start}
   .rt .bar-val{min-width:0}
   .editor{display:block}
-  .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid #21262d;overflow-x:auto}
+  .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
   .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}
   .ed-main{width:100%}
   .ed-frame,.ed-shot{height:min(440px,65vh)}
   .ed-shot{padding:8px}
-  .info .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
+  .info .tip,.hide-measure .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
   .page-foot{padding-inline:12px}
 }
-@media print{.measure-nav{position:static}}
+/* Print: the light palette is the token block above, re-valued; everything a reader can
+   click carries data-screen-only and is dropped. Colored marks keep their ink. */
+@media print{
+  :root{--bg:#fff;--panel:#fff;--panel-2:#f6f8fa;--raised:#f6f8fa;--raised-2:#e7ecf0;--line:#d0d7de;--line-2:#d0d7de;--fg:#1f2328;--fg-2:#24292f;--fg-3:#424a53;--muted:#57606a;--muted-2:#6e7781;--link:#0969da}
+  [data-screen-only]{display:none!important}
+  body{padding:0}
+  .wrap,.head-inner{max-width:none;padding:0 8mm}
+  .case+.case{break-before:page}
+  .case>summary{cursor:default}
+  .chart-title{break-after:avoid}
+  .bars,.attr,.lchart,.study{break-inside:avoid}
+  .bar-track,.bar-fill,.attr-seg,.tp-swatch,.attr-legend i,.lc-legend i,.brand-dot{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  a{color:inherit}
+}
 `;
+
+const MEASURE_GROUPS: { group: string; items: [string, string][] }[] = [
+  {
+    group: "Server",
+    items: [
+      ["microbench", "Throughput"],
+      ["autocannon", "Load req/s"],
+      ["attribution", "CPU split"],
+      ["nsweep", "Scaling"],
+    ],
+  },
+  {
+    group: "Browser",
+    items: [
+      ["hydrate", "Hydration"],
+      ["inp", "Interaction"],
+      ["mount", "Cold mount"],
+      ["render-timing", "Paint/Layout"],
+    ],
+  },
+  {
+    group: "Size & build",
+    items: [
+      ["payload", "Page bytes"],
+      ["buildtime", "Build time"],
+    ],
+  },
+];
+const MEASURE_COUNT = MEASURE_GROUPS.reduce((n, g) => n + g.items.length, 0);
+const MEASURE_LABEL: Record<string, string> = Object.fromEntries(MEASURE_GROUPS.flatMap((g) => g.items));
+
+// A × on every chart title, so a measurement can be dropped from where it is read without
+// scrolling back to the filter panel. It drives the same control the panel does.
+function HideMeasure({ k }: { k: string }) {
+  const label = k === "code" ? "source and preview" : MEASURE_LABEL[k];
+  return (
+    <button type="button" className="hide-measure" data-measure-hide={k} data-screen-only aria-label={`Hide ${label} in this report`}>
+      <svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true">
+        <path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      <span className="tip">Hide {label} in this report</span>
+    </button>
+  );
+}
 
 const CONTROLLER = `
 for (const ed of document.querySelectorAll('[data-ed]')) {
@@ -884,48 +1065,151 @@ function drawSweep() {
     }
   }
 }
-// Mirror the lane selection into ?lanes=a,b so a filtered view is a shareable URL.
-// No param = all lanes (the default view keeps a clean URL). replaceState can throw
-// on file:// — the filter must keep working there, so it's best-effort.
-function syncLanesQuery() {
-  const on = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
-  // The clean URL is the DEFAULT selection (all lanes minus the data-default-off ones).
-  const def = techPills.filter(b => b.dataset.defaultOff !== '1').map(b => b.dataset.techFilter);
-  const isDefault = on.length === def.length && on.every((t, i) => t === def[i]);
-  const qs = isDefault ? '' : '?lanes=' + on.map(encodeURIComponent).join(',');
+// ---- shared query mirror --------------------------------------------------------
+// Both filters serialize into ONE query string: ?lanes= for the technologies and ?show=
+// for the benchmark sections. The source/preview toggle rides in ?show= as 'code' because
+// it hides the same [data-measure] blocks, so one param restores the whole view. They MUST
+// be written together: two independent replaceState calls would each drop the other's
+// param. A clean URL is the DEFAULT view, so only a deviation from it appears.
+// replaceState can throw on file://, the filters must keep working there, best-effort.
+const measurePills = [...document.querySelectorAll('[data-measure-filter]')];
+const measureCountEl = document.querySelector('[data-measure-count]');
+const codeToggles = [...document.querySelectorAll('[data-code-toggle]')];
+const codeYes = codeToggles.find(b => b.dataset.codeToggle === '1');
+// The view a reader lands on with no ?lanes=: the React lanes, minus the diagnostic ones.
+// Solid is a second axis rather than a longer list, so it starts collapsed — one click on a
+// Solid row opens it, and any selection is then shareable through the query string.
+const isDefaultLane = b => b.dataset.defaultOff !== '1' && b.dataset.engine !== 'solid';
+const showKeys = ['code', ...measurePills.map(b => b.dataset.measureFilter)];
+const showOn = k => k === 'code'
+  ? !!codeYes && codeYes.classList.contains('active')
+  : measurePills.some(b => b.dataset.measureFilter === k && b.classList.contains('active'));
+
+function syncQuery() {
+  const parts = [];
+  const lanesOn = techPills.filter(b => b.classList.contains('active')).map(b => b.dataset.techFilter);
+  // The clean URL is the DEFAULT selection — see isDefaultLane.
+  const lanesDef = techPills.filter(isDefaultLane).map(b => b.dataset.techFilter);
+  if (!(lanesOn.length === lanesDef.length && lanesOn.every((t, i) => t === lanesDef[i])))
+    parts.push('lanes=' + lanesOn.map(encodeURIComponent).join(','));
+  const shown = showKeys.filter(showOn);
+  if (shown.length !== showKeys.length) parts.push('show=' + shown.map(encodeURIComponent).join(','));
+  const qs = parts.length ? '?' + parts.join('&') : '';
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
+
+// ---- technologies ---------------------------------------------------------------
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
+  for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
+  for (const b of groupPills) b.classList.toggle('active', lanesOfGroup(b.dataset.groupFilter).some(p => p.classList.contains('active')));
   for (const ed of document.querySelectorAll('[data-ed]')) {
     const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
     if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
   }
   rescaleBars();
   drawSweep();
-  syncLanesQuery();
+  syncQuery();
 }
 for (const b of techPills) b.onclick = () => { setTech(b, !b.classList.contains('active')); afterTech(); };
+// An engine row selects that engine's styling techniques in one click. The bare-framework
+// lanes stay out of it — they are comparison references, not a styling technique —
+// so they keep their own pills. All on already means the click turns them off again.
+const enginePills = [...document.querySelectorAll('[data-engine-filter]')];
+const lanesOfEngine = eng => techPills.filter(p => p.dataset.engine === eng && p.dataset.floor !== '1');
+// A group label does the same for one styling technique, both engines at once — the group IS
+// the thing you are asking for, so the baselines are included when you ask for Baseline.
+const groupPills = [...document.querySelectorAll('[data-group-filter]')];
+const lanesOfGroup = name => techPills.filter(p => p.dataset.group === name);
+const toggleAll = lanes => {
+  const allOn = lanes.every(p => p.classList.contains('active'));
+  for (const p of lanes) setTech(p, !allOn);
+  afterTech();
+};
+for (const b of enginePills) b.onclick = () => toggleAll(lanesOfEngine(b.dataset.engineFilter));
+for (const b of groupPills) b.onclick = () => toggleAll(lanesOfGroup(b.dataset.groupFilter));
 document.querySelector('[data-tech-all]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, true); afterTech(); });
 document.querySelector('[data-tech-none]')?.addEventListener('click', () => { for (const b of techPills) setTech(b, false); afterTech(); });
-// Apply an incoming ?lanes= BEFORE the initial afterTech, so a shared URL renders
-// pre-filtered (and syncLanesQuery then just re-serializes the same selection).
-// Without a lanes param, diagnostic lanes (data-default-off) start hidden — one
-// click on their pill brings them back.
-const lanesParam = new URLSearchParams(location.search).get('lanes');
+
+// ---- benchmarks + source/preview -------------------------------------------------
+function setMeasure(b, on) {
+  b.classList.toggle('active', on);
+  b.setAttribute('aria-pressed', String(on));
+  for (const el of document.querySelectorAll('[data-measure="'+b.dataset.measureFilter+'"]')) el.classList.toggle('measure-off', !on);
+}
+// Source + preview is a Yes/No toggle, not a filter pill, it reveals authored code
+// rather than a measurement. Drives the same [data-measure="code"] blocks either way.
+function setCode(on) {
+  for (const el of document.querySelectorAll('[data-measure="code"]')) el.classList.toggle('measure-off', !on);
+  for (const b of codeToggles) {
+    const isYes = b.dataset.codeToggle === '1';
+    b.classList.toggle('active', isYes === on);
+    b.setAttribute('aria-pressed', String(isYes === on));
+  }
+}
+// The count covers the benchmark pills only, source/preview has its own control.
+function afterMeasure() {
+  if (measureCountEl) measureCountEl.textContent = measurePills.filter(b => b.classList.contains('active')).length;
+  syncQuery();
+}
+for (const b of measurePills) b.onclick = () => { setMeasure(b, !b.classList.contains('active')); afterMeasure(); };
+document.querySelector('[data-measure-all]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, true); afterMeasure(); });
+document.querySelector('[data-measure-none]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, false); afterMeasure(); });
+for (const b of codeToggles) b.onclick = () => { setCode(b.dataset.codeToggle === '1'); afterMeasure(); };
+for (const b of document.querySelectorAll('[data-measure-hide]')) b.onclick = () => {
+  const k = b.dataset.measureHide;
+  if (k === 'code') setCode(false);
+  else for (const p of measurePills) if (p.dataset.measureFilter === k) setMeasure(p, false);
+  afterMeasure();
+};
+
+// ---- apply incoming params BEFORE the first sync, so a shared URL renders
+// pre-filtered and syncQuery then just re-serializes the same selection.
+const params = new URLSearchParams(location.search);
+const lanesParam = params.get('lanes');
 if (lanesParam !== null) {
   const want = new Set(lanesParam.split(',').filter(Boolean));
   for (const b of techPills) setTech(b, want.has(b.dataset.techFilter));
 } else {
-  for (const b of techPills) if (b.dataset.defaultOff === '1') setTech(b, false);
+  for (const b of techPills) if (!isDefaultLane(b)) setTech(b, false);
+}
+const showParam = params.get('show');
+if (showParam !== null) {
+  const want = new Set(showParam.split(',').filter(Boolean));
+  setCode(want.has('code'));
+  for (const b of measurePills) setMeasure(b, want.has(b.dataset.measureFilter));
 }
 afterTech();
-// measure pills — toggle which measurement sections are visible.
-for (const b of document.querySelectorAll('[data-measure-filter]')) b.onclick = () => {
-  const on = b.classList.toggle('active');
-  b.setAttribute('aria-pressed', String(on));
-  for (const el of document.querySelectorAll('[data-measure="'+b.dataset.measureFilter+'"]')) el.classList.toggle('measure-off', !on);
-};
+afterMeasure();
+
+// ---- contents index --------------------------------------------------------------
+// Marks the entry whose section is being read. An IntersectionObserver rather than
+// :target, so scrolling updates it and not only clicking. The rootMargin collapses the
+// viewport to a band under the header, so exactly one tall section qualifies at a time.
+const tocLinks = Array.from(document.querySelectorAll('[data-toc]'));
+if (tocLinks.length && 'IntersectionObserver' in window) {
+  const targets = tocLinks.map((a) => document.getElementById(a.dataset.toc)).filter(Boolean);
+  const inBand = new Set();
+  const setActive = (id) => { for (const a of tocLinks) a.classList.toggle('active', a.dataset.toc === id); };
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) inBand.add(e.target.id);
+      else inBand.delete(e.target.id);
+    }
+    // Two sections can share the band where one ends and the next begins; the later one
+    // is the one being read, so the last match wins.
+    const current = targets.findLast((t) => inBand.has(t.id));
+    if (current) setActive(current.id);
+  }, { rootMargin: '-88px 0px -70% 0px' });
+  for (const t of targets) io.observe(t);
+  if (targets[0]) setActive(targets[0].id);
+  // The closing sections are shorter than the viewport, so they never reach the band;
+  // at the bottom of the page the last entry is the one being read.
+  addEventListener('scroll', () => {
+    if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) setActive(targets[targets.length - 1].id);
+  }, { passive: true });
+
+}
 `;
 
 main().catch((e) => {

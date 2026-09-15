@@ -9,7 +9,7 @@ result/_prev/
 result/_*.log
 result/verify/
 # Optional vendored tooling/source trees (created by setup scripts).
-vendor/
+vendor/*
 # wpd's latest-pointer dir + scratch recordings (recordings/.wpd-last.json).
 recordings/
 # Per-tech build output.
@@ -29,3 +29,6 @@ result/analysis/*.md
 # wpd 1.3.0 study: raw recordings (multi-MB, not committed)
 .wpd-runs/
 scratch-wpd/
+
+# Local progress for resumable HTTP measurements.
+result/_http-checkpoint.json

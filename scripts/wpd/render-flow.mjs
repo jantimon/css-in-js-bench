@@ -1,11 +1,9 @@
 // wpd driver module for the `render-timing` measurement. wpd loads the host page (--url) at
-// the right mode, then calls this. The interaction is selected via the WPD_FLOW env var; today
-// gen only drives "mount" (cold client render into an empty root — the interaction with real
-// style/layout/paint work; see the spike: an idempotent inp re-render does ~zero render work).
+// the right mode, then calls this. WPD_FLOW selects the phase; gen uses mount.
 //
 //   mount   : url has ?mount=1   → window.__mount() cold-renders the workload into an empty root
 //   hydrate : url has ?manual=1  → window.__hydrate() commits the deferred hydration
-//   inp     : url auto-hydrates  → window.__inp() re-renders the mounted tree in place
+//   inp     : url auto-hydrates  → reset, then change each input from i to i + 1
 //
 // Only the measureStep() body is timed; wpd waits --settle after it to flush paints. wpd requires
 // this module to live inside its working directory (gen runs wpd with cwd = repo root).
@@ -39,11 +37,14 @@ export async function run({ page, measureStep }) {
   }
   if (FLOW === "inp") {
     await page.waitForFunction(
-      () => window.__hydrateMs !== undefined && typeof window.__inp === "function",
+      () => window.__hydrateMs !== undefined && typeof window.__prepareInp === "function" && typeof window.__inp === "function",
       { timeout: 30000 },
     );
-    await page.evaluate(() => window.__inp()); // warm (same page, safe to repeat)
-    await page.evaluate(() => window.__inp());
+    for (let i = 0; i < 3; i++) await page.evaluate(async () => {
+      await window.__prepareInp();
+      await window.__inp();
+    });
+    await page.evaluate(() => window.__prepareInp());
     await measureStep("inp", () => page.evaluate(() => window.__inp()));
     return;
   }

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { css } from "styled-system/css";
 
-export const button = css({
+export const button = css.raw({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

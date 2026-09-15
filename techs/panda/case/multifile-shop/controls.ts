@@ -4,7 +4,7 @@ import { css } from "styled-system/css";
 // The two tap targets. Their shared border/cursor now come from the imported base
 // button, which the page merges in alongside these.
 
-export const wishlist = css({
+export const wishlist = css.raw({
   position: "absolute",
   top: "6px",
   right: "6px",
@@ -25,9 +25,9 @@ export const wishlist = css({
   },
 });
 
-export const wishlistOn = css({ color: "#ef4444" });
+export const wishlistOn = css.raw({ color: "#ef4444" });
 
-export const addToCart = css({
+export const addToCart = css.raw({
   marginTop: "auto",
   position: "relative",
   borderRadius: "6px",
@@ -50,7 +50,7 @@ export const addToCart = css({
   },
 });
 
-export const addToCartDisabled = css({
+export const addToCartDisabled = css.raw({
   background: "#d1d5db",
   color: "#6b7280",
   cursor: "not-allowed",
