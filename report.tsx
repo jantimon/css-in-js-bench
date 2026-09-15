@@ -477,7 +477,7 @@ async function main() {
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code">
-              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview</h3>
+              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
               <Editor caseId={caseId} lanes={editorLanes} />
             </div>
             <div data-measure="microbench">
@@ -489,6 +489,7 @@ async function main() {
                   Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
                   Higher is better.
                 </InfoTip>
+                <HideMeasure k="microbench" />
               </h3>
               <BarChart bars={bars} unit="r/s" higherBetter />
             </div>
@@ -503,6 +504,7 @@ async function main() {
                     of 400 product tiles counts as one request. Excludes build time, browser rendering and external
                     network latency. Higher is better.
                   </InfoTip>
+                  <HideMeasure k="autocannon" />
                 </h3>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
                 <p className="rt-note">{httpNote}</p>
@@ -518,6 +520,7 @@ async function main() {
                     <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
                     (<code>web-performance-debugger</code> {wpdVersion}).
                   </InfoTip>
+                  <HideMeasure k="attribution" />
                 </h3>
                 <AttributionChart rows={attrRows} />
               </div>
@@ -533,6 +536,7 @@ async function main() {
                     profiles a span through the next frame and shows JavaScript, style, layout and paint
                     (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
                   </InfoTip>
+                  <HideMeasure k="hydrate" />
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={hydWpdRows} wpdVersion={wpdVersion} />
@@ -549,6 +553,7 @@ async function main() {
                     to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
                     Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
                   </InfoTip>
+                  <HideMeasure k="inp" />
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={inpWpdRows} wpdVersion={wpdVersion} />
@@ -564,6 +569,7 @@ async function main() {
                     during that work. The separate profiled span includes the next frame's rendering work.
                     Lower is better.
                   </InfoTip>
+                  <HideMeasure k="mount" />
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
                 <WpdBreakdownChart rows={mountWpdRows} wpdVersion={wpdVersion} />
@@ -581,6 +587,7 @@ async function main() {
                     milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
                     engine. Lower is better.
                   </InfoTip>
+                  <HideMeasure k="render-timing" />
                 </h3>
                 <RenderTimingChart rows={rtRows} />
               </div>
@@ -594,6 +601,7 @@ async function main() {
                     CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
                     none, so read the HTML column across frameworks with that in mind.
                   </InfoTip>
+                  <HideMeasure k="payload" />
                 </h3>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
@@ -606,6 +614,7 @@ async function main() {
                     Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
                     per element stays put as the page gets bigger.
                   </InfoTip>
+                  <HideMeasure k="nsweep" />
                 </h3>
                 <LineChart lines={sweepLines} />
               </div>
@@ -623,6 +632,7 @@ async function main() {
                   nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
                   about what users get.
                 </InfoTip>
+                <HideMeasure k="buildtime" />
               </h3>
               <BuildTimeChart rows={buildRows} />
             </section>
@@ -802,8 +812,11 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study .sum-cross{padding-top:8px;border-top:1px dashed #30363d}
 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid #30363d;border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:#8b949e;cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
 .info:hover{color:#c9d1d9;border-color:#6e7681}
-.info .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:#c9d1d9;text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
-.info:hover .tip,.info:focus .tip{display:block}
+.hide-measure{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;padding:0;border:1px solid #30363d;border-radius:50%;background:none;color:#8b949e;cursor:pointer;position:relative;vertical-align:middle}
+.hide-measure svg{display:block}
+.hide-measure:hover,.hide-measure:focus-visible{color:#c9d1d9;border-color:#6e7681}
+.info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:#c9d1d9;text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
 .bars,.attr{display:grid;grid-template-columns:230px 1fr max-content;column-gap:12px;row-gap:7px;align-items:center}
 .bars{margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
@@ -882,6 +895,9 @@ a.mono:hover{text-decoration:underline}
   .wrap{padding-inline:12px}
   .head-inner{padding-inline:12px}
   .filter-panel{padding-inline:14px}
+  /* No room for a 150px label column beside the pills: stack the label above them. */
+  .tp-row{flex-direction:column;align-items:stretch;gap:6px;padding:8px 0}
+  .tp-group{flex:none}
   .case{padding:4px 14px 16px}
   .bars,.attr{display:flex;flex-direction:column;gap:7px;align-items:stretch}
   .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
@@ -898,7 +914,7 @@ a.mono:hover{text-decoration:underline}
   .ed-main{width:100%}
   .ed-frame,.ed-shot{height:min(440px,65vh)}
   .ed-shot{padding:8px}
-  .info .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
+  .info .tip,.hide-measure .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
   .page-foot{padding-inline:12px}
 }
 `;
@@ -931,6 +947,21 @@ const MEASURE_GROUPS: { group: string; items: [string, string][] }[] = [
   },
 ];
 const MEASURE_COUNT = MEASURE_GROUPS.reduce((n, g) => n + g.items.length, 0);
+const MEASURE_LABEL: Record<string, string> = Object.fromEntries(MEASURE_GROUPS.flatMap((g) => g.items));
+
+// A × on every chart title, so a measurement can be dropped from where it is read without
+// scrolling back to the filter panel. It drives the same control the panel does.
+function HideMeasure({ k }: { k: string }) {
+  const label = k === "code" ? "source and preview" : MEASURE_LABEL[k];
+  return (
+    <button type="button" className="hide-measure" data-measure-hide={k} aria-label={`Hide ${label} in this report`}>
+      <svg viewBox="0 0 8 8" width="7" height="7" aria-hidden="true">
+        <path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      <span className="tip">Hide {label} in this report</span>
+    </button>
+  );
+}
 
 const CONTROLLER = `
 for (const ed of document.querySelectorAll('[data-ed]')) {
@@ -1105,6 +1136,12 @@ for (const b of measurePills) b.onclick = () => { setMeasure(b, !b.classList.con
 document.querySelector('[data-measure-all]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, true); afterMeasure(); });
 document.querySelector('[data-measure-none]')?.addEventListener('click', () => { for (const b of measurePills) setMeasure(b, false); afterMeasure(); });
 for (const b of codeToggles) b.onclick = () => { setCode(b.dataset.codeToggle === '1'); afterMeasure(); };
+for (const b of document.querySelectorAll('[data-measure-hide]')) b.onclick = () => {
+  const k = b.dataset.measureHide;
+  if (k === 'code') setCode(false);
+  else for (const p of measurePills) if (p.dataset.measureFilter === k) setMeasure(p, false);
+  afterMeasure();
+};
 
 // ---- apply incoming params BEFORE the first sync, so a shared URL renders
 // pre-filtered and syncQuery then just re-serializes the same selection.
@@ -1139,11 +1176,18 @@ if (tocLinks.length && 'IntersectionObserver' in window) {
       if (e.isIntersecting) inBand.add(e.target.id);
       else inBand.delete(e.target.id);
     }
-    const current = targets.find((t) => inBand.has(t.id));
+    // Two sections can share the band where one ends and the next begins; the later one
+    // is the one being read, so the last match wins.
+    const current = targets.findLast((t) => inBand.has(t.id));
     if (current) setActive(current.id);
   }, { rootMargin: '-88px 0px -70% 0px' });
   for (const t of targets) io.observe(t);
   if (targets[0]) setActive(targets[0].id);
+  // The closing sections are shorter than the viewport, so they never reach the band;
+  // at the bottom of the page the last entry is the one being read.
+  addEventListener('scroll', () => {
+    if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) setActive(targets[targets.length - 1].id);
+  }, { passive: true });
 
   // Line the index up with the top of the first section card. The header's height depends
   // on its content, so measure it rather than hardcode an offset; max-height follows the
