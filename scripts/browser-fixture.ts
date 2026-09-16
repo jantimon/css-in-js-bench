@@ -46,6 +46,9 @@ export async function serveBrowserFixture({ directory, ssrMod }: { directory: st
     if (!statSync(assetPath(item.file)).isFile()) throw new Error(`Missing browser asset: ${item.file}`);
   };
   collect(entry);
+  // A build with cssCodeSplit:false keeps every stylesheet in one "style.css" asset that no
+  // chunk lists; the page needs it exactly as it needs an entry's own css.
+  if (manifest["style.css"]) styles.add(manifest["style.css"].file);
   // This manifest is present even when a lane has no case-specific sheets.
   const caseStyles: { cases: Record<string, string[]>; maxInput?: Record<string, number> } = JSON.parse(readFileSync(assetPath("browser-styles.json"), "utf8"));
   for (const css of [...styles, ...Object.values(caseStyles.cases).flat()]) {
