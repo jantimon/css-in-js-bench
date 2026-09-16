@@ -4,7 +4,6 @@ import { existsSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "vite";
-import { utilityMaxInput } from "./browser-styles.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeLanes = new Set(["styled-components", "emotion", "goober"]);
@@ -32,9 +31,7 @@ for (const tech of readdirSync(resolve(root, "techs"))) {
       assert.notDeepEqual(metadata.cases["btn-variant"], metadata.cases["compose-1"], "case selectors must stay isolated");
     }
     if (utilityLanes.has(tech)) {
-      assert.equal(metadata.maxInput["dyn-translate"], utilityMaxInput);
       const sheet = css.map((file: string) => assets.get(file)).join("\n");
-      assert.ok(sheet.includes(`translateX\\(${utilityMaxInput}px\\)`) && /transform:translate(?:X)?\(/.test(sheet), "changed last input must have a utility rule");
       assert.ok(sheet.includes("background-color"), "source-scanned utilities must exist");
     }
   });

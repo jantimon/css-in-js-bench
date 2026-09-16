@@ -1,0 +1,5 @@
+Tailwind generates its CSS ahead of time by scanning source files for class names. From the docs: "The most important implication of how Tailwind extracts class names is that it will only find classes that exist as complete unbroken strings in your source files. If you use string interpolation or concatenate partial class names together, Tailwind will not find them and therefore will not generate the corresponding CSS" ([Content configuration, Dynamic class names](https://v3.tailwindcss.com/docs/content-configuration#dynamic-class-names)).
+
+The naive path this case measures builds `[transform:translateX(<i>px)]` from the instance index at render, so the scanner never sees the class and the element ships without its transform. `cn()` still parses the string on every render, but no rule ever exists behind it. Making it work takes a safelist of every value, or running the JIT over the rendered output, which no production build does.
+
+This lane's working path, a static utility plus an inline style for the value, is what `dyn-fair` measures, and this lane takes part there.

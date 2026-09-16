@@ -8,9 +8,9 @@ interface P {
 }
 
 const TranslatedDot: React.FunctionComponent<P> = ({ translateX, children }) => (
-  <div style={{ "--tx": `${translateX}px` } as React.CSSProperties} css={css`
+  <div css={css`
       display:inline-block;width:8px;height:8px;
-      transform: translateX(var(--tx));
+      transform: translateX(${() => translateX}px);
     `}>{children}</div>
 );
 
