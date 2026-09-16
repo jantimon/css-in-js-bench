@@ -1,3 +1,0 @@
-This lane measures Panda's recipe API. From the docs: "Recipes are a way to create multi-variant styles with a type-safe runtime API" and "Panda will extract and generate CSS for every variant and compoundVariant `css` ahead of time, as atomic classes" ([Recipes](https://panda-css.com/docs/concepts/recipes)). A recipe is a closed set of variants resolved at build time, so its subject is a variant ladder.
-
-`btn-variant` is that ladder. This case is not one, so a recipe here would repeat the `panda` lane's `css()` code behind a wrapper and measure nothing the `panda` lane does not already measure. Not a limit of the primitive, a scope choice: the recipe lane exists for the one case where the API shape is the variable.
