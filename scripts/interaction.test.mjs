@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "vite";
@@ -71,7 +71,7 @@ test("React and Solid repeat the same changed input and restore the initial outp
     await reference.close();
     assert.equal(expected.length, 9);
     for (const tech of bundles.keys()) {
-      if (!readdirSync(join(ROOT, "techs", tech, "case")).includes(caseId)) continue;
+      if (!existsSync(join(ROOT, "techs", tech, "case", caseId, "index.tsx"))) continue;
       let laneExpected = expected;
       if (tech !== "vanilla" && tech !== "vanilla-solid") {
         const reference = await pageFor(tech, caseId, 9);

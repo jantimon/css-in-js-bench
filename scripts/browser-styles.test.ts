@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "vite";
@@ -22,7 +22,7 @@ for (const tech of readdirSync(resolve(root, "techs"))) {
     const entry = manifest["client-entry.tsx"];
     assert.equal(entry.isEntry, true);
     const css = entry.css ?? [];
-    assert.deepEqual(Object.keys(metadata.cases).sort(), readdirSync(resolve(root, "techs", tech, "case")).sort());
+    assert.deepEqual(Object.keys(metadata.cases).sort(), readdirSync(resolve(root, "techs", tech, "case")).filter((id) => existsSync(resolve(root, "techs", tech, "case", id, "index.tsx"))).sort());
     for (const [caseId, sheets] of Object.entries(metadata.cases)) {
       const files = [...css, ...(sheets as string[])];
       if (!runtimeLanes.has(tech)) assert.ok(files.length, `${tech}/${caseId} has no linked stylesheet`);

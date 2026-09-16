@@ -61,6 +61,22 @@ async function loadTechs(): Promise<Record<string, TechInfo>> {
   return out;
 }
 
+// A lane says no to a case with techs/<t>/case/<c>/not-compatible.md in place of an
+// index.tsx. The editor lists that lane struck through and shows the note as its one tab.
+// Keyed "<caseId>/<tech>" like the snapshots.
+function loadNotCompatible(techs: Record<string, TechInfo>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const tech of Object.keys(techs)) {
+    const caseDir = join(TECHS_DIR, tech, "case");
+    if (!existsSync(caseDir)) continue;
+    for (const id of readdirSync(caseDir)) {
+      const note = join(caseDir, id, "not-compatible.md");
+      if (existsSync(note)) out[`${id}/${tech}`] = readFileSync(note, "utf8");
+    }
+  }
+  return out;
+}
+
 async function loadCases(): Promise<Record<string, CaseMeta>> {
   const out: Record<string, CaseMeta> = {};
   for (const f of readdirSync(CASES_DIR)) {
@@ -74,6 +90,7 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 async function main() {
   assertHttpCheckpointReady(readJson<unknown>(join(RESULT, "_http-checkpoint.json"), undefined));
   const techs = await loadTechs();
+  const notes = loadNotCompatible(techs);
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
   const wpdVersion = wpdManifest.wpd.version;
@@ -263,17 +280,17 @@ async function main() {
           : undefined;
         return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome, firefox };
       });
-    // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
-    // each also carries its rendered-preview image (if screenshots ran) so the editor's "preview"
-    // tab can show that lane's output inline — one image, switched with the selected lane.
+    // editor lanes = lanes that captured a source snapshot (the iframe files exist for them),
+    // each with its rendered-preview image (if screenshots ran) so the editor's "preview" tab
+    // can show that lane's output inline — plus, struck through, the lanes that hold a
+    // not-compatible.md for this case instead of a cell. Same order as everywhere else.
     const editorLanes: EditorLane[] = usedTechs
-      .filter((t) => snaps[`${caseId}/${t}`])
-      .map((t) => ({
-        tech: t,
-        label: techs[t].label,
-        preview: shots[`${caseId}/${t}`]?.[0],
-        files: snaps[`${caseId}/${t}`].files.map((f) => f.name),
-      }));
+      .filter((t) => snaps[`${caseId}/${t}`] || notes[`${caseId}/${t}`])
+      .map((t) =>
+        snaps[`${caseId}/${t}`]
+          ? { tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0], files: snaps[`${caseId}/${t}`].files.map((f) => f.name) }
+          : { tech: t, label: techs[t].label, files: [], note: notes[`${caseId}/${t}`] },
+      );
     return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes, analysis: analyses[caseId] ?? null };
   });
 
@@ -482,7 +499,7 @@ async function main() {
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code" data-screen-only>
               <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
-              <Editor caseId={caseId} lanes={editorLanes} />
+              <Editor caseId={caseId} lanes={editorLanes} caseIds={caseIds} />
             </div>
             <div data-measure="microbench">
               <h3 className="chart-title">
@@ -863,6 +880,8 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-file:hover{background:var(--raised);color:var(--fg-2)}
 .ed-file.active{background:var(--raised-2);color:var(--fg)}
 .ed-file.tech-off{display:none}
+.ed-file-off{text-decoration:line-through;color:var(--muted-2)}
+.ed-file-off.active{color:var(--fg-3)}
 .ed-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 /* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
    active, so the first lane's row stays visible and the editor still works. */
@@ -895,6 +914,13 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
+/* a struck-through lane's not-compatible.md, shown in the body in place of the frame */
+.ed-note{display:none;height:520px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
+.ed-note p,.ed-note ul,.ed-note blockquote{max-width:72ch;margin:0 0 12px}
+.ed-note blockquote{padding:6px 14px;border-left:3px solid var(--raised-2);color:var(--fg)}
+.ed-note a{color:var(--link)}
+.editor.ed-show-note .ed-frame{display:none}
+.editor.ed-show-note .ed-note.active{display:block}
 .buildtime{border:1px solid var(--line);border-radius:12px;padding:6px 22px 18px;background:var(--panel);margin-top:24px}
 .bd-kind{color:var(--fg-3)}
 .outro{border:1px solid var(--line);border-radius:12px;padding:6px 20px 16px;background:var(--panel);margin-top:24px}
@@ -930,7 +956,7 @@ a.mono:hover{text-decoration:underline}
   .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
   .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}
   .ed-main{width:100%}
-  .ed-frame,.ed-shot{height:min(440px,65vh)}
+  .ed-frame,.ed-shot,.ed-note{height:min(440px,65vh)}
   .ed-shot{padding:8px}
   .info .tip,.hide-measure .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
   .page-foot{padding-inline:12px}
@@ -1003,7 +1029,9 @@ const CONTROLLER = `
 // lane's first code file instead of keeping the preview: every lane renders the same
 // image, so a fresh reader clicking through lanes would otherwise see nothing change and
 // never learn that the tabs hold the source and the generated output. Once a tab was
-// chosen, lane clicks keep it.
+// chosen, lane clicks keep it. A struck-through lane (data-missing) has one tab, its
+// not-compatible.md, rendered inline as .ed-note; the state machine needs no special case
+// for it since carry() falls back to the lane's first tab in both directions.
 function mountEditor(ed) {
   ed.classList.add('ed-js');
   const frame = ed.querySelector('.ed-frame');
@@ -1030,8 +1058,13 @@ function mountEditor(ed) {
     for (const r of rows) r.classList.toggle('active', r.dataset.tabsLane===state.lane);
     for (const t of ed.querySelectorAll('.ed-tab')) t.classList.toggle('active', t.dataset.art===state.art);
     const preview = state.art==='preview';
+    const note = state.art==='note';
     ed.classList.toggle('ed-show-shot', preview);
-    if (preview) {
+    ed.classList.toggle('ed-show-note', note);
+    for (const n of ed.querySelectorAll('.ed-note')) n.classList.toggle('active', note && n.dataset.noteLane===state.lane);
+    if (note) {
+      // nothing to load: the note is already in the DOM
+    } else if (preview) {
       // every lane renders identically, so the image rarely changes — the highlighted lane
       // name in the sidebar is what signals which lane's render you're viewing.
       const src = files.find(b => b.dataset.lane===state.lane)?.dataset.preview || '';
@@ -1054,10 +1087,12 @@ function mountEditor(ed) {
   for (const t of ed.querySelectorAll('.ed-tab')) t.onclick = () => selectTab(t.dataset.art);
   render();
   return {
-    // the active lane just got filtered out: move to the first lane still shown
+    // the active lane just got filtered out: move to the first lane still shown,
+    // preferring one with a cell over a struck-through one
     leaveHiddenLane() {
       const active = files.find(b => b.dataset.lane===state.lane);
-      const visible = files.find(b => !b.classList.contains('tech-off'));
+      const shown = files.filter(b => !b.classList.contains('tech-off'));
+      const visible = shown.find(b => !b.dataset.missing) || shown[0];
       if (active?.classList.contains('tech-off') && visible) selectLane(visible.dataset.lane, false);
     },
   };

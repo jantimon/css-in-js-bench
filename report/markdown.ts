@@ -33,6 +33,8 @@ export interface MdSection {
   mountWpdRows: WpdBreakdownRow[];
   sweepLines: SweepLine[];
   rtRows: RenderTimingRow[];
+  /** the editor's lanes; a lane with a `note` has no cell and says why */
+  editorLanes: { tech: string; label: string; note?: string }[];
   analysis: CaseAnalysis | null;
 }
 
@@ -236,13 +238,22 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
 
   for (const s of sections) {
     const covered = new Set(MD_TECHS.filter((t) => s.bars.some((b) => b.tech === t) || s.attrRows.some((r) => r.tech === t)));
-    const missing = MD_TECHS.filter((t) => techs[t] && !covered.has(t));
+    // a lane that says no (not-compatible.md) prints its reason; any other gap stays a bare name
+    const refused = s.editorLanes.filter((l) => l.note && MD_TECHS.includes(l.tech));
+    const missing = MD_TECHS.filter((t) => techs[t] && !covered.has(t) && !refused.some((l) => l.tech === t));
     const links = MD_TECHS.filter((t) => techs[t] && covered.has(t)).map((t) => `[${techs[t].label}](techs/${t}/case/${s.caseId}/index.tsx)`);
 
     out.push(``, `## ${s.cm.label}`, ``, s.cm.description, ``);
     out.push(`- **n:** ${s.cm.n.toLocaleString("en-US")} · **cardinality:** ${s.cm.cardinality}`);
     if (links.length) out.push(`- **Source:** ${links.join(" · ")}`);
     if (missing.length) out.push(`- **Not covered by this case:** ${missing.map((t) => techs[t].label).join(", ")}`);
+    // lanes sharing one reason (the control case) print it once, under all their names
+    const byReason = new Map<string, string[]>();
+    for (const l of refused) {
+      const reason = l.note!.trim().split(/\n\s*\n/)[0].replace(/\s+/g, " ");
+      byReason.set(reason, [...(byReason.get(reason) ?? []), l.label]);
+    }
+    for (const [reason, labels] of byReason) out.push(`- **Not compatible:** ${labels.join(", ")} — ${reason}`);
 
     if (s.analysis) {
       out.push(``, `### Analysis`, ``, `> ${s.analysis.headline}`);

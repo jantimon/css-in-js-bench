@@ -1,5 +1,5 @@
 import test from "node:test";
-import { mkdirSync, mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "vite";
@@ -30,7 +30,7 @@ for (const tech of techs) {
     const ssrMod = await import(pathToFileURL(resolve(ssrDirectory, "entry.mjs")).href);
     const fixture = await serveBrowserFixture({ directory, ssrMod });
     t.after(() => fixture.close());
-    const supported = readdirSync(resolve(root, "techs", tech, "case"));
+    const supported = readdirSync(resolve(root, "techs", tech, "case")).filter((id) => existsSync(resolve(root, "techs", tech, "case", id, "index.tsx")));
     const cases = process.env.BROWSER_STYLES_CASES === "all" || tech === "panda" || tech === "bamboo"
       ? supported : ["btn-variant", "dyn-translate", "realistic-button", "tabs"];
     for (const caseId of cases) {
