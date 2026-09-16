@@ -223,11 +223,11 @@ importers:
   techs/plumeria:
     dependencies:
       '@plumeria/core':
-        specifier: 18.3.14
-        version: 18.3.14
+        specifier: 18.5.4
+        version: 18.5.4
       '@plumeria/unplugin':
-        specifier: 18.3.14
-        version: 18.3.14(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
+        specifier: 18.5.4
+        version: 18.5.4(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
       react:
         specifier: catalog:dev
         version: 19.3.0
@@ -1308,11 +1308,11 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@plumeria/core@18.3.14':
-    resolution: {integrity: sha512-P1KOvxXUqoKr/SvfWZqWLnJ7Ye6fqsqnvq25BdNcgBFMfZBqJclzmtFyvT/R06Kax0d70mNMbLLHKtDom4Wn7Q==}
+  '@plumeria/core@18.5.4':
+    resolution: {integrity: sha512-KX1oaoCclfoDrdwKQ2GhJa3ei9hKdXm4VkqaiXZaQfcDNLMs292TXCYUwhRJQEKUAc2bTyWiXi14ZfCLAJFMGA==}
 
-  '@plumeria/unplugin@18.3.14':
-    resolution: {integrity: sha512-soyiHbcBm9tx2eKOnRr1I+TkqgTO//Fe87wn0g/r/GBplGT95JMZQ7I63/ijg2W3uOtc97yCf299e29oO1w9FQ==}
+  '@plumeria/unplugin@18.5.4':
+    resolution: {integrity: sha512-T10PjmCBa0sgpzo/F18MXiwjTuk+/gS/xTz1evb9fDOMDFAVBX9F2o7x0HnNPmV+KOOTQGZjsBV/vb+1fUzx8Q==}
 
   '@plumeria/utils@18.5.4':
     resolution: {integrity: sha512-MWhFzoeRck6GTf9lxdErgeQ7cTmT1eaKWk0Lc4j//w5rYclSZKJqvd39zTN1xPexi4aGpma9WNumtCPxMFmCew==}
@@ -4307,9 +4307,9 @@ snapshots:
     dependencies:
       playwright: 1.63.0
 
-  '@plumeria/core@18.3.14': {}
+  '@plumeria/core@18.5.4': {}
 
-  '@plumeria/unplugin@18.3.14(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
+  '@plumeria/unplugin@18.5.4(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
     dependencies:
       '@plumeria/utils': 18.5.4
       '@rollup/pluginutils': 5.4.0

@@ -10,8 +10,8 @@
     "cssKind": "atomic"
   },
   "dependencies": {
-    "@plumeria/core": "18.3.14",
-    "@plumeria/unplugin": "18.3.14",
+    "@plumeria/core": "18.5.4",
+    "@plumeria/unplugin": "18.5.4",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }
