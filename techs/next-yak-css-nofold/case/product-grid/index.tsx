@@ -9,8 +9,9 @@ import { css } from "next-yak";
 // identical to the styled lane — same declarations, same media/pseudo/container
 // queries — only the authoring shape and the runtime component tree differ.
 // Dynamic variants use the css-prop closure form (`${() => cond && css`…`}`,
-// which the SWC plugin resolves per render); the continuous rating width rides a
-// CSS variable set via `style`, the idiomatic css-prop dynamic pattern.
+// which the SWC plugin resolves per render); the continuous rating width is a
+// function interpolation in a value position, which the compiler turns into a CSS
+// variable it names and sets itself, the css prop's path for a runtime value.
 
 const desktop = "@media (min-width: 992px)";
 
@@ -195,11 +196,10 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
       >
         <div
           aria-hidden="true"
-          style={{ "--pct": pct + "%" } as React.CSSProperties}
           css={css`
             height: 100%;
             background: #fbbf24;
-            width: var(--pct);
+            width: ${() => pct}%;
           `}
         />
       </div>

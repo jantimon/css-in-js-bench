@@ -49,14 +49,21 @@ for (const tech of readdirSync(TECHS_DIR, { withFileTypes: true }).filter((d) =>
     if (!FRAMEWORKS.has(b.framework)) fail(`${tech}: bench.framework "${b.framework}" invalid`);
   }
 
-  // each implemented case must have an index.tsx that default-exports + a matching
-  // cases/<id>.ts. Checked statically (a raw import of a plugin-dependent index — e.g.
-  // stylex.create — would throw at lint time), so we assert the `export default` token.
+  // A case folder is either a cell (index.tsx that default-exports) or a refusal
+  // (not-compatible.md saying why the lane does not do the case), never both, and either
+  // way it needs a matching cases/<id>.ts. The entry is checked statically (a raw import
+  // of a plugin-dependent index — e.g. stylex.create — would throw at lint time), so we
+  // assert the `export default` token.
   const caseDir = join(dir, "case");
   for (const id of existsSync(caseDir) ? readdirSync(caseDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : []) {
     const entry = join(caseDir, id, "index.tsx");
-    if (!existsSync(entry)) fail(`${tech}/${id}: no index.tsx`);
-    else if (!/export\s+default\b/.test(readFileSync(entry, "utf8"))) fail(`${tech}/${id}: index.tsx has no default export`);
+    const note = join(caseDir, id, "not-compatible.md");
+    if (existsSync(entry) && existsSync(note)) fail(`${tech}/${id}: has both index.tsx and not-compatible.md`);
+    else if (existsSync(entry)) {
+      if (!/export\s+default\b/.test(readFileSync(entry, "utf8"))) fail(`${tech}/${id}: index.tsx has no default export`);
+    } else if (existsSync(note)) {
+      if (!readFileSync(note, "utf8").trim()) fail(`${tech}/${id}: not-compatible.md is empty`);
+    } else fail(`${tech}/${id}: no index.tsx and no not-compatible.md`);
     if (!caseIds.has(id)) fail(`${tech}/${id}: no matching cases/${id}.ts`);
   }
 }

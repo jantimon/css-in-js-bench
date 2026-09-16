@@ -86,10 +86,13 @@ function statusBar(art: Art, arts: Art[]): string {
   }
   const group = arts.filter((a) => a.generated === art.generated);
   const total = group.reduce((n, a) => n + Buffer.byteLength(a.raw), 0);
-  const label = `${group.length} ${art.generated ? "output" : "input"} file${group.length === 1 ? "" : "s"} total: ${fmtBytes(total)} raw`;
+  // "input" / "output" is the one word that says which side of the build this tab shows,
+  // so it is set brighter than the rest of the total.
+  const kind = art.generated ? "output" : "input";
+  const label = `${group.length} <b class="sb-kind">${kind}</b> file${group.length === 1 ? "" : "s"} total: ${escapeHtml(fmtBytes(total))} raw`;
   return (
     `<div class="sb">${parts.map((p) => `<span>${escapeHtml(p)}</span>`).join("")}` +
-    `<span class="sb-total">${escapeHtml(label)}</span></div>`
+    `<span class="sb-total">${label}</span></div>`
   );
 }
 
@@ -101,6 +104,7 @@ body{font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e6edf3}
 .sb{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:6px 16px;padding:7px 16px;background:#161b22;border-bottom:1px solid #21262d;color:#8b949e;font-size:11.5px;z-index:1}
 .sb span{white-space:nowrap}.sb span:first-child{color:#c9d1d9}
 .sb .sb-total{margin-left:auto;color:#6e7681}
+.sb .sb-kind{font-weight:600;color:#e6edf3}
 pre.shiki{margin:0;padding:12px 0;background:#0d1117 !important;overflow:auto}
 pre.shiki code{counter-reset:line}
 .line{counter-increment:line}

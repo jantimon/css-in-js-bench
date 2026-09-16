@@ -24,7 +24,10 @@ Two rules shape everything here:
 
 There is no central registry. A lane exists because its folder exists, and a
 `(case, tech)` cell is measured because `techs/<tech>/case/<case>/index.tsx` exists.
-Adding a lane or a case is a folder, never an edit to a shared list
+Adding a lane or a case is a folder, never an edit to a shared list. A lane that does
+not do a case can say why: `techs/<tech>/case/<case>/not-compatible.md` in place of the
+`index.tsx` lists the lane struck through in that case's editor, with the note as its
+one tab
 
 ## How to read the report
 
@@ -232,7 +235,10 @@ Create `techs/<name>/`:
 4. `case/<id>/index.tsx` for each case the lane covers, default-exporting
    `(i) => ReactElement` — or, on a lane whose `bench.framework` is `"solid"`,
    `(i: () => number) => JSX.Element`, taking the index as an accessor so the interaction
-   pass can drive it from a signal
+   pass can drive it from a signal. For a case the lane cannot do without hacks, write
+   `case/<id>/not-compatible.md` instead: a short note on why, with a source (a doc page,
+   an issue comment). Paragraphs, `- ` lists, `> ` quotes, `[text](url)` links and
+   backticks render; the report lists the lane struck through and shows the note
 
 No registry edits anywhere. `pnpm lint` then validates the package, `pnpm gen:samples` builds it
 

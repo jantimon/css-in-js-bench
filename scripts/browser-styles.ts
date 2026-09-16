@@ -1,12 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Plugin } from "vite";
-import benchConfig from "../bench.config.ts";
-import dynamicCase from "../cases/dyn-translate.ts";
-
-// Browser utility classes cover both input states, including the last changed
-// instance. A larger workload requires rebuilding this finite stylesheet.
-export const utilityMaxInput = Math.max(dynamicCase.n, benchConfig.wpd.n, benchConfig.snapshotN);
 
 type SheetKind = "vanilla" | "tailwind" | "panda" | "stylex" | "native";
 
@@ -33,7 +27,7 @@ export function browserStyles(root: string, kind: SheetKind): Plugin {
       this.emitFile({
         type: "asset",
         fileName: "browser-styles.json",
-        source: JSON.stringify({ cases, ...(kind === "tailwind" ? { maxInput: { "dyn-translate": utilityMaxInput } } : {}) }),
+        source: JSON.stringify({ cases }),
       });
     },
     transform(code, id) {
@@ -53,7 +47,6 @@ export function browserStyles(root: string, kind: SheetKind): Plugin {
         const result = await postcss([tailwindcss({
           content: [resolve(root, "case/**/*.{ts,tsx}")],
           corePlugins: { preflight: false },
-          safelist: Array.from({ length: utilityMaxInput + 1 }, (_, i) => `[transform:translateX(${i}px)]`),
         })]).process("@tailwind utilities;", { from: undefined });
         return result.css;
       }

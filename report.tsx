@@ -61,6 +61,22 @@ async function loadTechs(): Promise<Record<string, TechInfo>> {
   return out;
 }
 
+// A lane says no to a case with techs/<t>/case/<c>/not-compatible.md in place of an
+// index.tsx. The editor lists that lane struck through and shows the note as its one tab.
+// Keyed "<caseId>/<tech>" like the snapshots.
+function loadNotCompatible(techs: Record<string, TechInfo>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const tech of Object.keys(techs)) {
+    const caseDir = join(TECHS_DIR, tech, "case");
+    if (!existsSync(caseDir)) continue;
+    for (const id of readdirSync(caseDir)) {
+      const note = join(caseDir, id, "not-compatible.md");
+      if (existsSync(note)) out[`${id}/${tech}`] = readFileSync(note, "utf8");
+    }
+  }
+  return out;
+}
+
 async function loadCases(): Promise<Record<string, CaseMeta>> {
   const out: Record<string, CaseMeta> = {};
   for (const f of readdirSync(CASES_DIR)) {
@@ -74,6 +90,7 @@ async function loadCases(): Promise<Record<string, CaseMeta>> {
 async function main() {
   assertHttpCheckpointReady(readJson<unknown>(join(RESULT, "_http-checkpoint.json"), undefined));
   const techs = await loadTechs();
+  const notes = loadNotCompatible(techs);
   const cases = await loadCases();
   const wpdManifest = validateWpdResults(RESULT);
   const wpdVersion = wpdManifest.wpd.version;
@@ -263,17 +280,17 @@ async function main() {
           : undefined;
         return { tech: t, label: techs[t].label, n: wpdManifest.config.n, chrome, firefox };
       });
-    // editor lanes = lanes that captured a source snapshot (the iframe files exist for them);
-    // each also carries its rendered-preview image (if screenshots ran) so the editor's "preview"
-    // tab can show that lane's output inline — one image, switched with the selected lane.
+    // editor lanes = lanes that captured a source snapshot (the iframe files exist for them),
+    // each with its rendered-preview image (if screenshots ran) so the editor's "preview" tab
+    // can show that lane's output inline — plus, struck through, the lanes that hold a
+    // not-compatible.md for this case instead of a cell. Same order as everywhere else.
     const editorLanes: EditorLane[] = usedTechs
-      .filter((t) => snaps[`${caseId}/${t}`])
-      .map((t) => ({
-        tech: t,
-        label: techs[t].label,
-        preview: shots[`${caseId}/${t}`]?.[0],
-        files: snaps[`${caseId}/${t}`].files.map((f) => f.name),
-      }));
+      .filter((t) => snaps[`${caseId}/${t}`] || notes[`${caseId}/${t}`])
+      .map((t) =>
+        snaps[`${caseId}/${t}`]
+          ? { tech: t, label: techs[t].label, preview: shots[`${caseId}/${t}`]?.[0], files: snaps[`${caseId}/${t}`].files.map((f) => f.name) }
+          : { tech: t, label: techs[t].label, files: [], note: notes[`${caseId}/${t}`] },
+      );
     return { caseId, cm, bars, payRows, acanBars, attrRows, hydBars, hydWpdRows, inpBars, inpWpdRows, mountBars, mountWpdRows, sweepLines, rtRows, editorLanes, analysis: analyses[caseId] ?? null };
   });
 
@@ -482,7 +499,7 @@ async function main() {
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code" data-screen-only>
               <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
-              <Editor caseId={caseId} lanes={editorLanes} />
+              <Editor caseId={caseId} lanes={editorLanes} caseIds={caseIds} />
             </div>
             <div data-measure="microbench">
               <h3 className="chart-title">
@@ -863,7 +880,9 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-file:hover{background:var(--raised);color:var(--fg-2)}
 .ed-file.active{background:var(--raised-2);color:var(--fg)}
 .ed-file.tech-off{display:none}
-.ed-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.ed-file-off{text-decoration:line-through;color:var(--muted-2)}
+.ed-file-off.active{color:var(--fg-3)}
+.ed-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 /* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
    active, so the first lane's row stays visible and the editor still works. */
 .ed-tabs{display:none;gap:10px;background:var(--panel);border-bottom:1px solid var(--raised-2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
@@ -878,11 +897,30 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-gen::before{content:"→ ";color:var(--muted-2)}
 .ed-tab{background:none;border:0;border-right:1px solid var(--raised-2);color:var(--muted);padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
 .ed-tab:hover{color:var(--fg-2)}
-.ed-tab.active{background:var(--panel);color:var(--fg);box-shadow:inset 0 -2px 0 #1f6feb}
+.ed-tab.active{background:var(--panel);color:var(--fg)}
+/* The active tab's underline is one element per editor, anchored to the active tab, so it
+   slides when the tab changes — also across the row swap of a lane click, since it sits on
+   .ed-main rather than on the row. Only the active row is laid out, so its active tab is
+   the only anchor in reach. Without JS no tab is active, hence no underline to draw. */
+@supports (anchor-name:--a){
+  .ed-tab.active{anchor-name:--ed-tab}
+  .editor.ed-js .ed-main::after{content:"";position:absolute;position-anchor:--ed-tab;bottom:anchor(bottom);left:anchor(left);right:anchor(right);height:2px;background:#1f6feb;pointer-events:none;transition:left .22s cubic-bezier(.2,.7,.2,1),right .22s cubic-bezier(.2,.7,.2,1)}
+  @media (prefers-reduced-motion:reduce){.editor.ed-js .ed-main::after{transition:none}}
+}
+@supports not (anchor-name:--a){
+  .ed-tab.active{box-shadow:inset 0 -2px 0 #1f6feb}
+}
 .ed-frame{width:100%;height:520px;border:0;background:var(--panel)}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
+/* a struck-through lane's not-compatible.md, shown in the body in place of the frame */
+.ed-note{display:none;height:520px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
+.ed-note p,.ed-note ul,.ed-note blockquote{max-width:72ch;margin:0 0 12px}
+.ed-note blockquote{padding:6px 14px;border-left:3px solid var(--raised-2);color:var(--fg)}
+.ed-note a{color:var(--link)}
+.editor.ed-show-note .ed-frame{display:none}
+.editor.ed-show-note .ed-note.active{display:block}
 .buildtime{border:1px solid var(--line);border-radius:12px;padding:6px 22px 18px;background:var(--panel);margin-top:24px}
 .bd-kind{color:var(--fg-3)}
 .outro{border:1px solid var(--line);border-radius:12px;padding:6px 20px 16px;background:var(--panel);margin-top:24px}
@@ -918,7 +956,7 @@ a.mono:hover{text-decoration:underline}
   .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
   .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}
   .ed-main{width:100%}
-  .ed-frame,.ed-shot{height:min(440px,65vh)}
+  .ed-frame,.ed-shot,.ed-note{height:min(440px,65vh)}
   .ed-shot{padding:8px}
   .info .tip,.hide-measure .tip{position:fixed;left:12px;right:12px;bottom:12px;width:auto;max-width:none;transform:none}
   .page-foot{padding-inline:12px}
@@ -984,43 +1022,82 @@ function HideMeasure({ k }: { k: string }) {
 }
 
 const CONTROLLER = `
-for (const ed of document.querySelectorAll('[data-ed]')) {
+// ---- code editor ------------------------------------------------------------------
+// One editor per case. Its state is { lane, art, chosen }: the lane shown in the sidebar,
+// the tab (data-art) open for it, and whether the reader has clicked a tab in THIS editor.
+// The editor opens on the preview. Until the reader picks a tab, a lane click opens that
+// lane's first code file instead of keeping the preview: every lane renders the same
+// image, so a fresh reader clicking through lanes would otherwise see nothing change and
+// never learn that the tabs hold the source and the generated output. Once a tab was
+// chosen, lane clicks keep it. A struck-through lane (data-missing) has one tab, its
+// not-compatible.md, rendered inline as .ed-note; the state machine needs no special case
+// for it since carry() falls back to the lane's first tab in both directions.
+function mountEditor(ed) {
   ed.classList.add('ed-js');
   const frame = ed.querySelector('.ed-frame');
   const shot = ed.querySelector('.ed-shot');
-  const apply = () => {
-    for (const b of ed.querySelectorAll('.ed-file')) b.classList.toggle('active', b.dataset.lane===ed.dataset.lane);
+  const files = [...ed.querySelectorAll('.ed-file')];
+  const rows = [...ed.querySelectorAll('.ed-tabs')];
+  const state = { lane: ed.dataset.lane, art: ed.dataset.art, chosen: false };
+
+  const tabsOf = (lane) => [...rows.find(r => r.dataset.tabsLane===lane).querySelectorAll('.ed-tab')];
+  const firstCode = (lane) => tabsOf(lane).find(t => t.dataset.art!=='preview').dataset.art;
+  // Carry the open tab to another lane. File names differ by extension across lanes
+  // (next-yak text.tsx vs StyleX text.ts), so a missing name falls back to the same stem;
+  // anything still unmatched (a lane without a preview image, say) opens the entry file.
+  const carry = (art, lane) => {
+    const tabs = tabsOf(lane);
+    if (tabs.some(t => t.dataset.art===art)) return art;
+    const stem = ed.querySelector('.ed-tab[data-art="'+art+'"]')?.dataset.stem;
+    return tabs.find(t => stem && t.dataset.stem===stem)?.dataset.art || firstCode(lane);
+  };
+
+  const render = () => {
+    for (const b of files) b.classList.toggle('active', b.dataset.lane===state.lane);
     // every lane's tab row is in the DOM; show only the active lane's
-    for (const row of ed.querySelectorAll('.ed-tabs')) row.classList.toggle('active', row.dataset.tabsLane===ed.dataset.lane);
-    for (const b of ed.querySelectorAll('.ed-tab')) b.classList.toggle('active', b.dataset.art===ed.dataset.art);
-    const preview = ed.dataset.art==='preview';
+    for (const r of rows) r.classList.toggle('active', r.dataset.tabsLane===state.lane);
+    for (const t of ed.querySelectorAll('.ed-tab')) t.classList.toggle('active', t.dataset.art===state.art);
+    const preview = state.art==='preview';
+    const note = state.art==='note';
     ed.classList.toggle('ed-show-shot', preview);
-    if (preview) {
+    ed.classList.toggle('ed-show-note', note);
+    for (const n of ed.querySelectorAll('.ed-note')) n.classList.toggle('active', note && n.dataset.noteLane===state.lane);
+    if (note) {
+      // nothing to load: the note is already in the DOM
+    } else if (preview) {
       // every lane renders identically, so the image rarely changes — the highlighted lane
       // name in the sidebar is what signals which lane's render you're viewing.
-      const psrc = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]')?.dataset.preview || '';
-      if (shot.getAttribute('src')!==psrc) shot.setAttribute('src', psrc);
+      const src = files.find(b => b.dataset.lane===state.lane)?.dataset.preview || '';
+      if (shot.getAttribute('src')!==src) shot.setAttribute('src', src);
     } else {
-      const src = 'assets/code/'+ed.dataset.case+'__'+ed.dataset.lane+'__'+ed.dataset.art+'.html';
+      const src = 'assets/code/'+ed.dataset.case+'__'+state.lane+'__'+state.art+'.html';
       if (frame.getAttribute('src')!==src) frame.setAttribute('src', src);
     }
   };
-  // Switching lane keeps the file you were reading. Names differ by extension across lanes
-  // (next-yak text.tsx vs StyleX text.ts), so match on the stem; anything unmatched falls
-  // back to the entry file. preview and the generated pair exist everywhere, so they stick.
-  const keepArt = (lane) => {
-    const art = ed.dataset.art;
-    if (!art.startsWith('src-')) return art;
-    const row = ed.querySelector('.ed-tabs[data-tabs-lane="'+lane+'"]');
-    const tabs = [...row.querySelectorAll('.ed-tab[data-stem]')];
-    if (tabs.some(t => t.dataset.art===art)) return art;
-    const stem = ed.querySelector('.ed-tab[data-art="'+art+'"]')?.dataset.stem;
-    return tabs.find(t => t.dataset.stem===stem)?.dataset.art || 'src-index.tsx';
+  // byReader: a click in the sidebar. The tech filter also moves an editor off a hidden
+  // lane, and that is not the reader exploring the editor, so it keeps the open tab.
+  const selectLane = (lane, byReader) => {
+    state.art = byReader && !state.chosen ? firstCode(lane) : carry(state.art, lane);
+    state.lane = lane;
+    render();
   };
-  for (const b of ed.querySelectorAll('.ed-file')) b.onclick = () => { ed.dataset.art = keepArt(b.dataset.lane); ed.dataset.lane = b.dataset.lane; apply(); };
-  for (const b of ed.querySelectorAll('.ed-tab')) b.onclick = () => { ed.dataset.art = b.dataset.art; apply(); };
-  apply();
+  const selectTab = (art) => { state.art = art; state.chosen = true; render(); };
+
+  for (const b of files) b.onclick = () => selectLane(b.dataset.lane, true);
+  for (const t of ed.querySelectorAll('.ed-tab')) t.onclick = () => selectTab(t.dataset.art);
+  render();
+  return {
+    // the active lane just got filtered out: move to the first lane still shown,
+    // preferring one with a cell over a struck-through one
+    leaveHiddenLane() {
+      const active = files.find(b => b.dataset.lane===state.lane);
+      const shown = files.filter(b => !b.classList.contains('tech-off'));
+      const visible = shown.find(b => !b.dataset.missing) || shown[0];
+      if (active?.classList.contains('tech-off') && visible) selectLane(visible.dataset.lane, false);
+    },
+  };
 }
+const editors = [...document.querySelectorAll('[data-ed]')].map(mountEditor);
 // tech pills — toggle one lane across every chart, keep the "N / M shown" count live, and
 // if an editor's active lane just got hidden, fall back to its first visible file.
 const techPills = [...document.querySelectorAll('[data-tech-filter]')];
@@ -1103,10 +1180,7 @@ function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
   for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
   for (const b of groupPills) b.classList.toggle('active', lanesOfGroup(b.dataset.groupFilter).some(p => p.classList.contains('active')));
-  for (const ed of document.querySelectorAll('[data-ed]')) {
-    const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
-    if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
-  }
+  for (const e of editors) e.leaveHiddenLane();
   rescaleBars();
   drawSweep();
   syncQuery();
