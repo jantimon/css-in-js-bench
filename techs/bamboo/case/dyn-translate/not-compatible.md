@@ -1,4 +1,4 @@
-Bamboo resolves every `css()` object at build time to a class-string literal and rejects a value that exists only at render. The naive path this case measures, a `translateX` computed from the instance index inside `css()`, fails the build with `css() — dynamic`.
+Bamboo resolves every `css()` object at build time to a class-string literal and rejects a value that exists only at render. The direct path this case measures, a `translateX` computed from the instance index inside `css()`, fails the build with `css() — dynamic`.
 
 The library's author states the position and the intended path:
 

@@ -1,4 +1,4 @@
-Panda extracts styles at build time: a style prop resolves to a name for the declaration the extractor can read from the source and emits nothing for a value composed at render. A `transform` prop built from the instance index yields a class with no rule behind it, so the naive path this case measures cannot be written with the primitive.
+Panda extracts styles at build time: a style prop resolves to a name for the declaration the extractor can read from the source and emits nothing for a value composed at render. A `transform` prop built from the instance index yields a class with no rule behind it, so the direct path this case measures cannot be written with the primitive.
 
 A Panda maintainer, asked about this cell:
 

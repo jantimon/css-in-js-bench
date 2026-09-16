@@ -46,7 +46,7 @@ run holds it. Do not run two sweeps at once.
 bash scripts/wpd-1.3.0/run-node.sh realistic-button cpu 250
 node scripts/wpd-1.3.0/extract-cpu.mjs .wpd-runs/cpu/realistic-button
 
-#    naive dynamic values (Study §1, dynamic)
+#    direct dynamic values (Study §1, dynamic)
 bash scripts/wpd-1.3.0/run-node.sh dyn-translate cpu 200
 node scripts/wpd-1.3.0/extract-cpu.mjs .wpd-runs/cpu/dyn-translate
 
