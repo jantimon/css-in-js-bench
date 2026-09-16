@@ -38,10 +38,11 @@ export const rating = css`
   overflow: hidden;
 `;
 
+// the width is per instance, so the tile sets it in place (a function interpolation
+// the compiler turns into a CSS variable); the mixin holds the static part.
 export const ratingFill = css`
   height: 100%;
   background: #fbbf24;
-  width: var(--pct);
 `;
 
 export const priceRow = css`

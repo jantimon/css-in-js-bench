@@ -63,8 +63,10 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
       <div role="img" aria-label={`Rated ${p.rating} out of 5`} css={css`${rating}`}>
         <div
           aria-hidden="true"
-          style={{ "--pct": pct + "%" } as React.CSSProperties}
-          css={css`${ratingFill}`}
+          css={css`
+            ${ratingFill};
+            width: ${() => pct}%;
+          `}
         />
       </div>
       <div css={css`${priceRow}`}>
