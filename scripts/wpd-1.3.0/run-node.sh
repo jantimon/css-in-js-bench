@@ -23,7 +23,7 @@ fi
 declare -A CASE_N=(
   [realistic-button]=1000 [product-grid]=400 [dyn-fair]=1000 [dyn-translate]=1000
   [btn-variant]=1000 [compose-1]=1000 [compose-3]=1000 [compose-6]=1000
-  [multifile-composition]=1000 [tabs]=1000 [dyn-inline]=1000
+  [multifile-composition]=1000 [tabs]=1000
 )
 N="${CASE_N[$CASE]:?unknown case $CASE - add its n}"
 

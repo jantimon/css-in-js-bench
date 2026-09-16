@@ -2,7 +2,7 @@
 const [,, techA, techB] = process.argv;
 const A = await import(`./techs/${techA}/dist/microbench/entry.mjs`);
 const B = await import(`./techs/${techB}/dist/microbench/entry.mjs`);
-const CASES = process.env.CASES?.split(",") ?? ["btn-variant","button-variants","button-variants-nested","compose-1","compose-3","compose-6","dyn-fair","dyn-inline","dyn-translate","multifile-composition","multifile-shop","product-grid","realistic-button","tabs"];
+const CASES = process.env.CASES?.split(",") ?? ["btn-variant","button-variants","button-variants-nested","compose-1","compose-3","compose-6","dyn-fair","dyn-translate","multifile-composition","multifile-shop","product-grid","realistic-button","tabs"];
 function parse(html) {
   const els = [];
   const tagRe = /<([a-zA-Z][\w-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;

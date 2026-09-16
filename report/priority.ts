@@ -13,10 +13,9 @@ export const CASE_PRIORITY: Record<string, number> = {
   "button-variants": 85,
   "button-variants-nested": 84,
   tabs: 80,
-  // experiment pairs read together: multifile is the tabs A/B, the dyn trio brackets
-  // the dynamic-value mechanisms (direct → best-practice → inline control).
+  // experiment pairs read together: multifile is the tabs A/B, the dyn pair brackets
+  // the dynamic-value mechanisms (direct → best-practice).
   "multifile-composition": 75,
   "dyn-translate": 60,
   "dyn-fair": 55,
-  "dyn-inline": 50,
 };
