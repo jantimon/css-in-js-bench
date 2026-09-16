@@ -52,17 +52,17 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
    when the gap is under ~15%, else "high".
 5. `headline`: one sentence, the case's single most useful takeaway.
 6. `crossCase`: only where sibling cases exist — link tabs ↔ multifile-composition (module
-   boundary vs JSX folding) and dyn-translate ↔ dyn-fair ↔ dyn-inline (naive vs idiomatic vs
+   boundary vs JSX folding) and dyn-translate ↔ dyn-fair ↔ dyn-inline (direct vs idiomatic vs
    inline-style dynamic values) with the concrete deltas.
    FRAMING for dynamic values (dyn-fair and any study-level finding about it): the "best
    practice" implementations for libraries without native dynamic-value support are
    HAND-WRITTEN workarounds — the developer manually splits static class from dynamic
    inline style, replicating by hand what next-yak compiles automatically. Reaching parity
    that way is a build-time optimization done manually, per component, forever. Never frame
-   it as "the cost belongs to the other libraries' naive pattern" — frame it as: next-yak
+   it as "the cost belongs to the other libraries' direct pattern" — frame it as: next-yak
    ships the optimization as a feature; elsewhere the same result costs developer discipline
    on every dynamic value. State both halves: what parity costs the developer, and that the
-   naive pattern is what you get when nobody pays that cost.
+   direct pattern is what you get when nobody pays that cost.
 7. CROSS-FRAMEWORK LANES. Two lanes render Solid 2, not React: `yak-solid` (@yak/solid,
    styled API) and its floor `vanilla-solid` (default-off). They run the same workloads, so
    they rank in the same lists. Explain the framework costs and the shared interaction:
