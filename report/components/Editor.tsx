@@ -23,11 +23,17 @@ export interface EditorLane {
 // off, matching how the rest of the page works.
 //
 // The body is a single <iframe> (for code) and an <img> (for the preview) whose src the
-// vanilla controller swaps on click. Highlighted files live in assets/code/ (compiled by
-// report/code-assets.ts) and preview images in assets/, so the main report stays small.
+// vanilla controller (CONTROLLER in report.tsx) swaps on click. data-lane and data-art on
+// the root are the state it starts from. Highlighted files live in assets/code/ (compiled
+// by report/code-assets.ts) and preview images in assets/, so the main report stays small.
 // Since every lane renders identically (parity), the preview is the same image for all of
 // them — literally the same file, since screenshots are named by a hash of their pixels.
 // The highlighted lane name is what tells you which one you're looking at.
+//
+// The editor opens on the preview. Until the reader clicks a tab, a lane click opens that
+// lane's index.tsx rather than keeping the preview, so a reader clicking through lanes
+// meets the source instead of the same image again. After a tab was chosen, lane clicks
+// keep it (matched by name, then by stem across extensions).
 const GENERATED = [
   { art: "html", file: "output.html" },
   { art: "css", file: "output.css" },

@@ -863,7 +863,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-file:hover{background:var(--raised);color:var(--fg-2)}
 .ed-file.active{background:var(--raised-2);color:var(--fg)}
 .ed-file.tech-off{display:none}
-.ed-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.ed-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 /* One tab row per lane is rendered; CSS shows the active one. Without JS no row is marked
    active, so the first lane's row stays visible and the editor still works. */
 .ed-tabs{display:none;gap:10px;background:var(--panel);border-bottom:1px solid var(--raised-2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
@@ -878,7 +878,19 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ed-gen::before{content:"→ ";color:var(--muted-2)}
 .ed-tab{background:none;border:0;border-right:1px solid var(--raised-2);color:var(--muted);padding:8px 16px;font:12.5px/1 ui-monospace,monospace;cursor:pointer;white-space:nowrap}
 .ed-tab:hover{color:var(--fg-2)}
-.ed-tab.active{background:var(--panel);color:var(--fg);box-shadow:inset 0 -2px 0 #1f6feb}
+.ed-tab.active{background:var(--panel);color:var(--fg)}
+/* The active tab's underline is one element per editor, anchored to the active tab, so it
+   slides when the tab changes — also across the row swap of a lane click, since it sits on
+   .ed-main rather than on the row. Only the active row is laid out, so its active tab is
+   the only anchor in reach. Without JS no tab is active, hence no underline to draw. */
+@supports (anchor-name:--a){
+  .ed-tab.active{anchor-name:--ed-tab}
+  .editor.ed-js .ed-main::after{content:"";position:absolute;position-anchor:--ed-tab;bottom:anchor(bottom);left:anchor(left);right:anchor(right);height:2px;background:#1f6feb;pointer-events:none;transition:left .22s cubic-bezier(.2,.7,.2,1),right .22s cubic-bezier(.2,.7,.2,1)}
+  @media (prefers-reduced-motion:reduce){.editor.ed-js .ed-main::after{transition:none}}
+}
+@supports not (anchor-name:--a){
+  .ed-tab.active{box-shadow:inset 0 -2px 0 #1f6feb}
+}
 .ed-frame{width:100%;height:520px;border:0;background:var(--panel)}
 .ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
@@ -984,43 +996,73 @@ function HideMeasure({ k }: { k: string }) {
 }
 
 const CONTROLLER = `
-for (const ed of document.querySelectorAll('[data-ed]')) {
+// ---- code editor ------------------------------------------------------------------
+// One editor per case. Its state is { lane, art, chosen }: the lane shown in the sidebar,
+// the tab (data-art) open for it, and whether the reader has clicked a tab in THIS editor.
+// The editor opens on the preview. Until the reader picks a tab, a lane click opens that
+// lane's first code file instead of keeping the preview: every lane renders the same
+// image, so a fresh reader clicking through lanes would otherwise see nothing change and
+// never learn that the tabs hold the source and the generated output. Once a tab was
+// chosen, lane clicks keep it.
+function mountEditor(ed) {
   ed.classList.add('ed-js');
   const frame = ed.querySelector('.ed-frame');
   const shot = ed.querySelector('.ed-shot');
-  const apply = () => {
-    for (const b of ed.querySelectorAll('.ed-file')) b.classList.toggle('active', b.dataset.lane===ed.dataset.lane);
+  const files = [...ed.querySelectorAll('.ed-file')];
+  const rows = [...ed.querySelectorAll('.ed-tabs')];
+  const state = { lane: ed.dataset.lane, art: ed.dataset.art, chosen: false };
+
+  const tabsOf = (lane) => [...rows.find(r => r.dataset.tabsLane===lane).querySelectorAll('.ed-tab')];
+  const firstCode = (lane) => tabsOf(lane).find(t => t.dataset.art!=='preview').dataset.art;
+  // Carry the open tab to another lane. File names differ by extension across lanes
+  // (next-yak text.tsx vs StyleX text.ts), so a missing name falls back to the same stem;
+  // anything still unmatched (a lane without a preview image, say) opens the entry file.
+  const carry = (art, lane) => {
+    const tabs = tabsOf(lane);
+    if (tabs.some(t => t.dataset.art===art)) return art;
+    const stem = ed.querySelector('.ed-tab[data-art="'+art+'"]')?.dataset.stem;
+    return tabs.find(t => stem && t.dataset.stem===stem)?.dataset.art || firstCode(lane);
+  };
+
+  const render = () => {
+    for (const b of files) b.classList.toggle('active', b.dataset.lane===state.lane);
     // every lane's tab row is in the DOM; show only the active lane's
-    for (const row of ed.querySelectorAll('.ed-tabs')) row.classList.toggle('active', row.dataset.tabsLane===ed.dataset.lane);
-    for (const b of ed.querySelectorAll('.ed-tab')) b.classList.toggle('active', b.dataset.art===ed.dataset.art);
-    const preview = ed.dataset.art==='preview';
+    for (const r of rows) r.classList.toggle('active', r.dataset.tabsLane===state.lane);
+    for (const t of ed.querySelectorAll('.ed-tab')) t.classList.toggle('active', t.dataset.art===state.art);
+    const preview = state.art==='preview';
     ed.classList.toggle('ed-show-shot', preview);
     if (preview) {
       // every lane renders identically, so the image rarely changes — the highlighted lane
       // name in the sidebar is what signals which lane's render you're viewing.
-      const psrc = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]')?.dataset.preview || '';
-      if (shot.getAttribute('src')!==psrc) shot.setAttribute('src', psrc);
+      const src = files.find(b => b.dataset.lane===state.lane)?.dataset.preview || '';
+      if (shot.getAttribute('src')!==src) shot.setAttribute('src', src);
     } else {
-      const src = 'assets/code/'+ed.dataset.case+'__'+ed.dataset.lane+'__'+ed.dataset.art+'.html';
+      const src = 'assets/code/'+ed.dataset.case+'__'+state.lane+'__'+state.art+'.html';
       if (frame.getAttribute('src')!==src) frame.setAttribute('src', src);
     }
   };
-  // Switching lane keeps the file you were reading. Names differ by extension across lanes
-  // (next-yak text.tsx vs StyleX text.ts), so match on the stem; anything unmatched falls
-  // back to the entry file. preview and the generated pair exist everywhere, so they stick.
-  const keepArt = (lane) => {
-    const art = ed.dataset.art;
-    if (!art.startsWith('src-')) return art;
-    const row = ed.querySelector('.ed-tabs[data-tabs-lane="'+lane+'"]');
-    const tabs = [...row.querySelectorAll('.ed-tab[data-stem]')];
-    if (tabs.some(t => t.dataset.art===art)) return art;
-    const stem = ed.querySelector('.ed-tab[data-art="'+art+'"]')?.dataset.stem;
-    return tabs.find(t => t.dataset.stem===stem)?.dataset.art || 'src-index.tsx';
+  // byReader: a click in the sidebar. The tech filter also moves an editor off a hidden
+  // lane, and that is not the reader exploring the editor, so it keeps the open tab.
+  const selectLane = (lane, byReader) => {
+    state.art = byReader && !state.chosen ? firstCode(lane) : carry(state.art, lane);
+    state.lane = lane;
+    render();
   };
-  for (const b of ed.querySelectorAll('.ed-file')) b.onclick = () => { ed.dataset.art = keepArt(b.dataset.lane); ed.dataset.lane = b.dataset.lane; apply(); };
-  for (const b of ed.querySelectorAll('.ed-tab')) b.onclick = () => { ed.dataset.art = b.dataset.art; apply(); };
-  apply();
+  const selectTab = (art) => { state.art = art; state.chosen = true; render(); };
+
+  for (const b of files) b.onclick = () => selectLane(b.dataset.lane, true);
+  for (const t of ed.querySelectorAll('.ed-tab')) t.onclick = () => selectTab(t.dataset.art);
+  render();
+  return {
+    // the active lane just got filtered out: move to the first lane still shown
+    leaveHiddenLane() {
+      const active = files.find(b => b.dataset.lane===state.lane);
+      const visible = files.find(b => !b.classList.contains('tech-off'));
+      if (active?.classList.contains('tech-off') && visible) selectLane(visible.dataset.lane, false);
+    },
+  };
 }
+const editors = [...document.querySelectorAll('[data-ed]')].map(mountEditor);
 // tech pills — toggle one lane across every chart, keep the "N / M shown" count live, and
 // if an editor's active lane just got hidden, fall back to its first visible file.
 const techPills = [...document.querySelectorAll('[data-tech-filter]')];
@@ -1103,10 +1145,7 @@ function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
   for (const b of enginePills) b.classList.toggle('active', lanesOfEngine(b.dataset.engineFilter).some(p => p.classList.contains('active')));
   for (const b of groupPills) b.classList.toggle('active', lanesOfGroup(b.dataset.groupFilter).some(p => p.classList.contains('active')));
-  for (const ed of document.querySelectorAll('[data-ed]')) {
-    const active = ed.querySelector('.ed-file[data-lane="'+ed.dataset.lane+'"]');
-    if (active && active.classList.contains('tech-off')) ed.querySelector('.ed-file:not(.tech-off)')?.click();
-  }
+  for (const e of editors) e.leaveHiddenLane();
   rescaleBars();
   drawSweep();
   syncQuery();
