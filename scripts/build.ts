@@ -30,7 +30,9 @@ const PER_LANE = MEASURES.filter((m) => m !== "autocannon");
 const STAGES = ["clean", "samples", "backfill", "wpd", "verify", "report"] as const;
 type Stage = (typeof STAGES)[number];
 
-const USAGE = `pnpm build [--fresh | --from <stage>] [--status]
+const USAGE = `pnpm build — measure every lane and case, then write BENCHMARK.html
+
+  usage: pnpm build [--fresh | --from <stage>] [--status]
 
   stages: ${STAGES.join(" → ")}
   --fresh          forget finished stages and start over

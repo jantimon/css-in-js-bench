@@ -1,6 +1,6 @@
 # Per-case analysis prompt
 
-Run this with a strong model (Opus) from the repo root after a full `pnpm gen`. It turns the
+Run this with a strong model (Opus) from the repo root after a full `pnpm build`. It turns the
 report numbers into one JSON summary per case, which `pnpm report` embeds into
 BENCHMARK.html/.md as the "Analysis" block.
 

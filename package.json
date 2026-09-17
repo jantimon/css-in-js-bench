@@ -5,7 +5,6 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "setup:wpd": "node scripts/setup-wpd.mjs",
-    "gen": "node ./scripts/run-gen.mjs",
     "gen:samples": "node ./gen.ts",
     "gen:wpd": "node ./scripts/run-wpd.mjs",
     "gen:wpd:lane": "node ./gen-wpd.ts",

@@ -104,20 +104,80 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 
 ## Running it
 
+You need Node 24+ and pnpm. The browser measures need Chromium through Playwright, and
+screenshots need `avifenc` on `PATH`.
+
+### Quick start
+
 ```bash
 pnpm install
-pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
-pnpm build      # full report build, resumable: clean → samples → backfill → wpd → verify → report
-pnpm gen        # gen:samples → gen:wpd → report, no resume (with --tech/--case: only those cells)
-
-# or run the stages on their own:
-pnpm gen:samples  # build every lane in isolation, write raw samples → result/ (then verifies)
-pnpm gen:wpd      # mandatory WPD lanes, sequential: SSR, mount (a breakdown+deep run group), hydrate, INP, Firefox
-pnpm report       # reduce samples → BENCHMARK.html + BENCHMARK.md (+ BENCHMARK.zip to share)
-pnpm verify     # parity gate: every lane renders the same DOM + pixels (gen:samples runs this too)
-pnpm lint       # validate every tech package's schema
-pnpm dev        # author a single cell with HMR
+pnpm exec playwright install chromium   # browser for the hydrate, inp, mount and screenshot measures
+pnpm setup:wpd                          # pinned WPD + its Chrome/Firefox, into the ignored vendor/wpd
+pnpm build                              # measure every lane and case, then write BENCHMARK.html
+open BENCHMARK.html
 ```
+
+`pnpm build` takes several hours and wants an idle machine. Start it detached and follow
+the log:
+
+```bash
+nohup caffeinate -is pnpm build > /dev/null 2>&1 &
+tail -f .build/build.log
+```
+
+If it stops, run `pnpm build` again. Each finished stage leaves a marker in `.build/done/`,
+so the build continues from the first unfinished stage.
+
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| `pnpm build` | the whole pipeline: clean → samples → backfill → wpd → verify → report |
+| `pnpm build --status` | stage timings, plus every cell the samples stage skipped and backfill re-measured |
+| `pnpm build --from wpd` | redo WPD and everything after it; `--fresh` starts from scratch |
+| `pnpm gen:samples` | the sample battery for every lane, written to `result/`; filter with `--tech`, `--case`, `--measure` |
+| `pnpm gen:wpd` | the WPD lanes, in order: SSR, mount, hydrate, INP, Firefox |
+| `pnpm verify` | the parity gate: every lane renders the same DOM and pixels, and hydration keeps the SSR markup |
+| `pnpm report` | reduce `result/` into BENCHMARK.html, BENCHMARK.md, BENCHMARK.json and a zip to share |
+| `pnpm lint` | validate every lane's package and case folders |
+| `pnpm dev` | author one cell with HMR |
+
+### Re-measure part of it
+
+Results merge per cell, so a filtered run replaces only the cells it measures:
+
+```bash
+pnpm gen:samples --tech 'next-yak*'            # only lanes whose folder name matches (glob)
+pnpm gen:samples --case 'realistic-button'     # only matching cases (glob)
+pnpm gen:samples --measure=microbench,payload  # only these measures (default: all)
+pnpm build --from wpd                          # then WPD, verify and report for everything
+```
+
+WPD must cover every cell before a report, so it has no filtered shortcut: after a partial
+`gen:samples`, `pnpm build --from wpd` finishes the job.
+
+### What the measures need
+
+`microbench` and `payload` are fast and deterministic. `nsweep` (scaling), `autocannon`
+(requests per second under load), `hydrate`, `inp`, `mount` and `screenshots` boot a browser
+or a server and want an idle machine; their knobs live in `bench.config.ts`. `autocannon`
+runs only unfiltered, because its schedule interleaves every lane. `screenshots` writes AVIFs
+to `result/assets/`, named by a hash of their pixels so lanes that render identically share
+one file. WPD waits for an idle machine and runs its lanes as separate processes; its raw
+output is committed as `result/measurement-wpd-*.json`, and `report` and `verify` need a
+complete, zero-failure WPD manifest.
+
+`gen:samples` writes raw samples, never a pre-reduced median, so the statistic is the
+report's choice and can change without re-running. History is git, not labeled runs.
+
+### verify
+
+`gen:samples` runs `verify` at its end (skip with `SKIP_VERIFY=1`; `pnpm build` does, since
+verify is its own stage there). verify proves the core invariant: for each case, every tech
+renders an identical DOM (same element count and tag skeleton, attributes on a whitelist so a
+leaked `$prop` fails) and identical pixels, and the hydrate build matches the SSR markup. The
+static checks always run; the pixel and hydrate checks reuse the screenshots and `dist/` a full
+run produced, and are skipped when those are absent. Diffs land in `result/verify/`.
 
 ### How the next-yak lanes get the library
 
@@ -162,54 +222,6 @@ a chart that mixes them:
   markup only, so both Solid lanes run that same bootstrap from the top of their client
   bundle instead — where the shared framework floor cancels it out.
 
-### gen and verify
-
-`gen` runs `verify` automatically at the end (skip with `SKIP_VERIFY=1`). verify proves
-the core invariant: for each case, every tech renders an identical DOM (same element
-count + tag skeleton, attributes on a whitelist so a leaked `$prop` fails) and identical
-pixels, and the hydrate build matches the SSR markup. Static checks always run, the
-pixel/hydrate checks reuse the screenshots / `dist/` a full run produced (skipped when absent,
-never rebuilt). Diffs land in `result/verify/`
-
-`gen:samples` filters:
-
-```bash
-pnpm gen:samples --tech 'next-yak*'          # only matching lane dirnames (glob)
-pnpm gen:samples --case 'realistic-button'   # only matching cases (glob)
-pnpm gen:samples --measure=microbench,payload  # only these measurements (default = all)
-```
-
-`pnpm build` is the overnight command. Each finished stage leaves a marker in `.build/done/`,
-so after a crash the same command resumes where it stopped; `--fresh` starts over and
-`--from <stage>` redoes a stage and everything after it. Output goes to `.build/build.log`,
-stage timings and every skipped or refilled cell to `.build/status.json` (`pnpm build --status`).
-The backfill stage re-measures the browser cells the samples stage skipped. Start it detached:
-`nohup caffeinate -is pnpm build > /dev/null 2>&1 &`.
-
-The full `pnpm gen` forwards `--tech`/`--case` to **both** generation stages
-(`pnpm gen --tech 'next-yak*'`), then stops before `report` — a filtered WPD run leaves the
-manifest incomplete and isn't reportable, so re-run a plain `pnpm gen` to publish. `--measure`
-(samples-only) and `--lane` (WPD-only) don't apply to the combined run; use the stage directly.
-
-`microbench` + `payload` are fast and deterministic and run by default. The others are
-opt-in, run them deliberately and the browser/load ones on an idle machine: `nsweep`
-(scaling), `autocannon` (req/s under load), `hydrate`, `inp`, `mount`, and `screenshots`
-(browser passes; `screenshots` writes AVIFs to `result/assets/`, named by a hash of their
-pixels so lanes that render identically share one file — `avifenc` must be on `PATH`). E.g.
-`pnpm gen:samples --measure=nsweep,hydrate`. A filtered or partial-measure run merges into
-`result/`, so it won't drop the cells it isn't regenerating. Knobs for the heavy ones
-live in `bench.config.ts` (`hydrate`/`inp`/`screenshots` need
-`pnpm exec playwright install chromium` once). WPD is isolated from the normal workspace
-install: run `pnpm setup:wpd` once, then `pnpm gen:wpd`. The command waits for an idle
-machine and runs six separate processes in a fixed order: Node SSR attribution, Chrome
-mount/hydration/INP breakdowns, Firefox mount breakdown, and Chrome forced-layout blame.
-Raw outputs are committed as `result/measurement-wpd-*.json`. `report` and `verify`
-require a complete, exact, zero-failure WPD manifest; filtered WPD runs are diagnostic
-and intentionally cannot produce a report
-
-`gen` writes raw samples, never a pre-reduced median, so the statistic is the report's
-choice and can change without re-running. History is git, not labeled runs
-
 ### Report analysis
 
 The report's prose is a separate, optional layer on top of the numbers, and it is
@@ -219,7 +231,7 @@ reproducible:
   lane, the same medians the charts draw. Read it directly if you want the numbers without
   the HTML.
 - The per-case analyses and the Key-findings panel are written by running
-  `scripts/prompts/case-analysis.md` with a strong LLM (Opus) after a full `pnpm gen`. It
+  `scripts/prompts/case-analysis.md` with a strong LLM (Opus) after a full `pnpm build`. It
   reads `BENCHMARK.json` plus `result/snapshot.json` and writes one JSON per case into
   `result/analysis/`, which `pnpm report` embeds.
 - The report renders without them. If `result/analysis/` is empty the charts and tables
@@ -283,7 +295,7 @@ That split means:
 
 - report tweak (charts, copy, layout): just push, the site re-renders from the committed
   samples without re-measuring
-- new numbers (lane changed, next-yak version bumped, new case): run `pnpm gen` on a quiet
+- new numbers (lane changed, next-yak version bumped, new case): run `pnpm build` on a quiet
   machine and commit the updated `result/`
 
 `BENCHMARK.html` / `BENCHMARK.md` / `BENCHMARK.zip` are build output and gitignored, the
