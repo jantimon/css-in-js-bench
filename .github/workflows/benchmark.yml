@@ -1,0 +1,112 @@
+# Never add pull_request / pull_request_target triggers. This would be a security risk
+name: benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      tech:
+        description: "Lane glob, e.g. next-yak* (empty = all). Filtered runs are never committed."
+        required: false
+        default: ""
+      case:
+        description: "Case glob (empty = all). Filtered runs are never committed."
+        required: false
+        default: ""
+      commit:
+        description: "Commit results to main (full runs on main only)"
+        type: boolean
+        default: true
+  schedule:
+    # Daily at 02:17 UTC while validating the setup.
+    # Later switch to weekly (Mondays): "17 2 * * 1"
+    - cron: "17 2 * * *"
+
+# Only one benchmark job at a time. A running job is never cancelled;
+# if several runs are waiting, GitHub keeps only the newest one.
+concurrency:
+  group: benchmark-machine
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push result/
+  actions: write # trigger deploy.yml
+
+jobs:
+  bench:
+    if: github.repository == 'jantimon/css-in-js-bench'
+    runs-on: [self-hosted, linux, bench]
+    timeout-minutes: 1320 # 22h
+    env:
+      TECH: ${{ inputs.tech }}
+      CASE: ${{ inputs.case }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          clean: false # keep node_modules/ and vendor/wpd between runs
+
+      - name: Reset workspace (keep caches)
+        run: |
+          git reset --hard
+          git clean -ffdx -e node_modules/ -e vendor/
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install chromium firefox
+          pnpm setup:wpd
+
+      - name: Check machine is idle
+        run: |
+          sleep 30
+          read -r idle steal < <(LC_ALL=C mpstat 1 10 | awk '/^Average/ && $2=="all" {print $NF, $(NF-3)}')
+          echo "idle=${idle}% steal=${steal}%"
+          if ! awk -v i="$idle" -v s="$steal" 'BEGIN { exit !(i >= 95 && s < 1) }'; then
+            echo "::error::Machine not idle (idle=${idle}% steal=${steal}%)"
+            exit 1
+          fi
+          { date -Is; uname -r; lsb_release -ds; node -v; pnpm -v; lscpu; } > machine-info.txt
+
+      - name: Benchmark
+        timeout-minutes: 1200 # 20h, leaves time for upload and commit
+        run: |
+          args=()
+          [[ -n "$TECH" ]] && args+=(--tech "$TECH")
+          [[ -n "$CASE" ]] && args+=(--case "$CASE")
+          pnpm gen "${args[@]}"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ github.run_id }}
+          path: |
+            result/
+            machine-info.txt
+          if-no-files-found: ignore
+
+      - name: Commit results and redeploy
+        if: >-
+          success() &&
+          github.ref == 'refs/heads/main' &&
+          inputs.tech == '' && inputs.case == '' &&
+          (github.event_name != 'workflow_dispatch' || inputs.commit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add result/
+          if git diff --cached --quiet; then
+            echo "No result changes"; exit 0
+          fi
+          git commit -m "bench: update results (${{ github.event_name }}, run ${{ github.run_id }})"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          # Pushes made with GITHUB_TOKEN don't trigger other workflows, so start the deploy explicitly.
+          gh workflow run deploy.yml --ref main
