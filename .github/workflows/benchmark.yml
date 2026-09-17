@@ -58,8 +58,11 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-          pnpm exec playwright install chromium firefox
+          pnpm exec playwright install chromium
           pnpm setup:wpd
+          # Screenshots are encoded with avifenc (libavif); the idle check needs mpstat (sysstat).
+          command -v avifenc >/dev/null || { echo "::error::avifenc not on PATH (install libavif)"; exit 1; }
+          command -v mpstat >/dev/null || { echo "::error::mpstat not on PATH (install sysstat)"; exit 1; }
 
       - name: Check machine is idle
         run: |
@@ -75,10 +78,18 @@ jobs:
       - name: Benchmark
         timeout-minutes: 1200 # 20h, leaves time for upload and commit
         run: |
-          args=()
-          [[ -n "$TECH" ]] && args+=(--tech "$TECH")
-          [[ -n "$CASE" ]] && args+=(--case "$CASE")
-          pnpm gen "${args[@]}"
+          if [[ -z "$TECH" && -z "$CASE" ]]; then
+            # The full report build: clean → samples → backfill → wpd → verify → report.
+            pnpm build --fresh
+          else
+            # A filtered run measures only the matching cells in both stages and is not
+            # reportable (the WPD manifest stays incomplete), so it is never committed.
+            args=()
+            [[ -n "$TECH" ]] && args+=(--tech "$TECH")
+            [[ -n "$CASE" ]] && args+=(--case "$CASE")
+            SKIP_VERIFY=1 pnpm gen:samples "${args[@]}"
+            pnpm gen:wpd "${args[@]}"
+          fi
 
       - name: Upload results
         if: always()
@@ -88,6 +99,10 @@ jobs:
           path: |
             result/
             machine-info.txt
+            .build/
+            BENCHMARK.html
+            BENCHMARK.md
+            BENCHMARK.json
           if-no-files-found: ignore
 
       - name: Commit results and redeploy
