@@ -27,7 +27,7 @@ import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderH
 import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
-import { validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
+import { settleStatic, validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
@@ -450,6 +450,7 @@ async function screenshotTech(tech: string, ssrMod: SsrModule, cells: Cell[], ca
     for (const cell of cells) {
       const n = Math.min(caseMeta[cell.caseId].n, 6); // a handful of instances reads better than 1,000
       await page.goto(`http://127.0.0.1:${port}/?case=${cell.caseId}&n=${n}&preview=1`, { waitUntil: "load" });
+      await settleStatic(page); // a case's colour transitions can still be running at load
       const el = await page.$("#root");
       const png = await (el ?? page).screenshot();
       const hash = createHash("sha1").update(png).digest("hex").slice(0, 8);

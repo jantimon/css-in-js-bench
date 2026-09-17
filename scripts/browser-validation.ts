@@ -9,6 +9,7 @@ const browserOptions = {
   deviceScaleFactor: benchConfig.browser.deviceScaleFactor,
 };
 
+/** Wait until fonts are ready and every running animation or transition has finished, then one more frame. */
 async function settle(page: Page): Promise<void> {
   await page.evaluate(async (timeout) => {
     let timer: ReturnType<typeof setTimeout>;
@@ -29,6 +30,23 @@ async function settle(page: Page): Promise<void> {
       clearTimeout(timer!);
     }
   }, TIMEOUT);
+}
+
+/**
+ * The same wait for a page whose script execution is disabled: there, requestAnimationFrame
+ * and timers never fire, so the page is polled from outside until its fonts are loaded and
+ * no finite animation or transition is still running.
+ */
+export async function settleStatic(page: Page): Promise<void> {
+  const deadline = Date.now() + TIMEOUT;
+  for (;;) {
+    const busy = await page.evaluate(() =>
+      document.fonts.status !== "loaded" ||
+      document.getAnimations().some((animation) => animation.playState === "running" && Number.isFinite(animation.effect?.getComputedTiming().endTime)));
+    if (!busy) return;
+    if (Date.now() > deadline) throw new Error("Browser fixture did not settle");
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
 }
 
 // Compare the rendered workload, allowing each framework its own class names and
@@ -87,8 +105,8 @@ export async function validateBrowserFixture(
     // Raw CSS belongs only in this independent expected-output page. The served
     // fixture must load the lane's own production CSS and SSR style metadata.
     await reference.setContent(`<!doctype html><meta charset="utf-8"><style>${css}</style><div id="root">${html}</div>`);
-    // No client code or input change runs in these pages. The load event waits
-    // for stylesheets; reading computed styles then forces their application.
+    // No client code or input change runs in these pages.
+    await settleStatic(reference);
     const expected = await readInstances(reference, caseId);
     assert.equal(expected.length, n + 1, `${caseId}: one root element per workload instance`);
 
@@ -96,6 +114,9 @@ export async function validateBrowserFixture(
     watch(ssr);
     await ssr.goto(`${url}&manual=1`, { waitUntil: "load", timeout: TIMEOUT });
     healthy("SSR");
+    // Colour transitions declared by a case can still be running at the load event; the
+    // check reads the page once they have finished.
+    await settleStatic(ssr);
     assert.deepEqual(await readInstances(ssr, caseId), expected.slice(0, n), `${caseId}: styles before client JavaScript`);
 
     const hydrateContext = await browser.newContext(browserOptions);
