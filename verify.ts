@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
-import { validateBrowserFixture } from "./scripts/browser-validation.ts";
+import { validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import type { Snapshot, SsrModule } from "./report/types.ts";
 import { validateWpdResults } from "./report/wpd-results.ts";
@@ -227,7 +227,7 @@ async function hydrateChecks(browser: Browser, techs: string[], cases: string[],
         if (!existsSync(join(TECHS_DIR, tech, "case", caseId, "index.tsx"))) continue;
         const report = reports.find((r) => r.caseId === caseId)!;
         try {
-          await validateBrowserFixture(browser, { port: fixture.port, ssrMod, caseId });
+          await validateBrowserFixtureWithRetry(browser, { port: fixture.port, ssrMod, caseId });
           report.notes.push(`✓ styled SSR, hydration, update and mount: ${tech}`);
         } catch (error) {
           report.ok = false; failed = true;

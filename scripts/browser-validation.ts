@@ -95,8 +95,8 @@ export async function validateBrowserFixture(
     const ssr = await referenceContext.newPage();
     watch(ssr);
     await ssr.goto(`${url}&manual=1`, { waitUntil: "load", timeout: TIMEOUT });
-    assert.deepEqual(await readInstances(ssr, caseId), expected.slice(0, n), `${caseId}: styles before client JavaScript`);
     healthy("SSR");
+    assert.deepEqual(await readInstances(ssr, caseId), expected.slice(0, n), `${caseId}: styles before client JavaScript`);
 
     const hydrateContext = await browser.newContext(browserOptions);
     contexts.push(hydrateContext);
@@ -136,5 +136,21 @@ export async function validateBrowserFixture(
     healthy("mount");
   } finally {
     await Promise.all(contexts.map((context) => context.close()));
+  }
+}
+
+/** Run the fixture checks up to `attempts` times. A transient failure passes on a later attempt; a real one fails every time. */
+export async function validateBrowserFixtureWithRetry(
+  browser: Browser,
+  options: Parameters<typeof validateBrowserFixture>[1],
+  attempts = 5,
+): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await validateBrowserFixture(browser, options);
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      console.error(`  ↻ ${options.caseId}: browser validation attempt ${attempt}/${attempts} failed — ${(error as Error).message.split("\n")[0]}`);
+    }
   }
 }

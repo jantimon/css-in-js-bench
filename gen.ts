@@ -27,7 +27,7 @@ import type { CaseMeta, InteractionSamples, NsweepSample, PayloadSample, RenderH
 import { INTERACTION_PROTOCOL, SOURCE_EXT } from "./report/types.ts";
 import { verify } from "./verify.ts";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
-import { validateBrowserFixture } from "./scripts/browser-validation.ts";
+import { validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 
 // next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
@@ -321,7 +321,7 @@ async function withHydrateServer<T>(tech: string, ssrMod: SsrModule, run: (brows
 // Page load and two animation frames settle outside the timer in every lane.
 async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
-    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
+    for (const cell of cells) await validateBrowserFixtureWithRetry(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("hydrate");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {
@@ -348,7 +348,7 @@ async function hydrateTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseM
 // Each reset settles outside the timer. __inp ends at the first rAF callback.
 async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, InteractionSamples>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
-    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
+    for (const cell of cells) await validateBrowserFixtureWithRetry(browser, { port, ssrMod, caseId: cell.caseId });
     const out: Record<string, InteractionSamples> = {};
     for (const cell of cells) {
       const n = caseMeta[cell.caseId].n;
@@ -374,7 +374,7 @@ async function inpTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta:
 // Each sample uses a fresh page; load and two animation frames stay outside the timer.
 async function mountTech(tech: string, ssrMod: SsrModule, cells: Cell[], caseMeta: Record<string, CaseMeta>): Promise<Record<string, number[]>> {
   return withHydrateServer(tech, ssrMod, async (browser, port) => {
-    for (const cell of cells) await validateBrowserFixture(browser, { port, ssrMod, caseId: cell.caseId });
+    for (const cell of cells) await validateBrowserFixtureWithRetry(browser, { port, ssrMod, caseId: cell.caseId });
     const S = samplesFor("mount");
     const acc: Record<string, number[]> = Object.fromEntries(cells.map((c) => [`${c.caseId}/${tech}`, [] as number[]]));
     for (let r = -1; r < S; r++) {

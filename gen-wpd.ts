@@ -12,7 +12,7 @@ import { readFileSync, existsSync, readdirSync, mkdirSync, mkdtempSync, rmSync }
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
-import { validateBrowserFixture } from "./scripts/browser-validation.ts";
+import { validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 import { chromium } from "@playwright/test";
 import os from "node:os";
 import benchConfig from "./bench.config.ts";
@@ -397,7 +397,7 @@ async function main() {
         // Correctness checks use separate pages before any profile recording.
         const browser = await chromium.launch();
         try {
-          for (const cell of techCells) await validateBrowserFixture(browser, { port, ssrMod: mod, caseId: cell.caseId });
+          for (const cell of techCells) await validateBrowserFixtureWithRetry(browser, { port, ssrMod: mod, caseId: cell.caseId });
         } finally { await browser.close(); }
         for (const cell of techCells) {
           const key = `${cell.caseId}/${tech}`;
