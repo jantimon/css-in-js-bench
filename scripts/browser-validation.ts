@@ -61,8 +61,8 @@ async function readInstances(page: Page, caseId: string) {
       "font-family", "font-size", "font-weight", "line-height", "letter-spacing",
       "text-align", "text-decoration-line", "opacity", "transform", "box-shadow",
       "gap", "align-items", "justify-content", "flex-direction",
+      "width", "height", "background-image",
     ];
-    if (caseId.startsWith("dyn-")) properties.push("width", "height");
     const isWorkload = (element: Element) => !["STYLE", "SCRIPT", "LINK"].includes(element.tagName);
     const read = (element: Element): unknown => {
       const style = getComputedStyle(element);

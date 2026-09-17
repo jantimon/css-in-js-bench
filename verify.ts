@@ -138,7 +138,7 @@ const dataUrl = (file: string) => `data:${MIME[extname(file)] ?? "image/png"};ba
 // onto a common max(w)×max(h) canvas (the area only one image covers stays transparent and
 // counts as differing), so a size delta folds into the SAME ratio. A 2px rounding drift is
 // then a sub-1% ratio (pass); a collapsed image or wrong border is double digits (fail).
-async function pixelDiff(page: Page, aUrl: string, bUrl: string, thr = 16) {
+async function pixelDiff(page: Page, aUrl: string, bUrl: string, thr = 2) {
   return page.evaluate(
     async ([a, b, t]: [string, string, number]) => {
       const load = (src: string) => new Promise<HTMLImageElement>((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
@@ -163,8 +163,12 @@ async function pixelDiff(page: Page, aUrl: string, bUrl: string, thr = 16) {
   );
 }
 
-const PIXEL_EPS = 0.01; // ≤1% differing pixels tolerated — absorbs sub-pixel AA/rounding so
-// only substantive visual breaks fail (a faithful lane renders ~0; a broken one, double digits).
+// Lanes that render the same DOM with the same styles produce byte-identical screenshots,
+// so the gate is tight: a pixel counts as different beyond a 2-level rounding allowance, and
+// 0.05 % of the image (about a thousand pixels at 1520×1456) is the most a lane may differ.
+// A six-tile rating bar at the wrong width is 0.8 %; a gradient rendered flat moves a third
+// of the pixels by a few levels each.
+const PIXEL_EPS = 0.0005;
 
 // tsx/esbuild compiles this file with `keepNames`, wrapping inner functions in a `__name`
 // helper that only exists at module scope. Playwright serializes just the evaluate callback
