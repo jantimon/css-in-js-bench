@@ -1,6 +1,6 @@
 {
-  "ok": false,
-  "generatedAt": "2026-09-17T07:05:07.943Z",
+  "ok": true,
+  "generatedAt": "2026-09-17T07:16:32.640Z",
   "reports": [
     {
       "caseId": "btn-variant",
@@ -255,10 +255,10 @@
     },
     {
       "caseId": "multifile-shop",
-      "ok": false,
+      "ok": true,
       "notes": [
         "✓ 21 techs · 27 elements · attrs clean",
-        "✗ pixels vanilla-solid: 5.90% differ from styled-components → verify/multifile-shop__vanilla-solid__diff.png",
+        "✓ pixels: 21 techs match styled-components",
         "✓ styled SSR, hydration, update and mount: bamboo",
         "✓ styled SSR, hydration, update and mount: cn",
         "✓ styled SSR, hydration, update and mount: cn-solid",
