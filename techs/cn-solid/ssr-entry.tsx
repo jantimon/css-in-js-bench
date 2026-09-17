@@ -2,7 +2,8 @@
 // React, so the pair isolates what the FRAMEWORK costs for a runtime class-merge
 // library. cn only joins/merges class strings at runtime; the stylesheet is the real
 // Tailwind JIT output for exactly the utility classes in the rendered HTML (preflight
-// off — §6.1), generated the same way as in the cn and tailwind-merge lanes.
+// off — §6.1; `@tailwind base` adds only the `*` defaults rule that utilities such as
+// gradients read their variables from), generated the same way as in cn and tailwind-merge.
 //
 // renderCase(caseId, n) is SYNCHRONOUS but Tailwind v3's JIT is async, so the JIT runs
 // in a short-lived child process (execFileSync) that reads HTML on stdin and writes CSS
@@ -25,7 +26,7 @@ for await (const chunk of process.stdin) html += chunk;
 const { default: tailwindcss } = await import("tailwindcss");
 const { default: postcss } = await import("postcss");
 const tw = tailwindcss({ content: [{ raw: html, extension: "html" }], corePlugins: { preflight: false } });
-const res = await postcss([tw]).process("@tailwind utilities;", { from: undefined });
+const res = await postcss([tw]).process("@tailwind base; @tailwind utilities;", { from: undefined });
 process.stdout.write(res.css);
 `;
 

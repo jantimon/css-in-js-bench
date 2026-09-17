@@ -1,8 +1,10 @@
 // cn SSR entry — utility-CSS family. Renders n instances, then produces the CSS
 // that markup needs: NOT something the lib authors (cn only joins/merges the class
 // strings at runtime) but the REAL Tailwind JIT stylesheet for exactly the utility
-// classes that appear in the rendered HTML (preflight off, so we measure only the
-// utilities used — §6.1, the honest cost). Identical CSS strategy to tailwind-merge.
+// classes that appear in the rendered HTML. Preflight is off, so we measure only the
+// utilities used (§6.1, the honest cost); `@tailwind base` then contributes just the
+// `*` defaults rule whose custom properties utilities such as gradients read.
+// Identical CSS strategy to tailwind-merge.
 //
 // The harness contract renderCase(caseId, n) is SYNCHRONOUS, but Tailwind v3's JIT
 // engine is async (its postcss plugin rejects .process(...).css / .sync()). We bridge
@@ -33,7 +35,7 @@ for await (const chunk of process.stdin) html += chunk;
 const { default: tailwindcss } = await import("tailwindcss");
 const { default: postcss } = await import("postcss");
 const tw = tailwindcss({ content: [{ raw: html, extension: "html" }], corePlugins: { preflight: false } });
-const res = await postcss([tw]).process("@tailwind utilities;", { from: undefined });
+const res = await postcss([tw]).process("@tailwind base; @tailwind utilities;", { from: undefined });
 process.stdout.write(res.css);
 `;
 

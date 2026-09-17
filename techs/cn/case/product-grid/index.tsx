@@ -30,7 +30,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
   return (
     <li className="flex flex-col [container-type:inline-size] [container-name:tile] border border-solid border-gray-200 rounded-lg p-3 bg-white transition-shadow duration-150 [@media(hover:hover)]:hover:shadow-md motion-reduce:transition-none">
       <div className="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(135deg,#f3f4f6_0%,#e5e7eb_100%)]" />
         {p.discount > 0 && (
           <span className={cn("absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-xs leading-[normal] font-bold text-white", p.discount >= 30 ? "bg-red-600" : "bg-amber-500")}>
             <span className="sr-only">Reduced by </span>-{p.discount}%

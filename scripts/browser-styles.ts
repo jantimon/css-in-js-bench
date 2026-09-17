@@ -47,7 +47,7 @@ export function browserStyles(root: string, kind: SheetKind): Plugin {
         const result = await postcss([tailwindcss({
           content: [resolve(root, "case/**/*.{ts,tsx}")],
           corePlugins: { preflight: false },
-        })]).process("@tailwind utilities;", { from: undefined });
+        })]).process("@tailwind base; @tailwind utilities;", { from: undefined });
         return result.css;
       }
     },
