@@ -107,7 +107,8 @@ server). Those carry that caveat in the report and live in a collapsible appendi
 ```bash
 pnpm install
 pnpm setup:wpd  # install pinned WPD + Chrome/Firefox in ignored vendor/wpd (Node 24+)
-pnpm gen        # full suite: gen:samples → gen:wpd → report (this is the one you usually want)
+pnpm build      # full report build, resumable: clean → samples → backfill → wpd → verify → report
+pnpm gen        # gen:samples → gen:wpd → report, no resume (with --tech/--case: only those cells)
 
 # or run the stages on their own:
 pnpm gen:samples  # build every lane in isolation, write raw samples → result/ (then verifies)
@@ -177,6 +178,13 @@ pnpm gen:samples --tech 'next-yak*'          # only matching lane dirnames (glob
 pnpm gen:samples --case 'realistic-button'   # only matching cases (glob)
 pnpm gen:samples --measure=microbench,payload  # only these measurements (default = all)
 ```
+
+`pnpm build` is the overnight command. Each finished stage leaves a marker in `.build/done/`,
+so after a crash the same command resumes where it stopped; `--fresh` starts over and
+`--from <stage>` redoes a stage and everything after it. Output goes to `.build/build.log`,
+stage timings and every skipped or refilled cell to `.build/status.json` (`pnpm build --status`).
+The backfill stage re-measures the browser cells the samples stage skipped. Start it detached:
+`nohup caffeinate -is pnpm build > /dev/null 2>&1 &`.
 
 The full `pnpm gen` forwards `--tech`/`--case` to **both** generation stages
 (`pnpm gen --tech 'next-yak*'`), then stops before `report` — a filtered WPD run leaves the

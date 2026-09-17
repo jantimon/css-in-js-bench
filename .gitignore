@@ -4,6 +4,8 @@ BENCHMARK.html
 BENCHMARK.md
 BENCHMARK.zip
 /assets/
+# `pnpm build` state: stage markers, log, status.
+.build/
 # Scratch output inside result/ (only the samples + screenshots are tracked).
 result/_prev/
 result/_*.log
