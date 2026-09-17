@@ -223,11 +223,11 @@ importers:
   techs/plumeria:
     dependencies:
       '@plumeria/core':
-        specifier: 19.2.1
-        version: 19.2.1
+        specifier: 19.2.2
+        version: 19.2.2
       '@plumeria/unplugin':
-        specifier: 19.2.1
-        version: 19.2.1(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
+        specifier: 19.2.2
+        version: 19.2.2(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
       react:
         specifier: catalog:dev
         version: 19.3.0
@@ -1232,14 +1232,14 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@plumeria/core@19.2.1':
-    resolution: {integrity: sha512-wJ3A+6ytn8lvVQ7seHm6wzy1W499eAD8rmPFv4HHrBkO2yoXYUj7BiKQ2wSmsLnQjyFbo5A6vIGaHz3XiRSrLg==}
+  '@plumeria/core@19.2.2':
+    resolution: {integrity: sha512-b+/vKroJnbQ+KhuTeaiWk0cexg35C15JbTp82DvoNkZ2mOfhrJYSbxK3VfZ1+sl4vER+h++RqWSntfJYneDxlg==}
 
-  '@plumeria/unplugin@19.2.1':
-    resolution: {integrity: sha512-/blOfaPC843d5DlLcqBmUZzdJ1R7nFnGy5odmyg03B0SEd9ngi9A5bZoxLzIi3UXab3Sw2rIdvWHbuDinRk1kg==}
+  '@plumeria/unplugin@19.2.2':
+    resolution: {integrity: sha512-tDOWxvN5lTAIhqQapAPupNnXiH6u+80ksvVHeujBHeFmVoGWy2vcdKE4rUBhb+CwGNPEBGJapE/t3+rsqZn2Qg==}
 
-  '@plumeria/utils@19.2.1':
-    resolution: {integrity: sha512-rOWkzvtDoZCpKeglT+I8eBOD52/JKllnjVH176r36Deo/1X3tsJUOALwow15SVdYtuc+mrFMNFjBaFRSP5PMxg==}
+  '@plumeria/utils@19.2.2':
+    resolution: {integrity: sha512-UPh+mRUgZh1bLDx/OxKDrwxoP2bwPhoWNNr9dmmvwNKpdgsqrda6RVRZcvUq2XXdG0LbJCkLfrNQ2fygAfp9rQ==}
 
   '@puppeteer/browsers@3.0.6':
     resolution: {integrity: sha512-B/gKoqlFkzhvzsI6jo9K1cZz9o5ypviVv/xu8CwA4grZzyVwN+XfkT+tu8T1zrauuEXv6VhS2oGX+6NL95WcKA==}
@@ -4241,11 +4241,11 @@ snapshots:
     dependencies:
       playwright: 1.63.0
 
-  '@plumeria/core@19.2.1': {}
+  '@plumeria/core@19.2.2': {}
 
-  '@plumeria/unplugin@19.2.1(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
+  '@plumeria/unplugin@19.2.2(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
     dependencies:
-      '@plumeria/utils': 19.2.1
+      '@plumeria/utils': 19.2.2
       '@rollup/pluginutils': 5.4.0
       unplugin: 3.3.0(esbuild@0.28.2)(rolldown@1.2.8)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
     transitivePeerDependencies:
@@ -4260,7 +4260,7 @@ snapshots:
       - vite
       - webpack
 
-  '@plumeria/utils@19.2.1':
+  '@plumeria/utils@19.2.2':
     dependencies:
       '@rust-gear/glob': 1.2.1
       '@swc/core': 1.15.47
