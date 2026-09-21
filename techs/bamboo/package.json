@@ -10,8 +10,8 @@
     "cssKind": "atomic"
   },
   "dependencies": {
-    "@bamboocss/dev": "1.55.6",
-    "@bamboocss/vite": "1.55.6",
+    "@bamboocss/dev": "1.55.7",
+    "@bamboocss/vite": "1.55.7",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }
