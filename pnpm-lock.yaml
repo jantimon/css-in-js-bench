@@ -63,11 +63,11 @@ importers:
   techs/bamboo:
     dependencies:
       '@bamboocss/dev':
-        specifier: 1.55.7
-        version: 1.55.7(typescript@7.1.0-dev.20260826.1)
+        specifier: 1.55.8
+        version: 1.55.8(typescript@7.1.0-dev.20260826.1)
       '@bamboocss/vite':
-        specifier: 1.55.7
-        version: 1.55.7(typescript@7.1.0-dev.20260826.1)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
+        specifier: 1.55.8
+        version: 1.55.8(typescript@7.1.0-dev.20260826.1)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))
       react:
         specifier: catalog:dev
         version: 19.3.0
@@ -501,63 +501,63 @@ packages:
     resolution: {integrity: sha512-eVdMqi3ej5aHhyQ2Si6yD2cAWeV8FJK9UrhK5aL0Sd8hu5GhT+YswhVNbVheOGVYMg8kuGuMaUpkB3stjj4z8A==}
     engines: {node: ^22.18.0 || >=24.11.0}
 
-  '@bamboocss/config@1.55.7':
-    resolution: {integrity: sha512-QClitRz8aWf75LxWE3QpV1MokkELJKU/0wH5YfAlG1UySU3ypNvV/Ii+LLhrockI8aN1m2IyfucurkP9Lbujug==}
+  '@bamboocss/config@1.55.8':
+    resolution: {integrity: sha512-e0aLwOxa555Ot7LrnqTRk4/vzWEnjx5Jj+CzJUavzF9UQ5DJR/uPYx9peYWJS/SChNsvYZR2E2S3tycaiN/oNQ==}
 
-  '@bamboocss/core@1.55.7':
-    resolution: {integrity: sha512-+a0QfKhDTS78gsLcQxzZz684k0/9S0xAX91dPy6B6UF3fXZKWw6SJ/r06byuPymkN/yt2IFPVYDjp4STk61KPA==}
+  '@bamboocss/core@1.55.8':
+    resolution: {integrity: sha512-RcU+ORtpcNZbrMR/a0fwvmoRMiYhvvi0pOpjEtSsaKAQH0mLlywBj0HKYu2A+EyPD4LPFlNhbqqFpMSkMSk0gQ==}
 
-  '@bamboocss/dev@1.55.7':
-    resolution: {integrity: sha512-lVjJYgjtXgc5nhA6ox+CXf3RxwdUvo1IBcVAc3cflV8DUk2Bbnc+q0YzaKW/e8P+YexrUttkeOuXXoqLnYSpDQ==}
+  '@bamboocss/dev@1.55.8':
+    resolution: {integrity: sha512-YQohTImwObCXy12X62dzHiPFPEeOX5uNr5nEyWnMTB6RMyMcsRmi7cfrErKO0xB/AawylVTYcTsGUobXFtPLLw==}
     hasBin: true
 
-  '@bamboocss/extractor@1.55.7':
-    resolution: {integrity: sha512-w9i5ufL5t0bTSkygk4s/U4R2Fa91wC5TclfQo6812Y48fJ9JkiAXfJZX9S6ElwUmZe+aIIwolGzG9r9FB3jqBw==}
+  '@bamboocss/extractor@1.55.8':
+    resolution: {integrity: sha512-HYXlRKZgGRY8DUhWdWlgh28KAO8RVJy15FYn8v4F6Zx0QoNvZq6TBWXk1WeCUWI/2R1DcI0b3nweyYObUHTmAw==}
 
-  '@bamboocss/generator@1.55.7':
-    resolution: {integrity: sha512-KTrRqdqkejNPxhH9hCRK+MD/oK/2P5CnI7ci/yALkUtwQ4KXECHOvOuWRniNitSNTTUdlGXUYJlZfKtQ+NMZmQ==}
+  '@bamboocss/generator@1.55.8':
+    resolution: {integrity: sha512-9nkFy5EqQALKxfBcI0bYWSSbytbHMOfP3jLm1kNq3bRO90oOSeNTol98VGXxTLKxRb3ouRrnGll49bAezHiKiw==}
 
-  '@bamboocss/is-valid-prop@1.55.7':
-    resolution: {integrity: sha512-FyHM3eeeXeqnYgYxe1g8txMR/mCmMLnjXNMh4hB5+MZ75vJxzyGH7ZBlMM8Rln607cltccRiZTOhb5gGaQ5Rcw==}
+  '@bamboocss/is-valid-prop@1.55.8':
+    resolution: {integrity: sha512-qmozxS1lJFBRzZqfSJJP3JZY+aSHuLsVuh5CcBAMj7aUmGGP+TXWfBXrvQQX5KgrHEbCDHiCOGCUKqTCiRkGig==}
 
-  '@bamboocss/logger@1.55.7':
-    resolution: {integrity: sha512-g8Sv7y4cWTxxN7O50neQfVBSNLyhzqCPS8n9urh25s5Z5WdCYVxGclGpcHi0kO52psFD+5jNIkQECXCIq1HQMw==}
+  '@bamboocss/logger@1.55.8':
+    resolution: {integrity: sha512-vZ7YzfcqAOTP+VrjqRUdT5I1HRl7UzSuqR7h9ZnhC8QwSI/OwK5s2zkH/qVMcinewiXFxlfmMB0aV7nDGZ9+Ag==}
 
-  '@bamboocss/node@1.55.7':
-    resolution: {integrity: sha512-waiQ8CB25Akd4wUJtoDS5IwVA5m86hvBRhiediRJhVrLx1tXWzfI/P6MVEb08c/zhsHdWyvdVIteJej2Z9PHTg==}
+  '@bamboocss/node@1.55.8':
+    resolution: {integrity: sha512-4y6Aa5R5OUqOzx0kr2+JazPfSfH5zIv69yU2ZHIsOGdm1jbEBjW32uaKwMV0caTv8BBNSPFAkAUa6cEH0pHFJA==}
 
-  '@bamboocss/parser@1.55.7':
-    resolution: {integrity: sha512-ViDQdrk8lCMFPh7WNQ0tcZMAiNexwdham/hQ4t1huAf7HndDxmvAmOqhfg52j88LPGukhtq6nzoTY2c16Zf+6w==}
+  '@bamboocss/parser@1.55.8':
+    resolution: {integrity: sha512-0H1K9Lw6dZufVbodp+kNWtYs71LHxoiResY+9xbYWvGppUYbSwnBZB5UtMSAcLj+WXU0r/9NtRIY6dZt53W8VQ==}
 
-  '@bamboocss/plugin-svelte@1.55.7':
-    resolution: {integrity: sha512-RZniwWtJ6wfWcRfR0QXeFMzSI8MgCkhJVK20OzTESBG8BrfXo/KvbgIUhyy3NGUjkeM8SdrhSGvXZL0Y8fAPUQ==}
+  '@bamboocss/plugin-svelte@1.55.8':
+    resolution: {integrity: sha512-Z6f9wvTMNwc2WiLBHegd0ZXHhCjMMjvfLmrItyc5ad5rHZDOf/9x7p2AxHrn+P2hbayKjKg0TKsRVNWXQOIbvQ==}
 
-  '@bamboocss/plugin-vue@1.55.7':
-    resolution: {integrity: sha512-9K/J8KX29LHfn9EZbubXqbhZZFnAzsHuImJam9DZaHI4X35T44Vw+EX2cWhgIMbGIX4MTCT3voc0+yAWMGYwPA==}
+  '@bamboocss/plugin-vue@1.55.8':
+    resolution: {integrity: sha512-GyTtbc1JC6xswbEmdR7F9Gyms/3yWVz4K5yn3zUQ+6T+l1Hc2KFTPLJ2YrHyTQfjcKxphXxpXqcPYmwXJBxACQ==}
 
-  '@bamboocss/preset-bamboo@1.55.7':
-    resolution: {integrity: sha512-MuIPpOOMXQ8vyaiJF1HEiWX7j/SSY7pvwrveFhkzp49V/IwPG/RKgCcV6nHMsD4biAiZHIvHcnAiRyplP7+CoQ==}
+  '@bamboocss/preset-bamboo@1.55.8':
+    resolution: {integrity: sha512-ZDYnJAqVVbMvzc9lDRiNjzyffG7hFWfdkxVl/ta4602IugK/01PIrYuwJu0Qge4O1hcBHMx/mlNWQ/32ta3H/Q==}
 
-  '@bamboocss/preset-base@1.55.7':
-    resolution: {integrity: sha512-t1ydSClkL8QWK4Z2ipbCkNBx6Jz6bbypIwkpgqyVyEd0ie1uVSqaS3qVOvRqGMQ5ZHiJe8lFwSAE/zDq6BWHfg==}
+  '@bamboocss/preset-base@1.55.8':
+    resolution: {integrity: sha512-UwQP7VZyY7umyoUxMDEEQ6D3gZDJae9ZLBtd6xVzJ9ZKvsgPLcDSaoeJZTYebLKlB8r+kPUopWPw2zEDboqYCA==}
 
-  '@bamboocss/reporter@1.55.7':
-    resolution: {integrity: sha512-hDFKX3LaBS4dprbq3b5jqHSM+66CraAlBWnJJ0Bcn8onLj3Zf6I5aChUQ+aR8KsykIKFRZ6YsP1vcpzxHCVlGA==}
+  '@bamboocss/reporter@1.55.8':
+    resolution: {integrity: sha512-wY63gOA9IxZZxhKyn42DirOkIJBNhJ0LrOg/CezQzxOmLeAcHmGxkyGgI9qn1PmS0ksKCTgDEuIyaPjmuIArzA==}
 
-  '@bamboocss/shared@1.55.7':
-    resolution: {integrity: sha512-cW66STdo0uUjjrBE/QDqR6+H6AEKETjj6bcf99xBv8DzWU6DWgjGfUSsJ2d8F7KAE+JfQn7s7/cz/pNjGrz+/w==}
+  '@bamboocss/shared@1.55.8':
+    resolution: {integrity: sha512-9I4CSGr8xChXD686jrJ+7HOzTZwHVY3uG1cmvZ0o3zCfH3Y7tcY5mAVDPKhHg4oKV2v+miyUu/ea+Z+6PzwsGA==}
 
-  '@bamboocss/token-dictionary@1.55.7':
-    resolution: {integrity: sha512-z50fO7d8xdA94BEodYtr1uM9ttvoKIGUETJXLgDjV2JGo1/nOw9X3IcLlBvai/Dcltg8Ek1BOr5FIi9UUSdI0w==}
+  '@bamboocss/token-dictionary@1.55.8':
+    resolution: {integrity: sha512-jnRVgoEt1aebtLc7jEV6UvUmRgHpGC+4K9kUWLaiG6kMYVwqXktTboYZaFWd1L/UrbWBdeBrxPz+4D37J+RqmA==}
 
-  '@bamboocss/ts-ast@1.55.7':
-    resolution: {integrity: sha512-Z7MesXrOWI80expB1M+bFlpdB0MqSxTH32e4juawywKcRbruHnudpXrpNN6bKTOnjrQB0uXyPDC4MV9OlI4Ufw==}
+  '@bamboocss/ts-ast@1.55.8':
+    resolution: {integrity: sha512-Y3SCaUVGQWXFYEJBClnj8CE9RmyOLBzhCW76SLRPjK7AZm3F1GF3NTTWeHqgfGPB0mY7kV4J8u7QZMjQ6Csc1w==}
 
-  '@bamboocss/types@1.55.7':
-    resolution: {integrity: sha512-1J9g9bZjICVBm1AkqFRHc++ntuhmZW7Nr3BFGCejbfTiDyUhfbtHixwVOvdmZwEcLtEllFM1deZSmSOdQdFKfQ==}
+  '@bamboocss/types@1.55.8':
+    resolution: {integrity: sha512-pqKNV4jjzclblR8a2u/T1tVCJIAVtGRjAscJ493m1dtSw0M8JmKnfpFM1D+UbPSyoQGvrMFEsucyZH0OjLeCjg==}
 
-  '@bamboocss/vite@1.55.7':
-    resolution: {integrity: sha512-3W35L/+DLIlOfmBmuNstJLbRoXRVYnEZ1jYPNFzeP3/EevSLjYHHjJvKqBYfbPnNmWTTA5YJC1sGwRHwVBr+Cg==}
+  '@bamboocss/vite@1.55.8':
+    resolution: {integrity: sha512-s6axY0M0u22T/Wkob6EoYGPGlByRTZ05vY3U5HRjqN/zG1ydCtHTMISnl6rZzpkrwM9YzZe6NCemjA+al3H+yw==}
     peerDependencies:
       vite: '>=5'
 
@@ -3533,25 +3533,25 @@ snapshots:
       '@babel/helper-string-parser': 8.0.0
       '@babel/helper-validator-identifier': 8.0.4
 
-  '@bamboocss/config@1.55.7':
+  '@bamboocss/config@1.55.8':
     dependencies:
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/preset-bamboo': 1.55.7
-      '@bamboocss/preset-base': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/preset-bamboo': 1.55.8
+      '@bamboocss/preset-base': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/types': 1.55.8
       bundle-n-require: 1.1.2
       escalade: 3.2.0
       microdiff: 1.5.0
       typescript: '@typescript/typescript6@6.0.2'
 
-  '@bamboocss/core@1.55.7':
+  '@bamboocss/core@1.55.8':
     dependencies:
-      '@bamboocss/is-valid-prop': 1.55.7
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/token-dictionary': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/is-valid-prop': 1.55.8
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/token-dictionary': 1.55.8
+      '@bamboocss/types': 1.55.8
       browserslist: 4.28.7
       css-tree: 3.2.1
       lodash.merge: 4.6.2
@@ -3563,65 +3563,65 @@ snapshots:
       postcss-selector-parser: 7.1.5
       ts-pattern: 5.9.0
 
-  '@bamboocss/dev@1.55.7(typescript@7.1.0-dev.20260826.1)':
+  '@bamboocss/dev@1.55.8(typescript@7.1.0-dev.20260826.1)':
     dependencies:
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/node': 1.55.7(typescript@7.1.0-dev.20260826.1)
-      '@bamboocss/preset-bamboo': 1.55.7
-      '@bamboocss/preset-base': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/token-dictionary': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/node': 1.55.8(typescript@7.1.0-dev.20260826.1)
+      '@bamboocss/preset-bamboo': 1.55.8
+      '@bamboocss/preset-base': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/token-dictionary': 1.55.8
+      '@bamboocss/types': 1.55.8
       '@clack/prompts': 0.11.0
       cac: 6.7.14
     transitivePeerDependencies:
       - jsdom
       - typescript
 
-  '@bamboocss/extractor@1.55.7(typescript@7.1.0-dev.20260826.1)':
+  '@bamboocss/extractor@1.55.8(typescript@7.1.0-dev.20260826.1)':
     dependencies:
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/ts-ast': 1.55.7
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/ts-ast': 1.55.8
       ts-evaluator: 2.0.0(typescript@7.1.0-dev.20260826.1)
     transitivePeerDependencies:
       - jsdom
       - typescript
 
-  '@bamboocss/generator@1.55.7':
+  '@bamboocss/generator@1.55.8':
     dependencies:
-      '@bamboocss/core': 1.55.7
-      '@bamboocss/is-valid-prop': 1.55.7
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/token-dictionary': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/core': 1.55.8
+      '@bamboocss/is-valid-prop': 1.55.8
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/token-dictionary': 1.55.8
+      '@bamboocss/types': 1.55.8
       javascript-stringify: 2.1.0
       outdent: 0.8.0
       pluralize: 8.0.0
       postcss: 8.5.26
       ts-pattern: 5.9.0
 
-  '@bamboocss/is-valid-prop@1.55.7': {}
+  '@bamboocss/is-valid-prop@1.55.8': {}
 
-  '@bamboocss/logger@1.55.7':
+  '@bamboocss/logger@1.55.8':
     dependencies:
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/types': 1.55.8
       kleur: 4.1.5
 
-  '@bamboocss/node@1.55.7(typescript@7.1.0-dev.20260826.1)':
+  '@bamboocss/node@1.55.8(typescript@7.1.0-dev.20260826.1)':
     dependencies:
-      '@bamboocss/config': 1.55.7
-      '@bamboocss/core': 1.55.7
-      '@bamboocss/generator': 1.55.7
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/parser': 1.55.7(typescript@7.1.0-dev.20260826.1)
-      '@bamboocss/plugin-svelte': 1.55.7
-      '@bamboocss/plugin-vue': 1.55.7
-      '@bamboocss/reporter': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/token-dictionary': 1.55.7
-      '@bamboocss/ts-ast': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/config': 1.55.8
+      '@bamboocss/core': 1.55.8
+      '@bamboocss/generator': 1.55.8
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/parser': 1.55.8(typescript@7.1.0-dev.20260826.1)
+      '@bamboocss/plugin-svelte': 1.55.8
+      '@bamboocss/plugin-vue': 1.55.8
+      '@bamboocss/reporter': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/token-dictionary': 1.55.8
+      '@bamboocss/ts-ast': 1.55.8
+      '@bamboocss/types': 1.55.8
       chokidar: 5.0.0
       fast-glob: 3.3.3
       fs-extra: 11.3.2
@@ -3641,77 +3641,77 @@ snapshots:
       - jsdom
       - typescript
 
-  '@bamboocss/parser@1.55.7(typescript@7.1.0-dev.20260826.1)':
+  '@bamboocss/parser@1.55.8(typescript@7.1.0-dev.20260826.1)':
     dependencies:
-      '@bamboocss/config': 1.55.7
-      '@bamboocss/core': 1.55.7
-      '@bamboocss/extractor': 1.55.7(typescript@7.1.0-dev.20260826.1)
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/ts-ast': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/config': 1.55.8
+      '@bamboocss/core': 1.55.8
+      '@bamboocss/extractor': 1.55.8(typescript@7.1.0-dev.20260826.1)
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/ts-ast': 1.55.8
+      '@bamboocss/types': 1.55.8
       ts-pattern: 5.9.0
     transitivePeerDependencies:
       - jsdom
       - typescript
 
-  '@bamboocss/plugin-svelte@1.55.7':
+  '@bamboocss/plugin-svelte@1.55.8':
     dependencies:
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/types': 1.55.8
       magic-string: 0.30.21
 
-  '@bamboocss/plugin-vue@1.55.7':
+  '@bamboocss/plugin-vue@1.55.8':
     dependencies:
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/types': 1.55.8
       '@vue/compiler-sfc': 3.5.41
       magic-string: 0.30.21
 
-  '@bamboocss/preset-bamboo@1.55.7':
+  '@bamboocss/preset-bamboo@1.55.8':
     dependencies:
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/types': 1.55.8
 
-  '@bamboocss/preset-base@1.55.7':
+  '@bamboocss/preset-base@1.55.8':
     dependencies:
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/types': 1.55.8
 
-  '@bamboocss/reporter@1.55.7':
+  '@bamboocss/reporter@1.55.8':
     dependencies:
-      '@bamboocss/core': 1.55.7
-      '@bamboocss/generator': 1.55.7
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/core': 1.55.8
+      '@bamboocss/generator': 1.55.8
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/types': 1.55.8
       table: 6.9.0
       wordwrapjs: 5.1.1
 
-  '@bamboocss/shared@1.55.7': {}
+  '@bamboocss/shared@1.55.8': {}
 
-  '@bamboocss/token-dictionary@1.55.7':
+  '@bamboocss/token-dictionary@1.55.8':
     dependencies:
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/types': 1.55.8
       picomatch: 4.0.5
       ts-pattern: 5.9.0
 
-  '@bamboocss/ts-ast@1.55.7':
+  '@bamboocss/ts-ast@1.55.8':
     dependencies:
       '@typescript/api': typescript@7.1.0-dev.20260826.1
       oxc-resolver: 11.24.2
 
-  '@bamboocss/types@1.55.7': {}
+  '@bamboocss/types@1.55.8': {}
 
-  '@bamboocss/vite@1.55.7(typescript@7.1.0-dev.20260826.1)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
+  '@bamboocss/vite@1.55.8(typescript@7.1.0-dev.20260826.1)(vite@8.3.0(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.13))':
     dependencies:
       '@ampproject/remapping': 2.3.0
-      '@bamboocss/config': 1.55.7
-      '@bamboocss/core': 1.55.7
-      '@bamboocss/extractor': 1.55.7(typescript@7.1.0-dev.20260826.1)
-      '@bamboocss/logger': 1.55.7
-      '@bamboocss/node': 1.55.7(typescript@7.1.0-dev.20260826.1)
-      '@bamboocss/shared': 1.55.7
-      '@bamboocss/ts-ast': 1.55.7
-      '@bamboocss/types': 1.55.7
+      '@bamboocss/config': 1.55.8
+      '@bamboocss/core': 1.55.8
+      '@bamboocss/extractor': 1.55.8(typescript@7.1.0-dev.20260826.1)
+      '@bamboocss/logger': 1.55.8
+      '@bamboocss/node': 1.55.8(typescript@7.1.0-dev.20260826.1)
+      '@bamboocss/shared': 1.55.8
+      '@bamboocss/ts-ast': 1.55.8
+      '@bamboocss/types': 1.55.8
       '@jridgewell/gen-mapping': 0.3.13
       magic-string: 0.30.21
       postcss: 8.5.26
