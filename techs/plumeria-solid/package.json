@@ -1,0 +1,22 @@
+{
+  "name": "plumeria-solid",
+  "description": "Plumeria on Solid",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#fb923c",
+    "buildPlugin": "plumeria",
+    "appStylesheet": null,
+    "cssKind": "atomic",
+    "framework": "solid"
+  },
+  "dependencies": {
+    "@plumeria/core": "19.2.14",
+    "@plumeria/unplugin": "19.2.14",
+    "@solidjs/web": "2.0.0-rc.8",
+    "solid-js": "2.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@solidjs/vite-plugin": "3.0.0-next.43"
+  }
+}
