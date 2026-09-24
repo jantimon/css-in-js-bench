@@ -1,0 +1,3 @@
+This case is a wrapper chain: each of three levels adds its own style and hands the accumulated styles down to the next component. Plumeria lets a style value cross one component boundary, but the component that receives it has to put it on an element itself; relaying a received `classStyle` to another component is a build error, because the compiler resolves composition at the call site where the styles are written.
+
+Joining independently resolved class strings at runtime would get the chain through, but it would bypass Plumeria's conflict resolution and make the result depend on class order. So the lane sits this case out rather than measure a workaround. Source: [the lane author's note on the pull request](https://github.com/jantimon/css-in-js-bench/pull/14).
