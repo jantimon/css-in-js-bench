@@ -1,8 +1,8 @@
 {
   "host": "AMD EPYC 9845 160-Core Processor (x64)",
   "node": "v24.21.0",
-  "timestamp": "2026-09-24T09:57:06.000Z",
-  "gitSha": "6d8d2db",
+  "timestamp": "2026-09-25T10:18:10.704Z",
+  "gitSha": "2bca218",
   "techs": [
     "bamboo",
     "cn",
@@ -17,6 +17,7 @@
     "panda-props",
     "panda-recipe",
     "plumeria",
+    "plumeria-solid",
     "styled-components",
     "stylex",
     "stylex-layers",
