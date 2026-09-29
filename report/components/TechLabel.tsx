@@ -15,7 +15,7 @@ export function logoFor(tech: string): string | null {
   if (tech === "goober") return "assets/logos/goober.avif";
   if (tech === "vanilla" || tech === "vanilla-solid") return "assets/logos/vanilla.avif";
   if (tech === "styled-components") return "assets/logos/styled-components.avif";
-  if (tech === "plumeria") return "assets/logos/plumeria.avif";
+  if (tech.startsWith("plumeria")) return "assets/logos/plumeria.avif";
   return null;
 }
 
@@ -46,6 +46,7 @@ export const TECH_ALIASES: Record<string, string> = {
   "yak-solid-nofold": "yak-solid-nofold",
   "stylex-solid": "stylex-solid",
   "cn-solid": "cn-solid",
+  "plumeria-solid": "plumeria-solid",
 };
 
 // A technology's logo (when one is mapped) followed by its label text. The <img> is decorative

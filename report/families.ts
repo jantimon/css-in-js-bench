@@ -74,7 +74,10 @@ export const FAMILIES: Family[] = [
   },
   {
     group: "Plumeria",
-    items: [{ tech: "plumeria", short: "classStyle" }],
+    items: [
+      { tech: "plumeria", short: "classStyle" },
+      { tech: "plumeria-solid", short: "classStyle" },
+    ],
   },
   {
     group: "Runtime CSS-in-JS",
