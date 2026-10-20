@@ -11,12 +11,12 @@ export const layoutStyles = css.create({
     padding: 0,
     margin: 0,
     listStyle: "none",
+    "@media (min-width: 640px)": {
+      gridTemplateColumns: "repeat(3, minmax(0, 1fr))"
+    },
     [media.desktop]: {
       gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
       gap: 16
-    },
-    "@media (min-width: 640px)": {
-      gridTemplateColumns: "repeat(3, minmax(0, 1fr))"
     }
   },
   card: {
@@ -31,11 +31,11 @@ export const layoutStyles = css.create({
     transition: "box-shadow 0.15s ease",
     containerType: "inline-size",
     containerName: "tile",
-    [media.reduce]: {
-      transition: "none"
-    },
     ":hover": {
       boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)"
+    },
+    [media.reduce]: {
+      transition: "none"
     }
   },
   imageWrap: {

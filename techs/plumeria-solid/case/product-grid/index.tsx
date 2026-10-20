@@ -23,6 +23,14 @@ const shared = css.create({
     clip: "rect(0, 0, 0, 0)"
   },
   minTarget: {
+    "::before": {
+      position: "absolute",
+      inset: "50%",
+      width: "100%",
+      height: "100%",
+      content: '""',
+      translate: "-50% -50%"
+    },
     [coarse]: {
       "::before": {
         minWidth: 44,
@@ -34,14 +42,6 @@ const shared = css.create({
         minWidth: 24,
         minHeight: 24
       }
-    },
-    "::before": {
-      position: "absolute",
-      inset: "50%",
-      width: "100%",
-      height: "100%",
-      content: '""',
-      translate: "-50% -50%"
     }
   },
   focusRing: {
@@ -65,11 +65,11 @@ const styles = css.create({
     transition: "box-shadow 0.15s ease",
     containerType: "inline-size",
     containerName: "tile",
-    [reduce]: {
-      transition: "none"
-    },
     ":hover": {
       boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)"
+    },
+    [reduce]: {
+      transition: "none"
     }
   },
   imageWrap: {
@@ -111,11 +111,11 @@ const styles = css.create({
     borderWidth: 0,
     borderRadius: 9999,
     transition: "color 0.15s ease",
-    [reduce]: {
-      transition: "none"
-    },
     ":hover": {
       color: "#ef4444"
+    },
+    [reduce]: {
+      transition: "none"
     }
   },
   wishlistOn: {
@@ -179,14 +179,14 @@ const styles = css.create({
     borderWidth: 0,
     borderRadius: 6,
     transition: "background-color 0.15s ease",
+    ":hover:not(:disabled)": {
+      backgroundColor: "#1d4ed8"
+    },
     [desktop]: {
       padding: "9px 12px"
     },
     [reduce]: {
       transition: "none"
-    },
-    ":hover:not(:disabled)": {
-      backgroundColor: "#1d4ed8"
     }
   },
   addToCartDisabled: {

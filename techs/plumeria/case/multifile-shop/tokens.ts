@@ -17,6 +17,14 @@ export const shared = css.create({
     clip: "rect(0, 0, 0, 0)"
   },
   minTarget: {
+    "::before": {
+      position: "absolute",
+      inset: "50%",
+      width: "100%",
+      height: "100%",
+      content: '""',
+      translate: "-50% -50%"
+    },
     [media.coarse]: {
       "::before": {
         minWidth: 44,
@@ -28,14 +36,6 @@ export const shared = css.create({
         minWidth: 24,
         minHeight: 24
       }
-    },
-    "::before": {
-      position: "absolute",
-      inset: "50%",
-      width: "100%",
-      height: "100%",
-      content: '""',
-      translate: "-50% -50%"
     }
   },
   focusRing: {

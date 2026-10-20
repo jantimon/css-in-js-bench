@@ -16,11 +16,11 @@ export const controlsStyles = css.create({
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderRadius: 9999,
     transition: "color 0.15s ease",
-    [media.reduce]: {
-      transition: "none"
-    },
     ":hover": {
       color: "#ef4444"
+    },
+    [media.reduce]: {
+      transition: "none"
     }
   },
   wishlistOn: {
@@ -36,14 +36,14 @@ export const controlsStyles = css.create({
     backgroundColor: "#2563eb",
     borderRadius: 6,
     transition: "background-color 0.15s ease",
+    ":hover:not(:disabled)": {
+      backgroundColor: "#1d4ed8"
+    },
     [media.desktop]: {
       padding: "9px 12px"
     },
     [media.reduce]: {
       transition: "none"
-    },
-    ":hover:not(:disabled)": {
-      backgroundColor: "#1d4ed8"
     }
   },
   addToCartDisabled: {

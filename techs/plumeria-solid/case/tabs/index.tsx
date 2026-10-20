@@ -44,10 +44,6 @@ const styles = css.create({
     letterSpacing: "0.01em",
     backgroundColor: "transparent",
     borderStyle: "none",
-    [desktop]: {
-      fontSize: 14,
-      lineHeight: "20px"
-    },
     ":focus-visible": {
       outline: "none"
     },
@@ -69,6 +65,10 @@ const styles = css.create({
       minWidth: 40,
       height: "100%",
       content: '""'
+    },
+    [desktop]: {
+      fontSize: 14,
+      lineHeight: "20px"
     }
   },
   inactive: {

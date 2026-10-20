@@ -25,13 +25,6 @@ const styles = css.create({
     borderStyle: "solid",
     borderWidth: 1,
     borderRadius: 3,
-    [desktop]: {
-      display: "inline-flex",
-      width: "auto",
-      padding: "1px 11px",
-      fontSize: 14,
-      lineHeight: "20px"
-    },
     ":active:not(:disabled)": {
       boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.16), 0px 2px 4px rgba(0, 0, 0, 0.08)",
     },
@@ -50,6 +43,13 @@ const styles = css.create({
       cursor: "default",
       backgroundColor: "transparent",
       borderColor: "rgba(0, 0, 0, 0.1)"
+    },
+    [desktop]: {
+      display: "inline-flex",
+      width: "auto",
+      padding: "1px 11px",
+      fontSize: 14,
+      lineHeight: "20px"
     }
   },
   standard: {
