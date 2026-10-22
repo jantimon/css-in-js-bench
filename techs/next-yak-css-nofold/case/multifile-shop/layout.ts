@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { desktop } from "./tokens";
 
 // Structure fragments. Declarations only — no JSX use site lives in this module.

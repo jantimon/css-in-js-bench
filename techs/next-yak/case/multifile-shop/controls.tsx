@@ -1,4 +1,4 @@
-import { css, styled } from "next-yak";
+import { css, styled } from "@yak/react";
 import { Button } from "./button";
 import { desktop } from "./tokens";
 

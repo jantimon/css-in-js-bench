@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { focusRing, minTargetSize } from "./tokens";
 
 // The base button fragment every tap target is built from — exactly the declarations

@@ -1,6 +1,6 @@
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React, { type FunctionComponent } from "react";
-import { css } from "next-yak";
+import { css } from "@yak/react";
 
 // The SAME product tile as product-grid.yak.tsx, but authored with next-yak's
 // css PROP instead of styled() components: every element is a plain host tag

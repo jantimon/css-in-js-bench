@@ -4,9 +4,9 @@
 // merges all three onto ONE element, which is how this library composes styles.
 // Paired with button-variants-nested, which ships the same ladder as a JSX
 // component API — the pair prices the API shape, not the file layout (both split).
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React from "react";
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { button } from "./button";
 import { ghostButton } from "./ghost-button";
 import { ghostPrimaryButton } from "./ghost-primary-button";

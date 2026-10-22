@@ -8,9 +8,9 @@
 // `mergeCssProp(...)` — distributing styles across a component chain and folding are
 // mutually exclusive in this API. The single-element form (compose-1) still folds.
 // Default-exports a single-instance render(i) (§6); the harness loops it.
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React from 'react';
-import { css } from 'next-yak';
+import { css } from '@yak/react';
 
 interface P { children?: React.ReactNode; className?: string }
 

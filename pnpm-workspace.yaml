@@ -2,7 +2,7 @@
 # with its own declared deps, so the comparison is isolated by construction — a
 # styled-components lane physically cannot import goober.
 #
-# The one external seam is `next-yak`. All four yak lanes pin the same published version
+# The one external seam is `@yak/react`. All four next-yak lanes pin the same published version
 # and resolve straight from the npm registry; the `-nofold` pair sets `foldStatic: false`
 # in its viteYak options.
 packages:
@@ -17,7 +17,7 @@ allowBuilds:
   puppeteer: true
 
 # Disable pnpm 11's "minimum release age" gate (matches the root workspace config) —
-# it would block freshly published next-yak versions and churn an exclude list here.
+# it would block freshly published yak versions and churn an exclude list here.
 minimumReleaseAge: 0
 
 # Shared dev deps the lanes reference as `catalog:dev`. Library-specific deps

@@ -1,6 +1,6 @@
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React, { type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
-import { css } from "next-yak";
+import { css } from "@yak/react";
 
 // The SAME Tabs component as tabs.yak.tsx, authored with the css PROP instead of
 // styled(): the tab button, list item and tab list are plain host tags carrying

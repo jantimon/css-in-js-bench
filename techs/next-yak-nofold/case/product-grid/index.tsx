@@ -1,5 +1,5 @@
 import React, { type FunctionComponent } from "react";
-import { css, styled } from "next-yak";
+import { css, styled } from "@yak/react";
 
 // A realistic shop page: 400 product tiles, each composed of ~11 elements that
 // mix static styles, conditional variants (sale badge, wishlist, stock), a

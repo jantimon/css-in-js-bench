@@ -6,7 +6,7 @@
 // two cases for this lane is what the CSS-variable path costs over the inline style.
 // Default-exports render(i) (§6); the harness loops it.
 import React from 'react';
-import { styled } from 'next-yak';
+import { styled } from '@yak/react';
 
 interface P {
   translateX: number;

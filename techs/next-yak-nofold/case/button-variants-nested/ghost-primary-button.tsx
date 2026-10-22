@@ -1,4 +1,4 @@
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 import { GhostButton } from "./ghost-button";
 
 export const GhostPrimaryButton = styled(GhostButton)`

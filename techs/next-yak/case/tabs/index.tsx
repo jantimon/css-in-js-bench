@@ -1,5 +1,5 @@
 import React, { type ButtonHTMLAttributes, type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
-import { css, styled } from "next-yak";
+import { css, styled } from "@yak/react";
 
 // Port of a real-project Tabs component (galaxus design system). Exercises the
 // hardest CSS this suite has: responsive copy typography, normal/active/hover/

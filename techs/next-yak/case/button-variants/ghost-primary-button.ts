@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 
 /** Brand override on top of ghost. */
 export const ghostPrimaryButton = css`

@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { desktop } from "./tokens";
 
 // The two tap targets. Their shared border/cursor come from the imported base

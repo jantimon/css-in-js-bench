@@ -6,9 +6,9 @@
 // resolves interpolated fragments at build time, so an imported fragment costs nothing
 // — but a $-prop closure reads component scope, so the three dynamic halves cannot
 // leave this file. That asymmetry is the point of the cell.
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React, { type FunctionComponent } from "react";
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { srOnly } from "./tokens";
 import { button } from "./button";
 import { card, imageWrap, imagePlaceholder } from "./layout";

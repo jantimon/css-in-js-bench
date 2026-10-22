@@ -1,6 +1,6 @@
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React from 'react';
-import { css } from 'next-yak';
+import { css } from '@yak/react';
 
 interface P {
   translateX: number;

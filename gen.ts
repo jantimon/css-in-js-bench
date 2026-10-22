@@ -29,7 +29,7 @@ import { verify } from "./verify.ts";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
 import { settleStatic, validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 
-// next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
+// @yak/swc chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
 // here, the first lane built in a run (and any yak-only run) silently transforms in DEV
 // mode (longer class names, unoptimized) — an unfair, non-deterministic mix. Pin prod for
@@ -124,7 +124,7 @@ async function buildTech(tech: string, measurement: Measurement): Promise<SsrMod
   if (!existsSync(configPath)) throw new Error(`${tech}: missing vite.${measurement}.config.ts`);
   // Import the config module directly (gen runs under tsx/ESM) instead of letting
   // vite re-bundle it — vite's config loader requires() the file, which breaks on
-  // ESM-only plugins like next-yak/vite. Resolve fn/promise → inline config.
+  // ESM-only plugins like @yak/react/vite. Resolve fn/promise → inline config.
   let cfg = (await import(pathToFileURL(configPath).href + `?t=${Date.now()}`)).default;
   if (typeof cfg === "function") cfg = cfg();
   cfg = await cfg;

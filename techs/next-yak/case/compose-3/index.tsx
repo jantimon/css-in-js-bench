@@ -1,5 +1,5 @@
 import React from 'react';
-import { styled } from 'next-yak';
+import { styled } from '@yak/react';
 
 const L0 = styled.button`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`;
 const L1 = styled(L0)`border-left:1px solid hsl(53 70% 50%);padding-left:2px;`;

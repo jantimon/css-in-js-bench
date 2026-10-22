@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 
 // The base button as a style VALUE. Exporting a css fragment rather than a
 // component leaves the page free to merge it wherever it likes.

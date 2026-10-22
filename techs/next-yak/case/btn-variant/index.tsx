@@ -1,5 +1,5 @@
 import React from 'react';
-import { styled, css } from 'next-yak';
+import { styled, css } from '@yak/react';
 
 interface P {
   $active?: boolean;

@@ -5,9 +5,9 @@
 // turns into a CSS variable, and that is what dyn-translate measures; the gap between the
 // two cases for this lane is what the CSS-variable path costs over the inline style.
 // Default-exports render(i) (§6); the harness loops it.
-/** @jsxImportSource next-yak */
+/** @jsxImportSource @yak/react */
 import React from 'react';
-import { css } from 'next-yak';
+import { css } from '@yak/react';
 
 interface P {
   translateX: number;

@@ -4,7 +4,7 @@
 // half of the { html, css } contract.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { viteYak } from "next-yak/vite";
+import { viteYak } from "@yak/react/vite";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -15,8 +15,8 @@ export default defineConfig(async () => ({
   root: here,
   plugins: [await viteYak({ basePath: REPO_ROOT, foldStatic: false }), react()],
   define: { "process.env.NODE_ENV": '"production"' },
-  // next-yak comes from the local source (link:), which brings its OWN react — dedupe
-  // to a single copy so next-yak's hooks and react-dom share one dispatcher.
+  // @yak/react brings its OWN react — dedupe
+  // to a single copy so @yak/react's hooks and react-dom share one dispatcher.
   resolve: { dedupe: ["react", "react-dom"] },
   build: {
     outDir: "dist/microbench",

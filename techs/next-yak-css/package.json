@@ -10,7 +10,7 @@
     "cssKind": "extracted"
   },
   "dependencies": {
-    "next-yak": "9.10.2",
+    "@yak/react": "10.0.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }

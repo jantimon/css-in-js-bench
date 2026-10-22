@@ -1,5 +1,5 @@
-/** @jsxImportSource next-yak */
-import { css } from "next-yak";
+/** @jsxImportSource @yak/react */
+import { css } from "@yak/react";
 
 // next-yak with the css PROP: every element is a host tag with css={css`…`}, so
 // there is no styled() wrapper. The SWC plugin extracts all of this to build-time

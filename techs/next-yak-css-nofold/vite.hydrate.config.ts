@@ -4,7 +4,7 @@
 import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { viteYak } from "next-yak/vite";
+import { viteYak } from "@yak/react/vite";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -15,7 +15,7 @@ export default defineConfig(async () => ({
   root: here,
   plugins: [browserStyles(here, "native"), await viteYak({ basePath: REPO_ROOT, foldStatic: false }), react()],
   define: { "process.env.NODE_ENV": '"production"' },
-  // next-yak (link:) brings its own react — dedupe to one copy (single dispatcher).
+  // @yak/react brings its own react — dedupe to one copy (single dispatcher).
   resolve: { dedupe: ["react", "react-dom"] },
   build: {
     outDir: "dist/hydrate",

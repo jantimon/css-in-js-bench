@@ -1,4 +1,4 @@
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 import { Button } from "./button";
 
 /** styled(Component) across a module boundary — the fold never crosses it. */

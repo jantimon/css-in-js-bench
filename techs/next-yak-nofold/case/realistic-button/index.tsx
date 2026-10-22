@@ -1,5 +1,5 @@
 import React from "react";
-import { css, styled } from "next-yak";
+import { css, styled } from "@yak/react";
 
 // Port of a real-project DenseButton: composed css fragments, responsive
 // media query, :hover/:focus-visible/:active/:disabled pseudo-states, a

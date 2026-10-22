@@ -1,4 +1,4 @@
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 import { desktop } from "./tokens";
 
 // Structure primitives. Declarations only — no JSX use site lives in this module,

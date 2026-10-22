@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 
 // The design system's shared style fragments. No components here — only the mixins
 // the primitive modules interpolate, so the fan-out is real: `desktop` is pulled by

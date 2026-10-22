@@ -1,5 +1,5 @@
 import React from 'react';
-import { styled } from 'next-yak';
+import { styled } from '@yak/react';
 
 interface P {
   $translateX: number;

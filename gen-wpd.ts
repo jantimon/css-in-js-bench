@@ -108,7 +108,7 @@ const errLine = (error: unknown) => (((error as { stderr?: string }).stderr || (
 // techs/<tech> resolves to that tech's WORKSPACE package name (its dir name), and the compiled/
 // transformed bundle to wpd's generic first-party buckets `app` / `css-in-js-bench`. A workspace
 // name only counts as `component` when it does NOT collide with a runtime styling-library npm name:
-// for cn / goober / next-yak / styled-components / tailwind-merge the workspace package is named
+// for cn / goober / styled-components / tailwind-merge the workspace package is named
 // after the library it benchmarks, so that key IS the library runtime (measured on the SSR data),
 // and first-party for those lanes lands on `app` instead. Those names therefore stay in `lib`.
 const COMPONENT_PACKAGES = new Set([
@@ -117,7 +117,7 @@ const COMPONENT_PACKAGES = new Set([
   "stylex", "stylex-layers", "stylex-solid", // lib is @stylexjs/stylex
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
   "bamboo", // lib is @bamboocss/* (+ generated styled-system)
-  "next-yak-css", // lib is next-yak (no npm package named next-yak-css)
+  "next-yak", "next-yak-nofold", "next-yak-css", "next-yak-css-nofold", // lib is @yak/react
   "yak-solid", "yak-solid-nofold", // lib is @yak/solid (no npm package named yak-solid)
   "cn-solid", // lib is cn (no npm package named cn-solid)
   "vanilla", "vanilla-solid", // no styling library
@@ -130,13 +130,13 @@ function bucketForPackage(pkg: string): "react" | "lib" | "component" | "other" 
   if (COMPONENT_PACKAGES.has(pkg)) return "component";
   if (/^\(node\)|^\(native\)|^\(program\)|^\(gc\)/.test(pkg)) return "other";
   // Every real styling package (@emotion/*, goober, stylis, styled-system, ...) AND wpd's
-  // `(unmapped: <dir>)` buckets. next-yak ships published sourcemaps whose runtime/internals
+  // `(unmapped: <dir>)` buckets. @yak/react and @yak/solid ship published sourcemaps whose runtime/internals
   // originals are off-disk here, so wpd cannot name their node_modules package and buckets them as
-  // `(unmapped: runtime)` / `(unmapped: internals)`. That cost is next-yak's own library runtime, so
+  // `(unmapped: runtime)` / `(unmapped: internals)`. That cost is yak's own library runtime, so
   // it belongs in `lib` -- and it must NOT be blamed on the user's component. (wpd used to fold it
   // into `app`, which this remap read as `component`; wpd now keeps it out of `app`, so the
   // fallthrough here is what routes it correctly.) The only unmapped buckets this bench produces are
-  // next-yak's, so the fallthrough is load-bearing, not a catch-all to tighten.
+  // yak's, so the fallthrough is load-bearing, not a catch-all to tighten.
   return "lib";
 }
 

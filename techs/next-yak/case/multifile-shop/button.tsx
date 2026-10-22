@@ -1,4 +1,4 @@
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 import { focusRing, minTargetSize } from "./tokens";
 
 // The base button every tap target in the tile is built from — exactly the four

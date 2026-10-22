@@ -5,7 +5,7 @@
 // Paired with button-variants-nested, which ships the same ladder as a JSX
 // component API — the pair prices the API shape, not the file layout (both split).
 import React from "react";
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 import { button } from "./button";
 import { ghostButton } from "./ghost-button";
 import { ghostPrimaryButton } from "./ghost-primary-button";

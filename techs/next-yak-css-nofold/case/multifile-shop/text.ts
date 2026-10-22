@@ -1,4 +1,4 @@
-import { css } from "next-yak";
+import { css } from "@yak/react";
 import { desktop, srOnly } from "./tokens";
 
 // Copy, rating and price fragments. Declarations only — no JSX use site lives here.

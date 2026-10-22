@@ -1,4 +1,4 @@
-import { styled } from "next-yak";
+import { styled } from "@yak/react";
 
 /** The design system's base button. The module's API is the component itself. */
 export const Button = styled.button`
