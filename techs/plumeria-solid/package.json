@@ -11,8 +11,8 @@
     "framework": "solid"
   },
   "dependencies": {
-    "@plumeria/core": "21.1.0",
-    "@plumeria/unplugin": "21.1.0",
+    "@plumeria/core": "21.1.1",
+    "@plumeria/unplugin": "21.1.1",
     "@solidjs/web": "2.0.0-rc.11",
     "solid-js": "2.0.0-rc.11"
   },
