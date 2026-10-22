@@ -28,7 +28,7 @@ export interface MeasurementAnalysis {
     /** value / baseline value — raw quotient, no inversion for lower-is-better */
     ratioToBaseline: number;
   }[];
-  /** the baseline lane's value (the current default next-yak lane), or null when it has no data in this case */
+  /** the baseline lane's value (the current default yak-react lane), or null when it has no data in this case */
   baseline: { tech: string; value: number } | null;
   /** one paragraph: the mechanism behind the ordering, grounded in the WPD numbers */
   why: string;

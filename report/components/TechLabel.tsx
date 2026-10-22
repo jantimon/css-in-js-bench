@@ -1,12 +1,12 @@
 import React from "react";
 
 // Map a lane dirname to its technology logo (mirrored into assets/logos/ by report.tsx).
-// A mark belongs to the library, not the lane, so every next-yak* and yak-solid* lane shares
+// A mark belongs to the library, not the lane, so every yak-react* and yak-solid* lane shares
 // the yak mark, the cn / tailwind-merge lanes share the Tailwind mark, the Panda
 // lanes share the Panda mark, and both vanilla baselines share the vanilla mark. Anything
 // unmapped renders label-only.
 export function logoFor(tech: string): string | null {
-  if (tech.startsWith("next-yak") || tech.startsWith("yak-solid")) return "assets/logos/next-yak.avif";
+  if (tech.startsWith("yak-react") || tech.startsWith("yak-solid")) return "assets/logos/yak.svg";
   if (tech === "tailwind-merge" || tech === "cn" || tech === "cn-solid") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
   if (tech === "bamboo") return "assets/logos/bamboo.png";
@@ -24,7 +24,8 @@ export function logoFor(tech: string): string | null {
 // collision-prone in running text.
 export const TECH_ALIASES: Record<string, string> = {
   "styled-components": "styled-components",
-  "next-yak": "next-yak",
+  "@yak/react": "yak-react",
+  "yak-react": "yak-react",
   "tailwind-merge": "tailwind-merge",
   cn: "cn",
   stylex: "stylex",

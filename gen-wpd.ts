@@ -117,7 +117,7 @@ const COMPONENT_PACKAGES = new Set([
   "stylex", "stylex-layers", "stylex-solid", // lib is @stylexjs/stylex
   "panda", "panda-props", "panda-recipe", // lib is @pandacss/dev (+ generated styled-system)
   "bamboo", // lib is @bamboocss/* (+ generated styled-system)
-  "next-yak", "next-yak-nofold", "next-yak-css", "next-yak-css-nofold", // lib is @yak/react
+  "yak-react", "yak-react-nofold", "yak-react-css", "yak-react-css-nofold", // lib is @yak/react
   "yak-solid", "yak-solid-nofold", // lib is @yak/solid (no npm package named yak-solid)
   "cn-solid", // lib is cn (no npm package named cn-solid)
   "vanilla", "vanilla-solid", // no styling library

@@ -2,7 +2,7 @@
 # with its own declared deps, so the comparison is isolated by construction — a
 # styled-components lane physically cannot import goober.
 #
-# The one external seam is `@yak/react`. All four next-yak lanes pin the same published version
+# The one external seam is `@yak/react`. All four yak-react lanes pin the same published version
 # and resolve straight from the npm registry; the `-nofold` pair sets `foldStatic: false`
 # in its viteYak options.
 packages:

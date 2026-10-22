@@ -2,7 +2,7 @@
 // feature — responsive copy typography, the pseudo-state matrix, the @supports-gated
 // anchor-positioned underline, the ::after fallback underline, the ::before WCAG
 // target, the hidden scrollbar and the full-width composition — becomes a prefixed
-// utility that twMerge(clsx()) parses and conflict-resolves on EVERY render (next-yak
+// utility that twMerge(clsx()) parses and conflict-resolves on EVERY render (@yak/react
 // did it all at build time). Default-exports a single-instance render(i) (§6); the
 // harness loops it. Class strings, sub-components, helpers and the per-group data
 // formula are verbatim from the original twmerge tabs lane.

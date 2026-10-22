@@ -1,7 +1,7 @@
 // tailwind-merge — the DenseButton as a ~40-token Tailwind class list. The pseudo-
 // states, responsive breakpoint, ::before target-size and elevation are all prefixed
 // utilities that twMerge(clsx()) must parse and conflict-resolve on EVERY render
-// (next-yak did all of this at build time). Default-exports a single-instance
+// (@yak/react did all of this at build time). Default-exports a single-instance
 // render(i) (§6); the harness loops it. realistic-button varies variant/disabled/icon
 // by index. Class strings are verbatim from the original twmerge lane.
 import React from "react";

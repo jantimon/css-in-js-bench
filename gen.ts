@@ -9,7 +9,7 @@
 //
 //   pnpm gen:samples                             full battery · all techs · all cases
 //   pnpm gen:samples --measure=microbench        narrow to listed measurements
-//   pnpm gen:samples --tech 'next-yak*'          glob over tech dirnames
+//   pnpm gen:samples --tech 'yak-react*'         glob over tech dirnames
 //   pnpm gen:samples --case 'realistic-button'   glob over cases
 import { build } from "vite";
 import { execSync, execFileSync } from "node:child_process";
@@ -93,7 +93,7 @@ function parseArgs(argv: string[]) {
   }
   return out;
 }
-// dirname glob: only `*` is supported (matches the spec's `next-yak*` examples).
+// dirname glob: only `*` is supported (matches the spec's `yak-react*` examples).
 const globToRe = (g: string) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
 const matches = (glob: string | undefined, name: string) => !glob || globToRe(glob).test(name);
 

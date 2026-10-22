@@ -307,7 +307,7 @@ async function main() {
         <meta property="og:title" content="CSS-in-JS benchmarks" />
         <meta
           property="og:description"
-          content="styled-components, Emotion, Goober, next-yak, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
+          content="styled-components, Emotion, Goober, @yak/react, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://jantimon.github.io/css-in-js-bench/" />
@@ -319,7 +319,7 @@ async function main() {
         <meta name="twitter:title" content="CSS-in-JS benchmarks" />
         <meta
           name="twitter:description"
-          content="styled-components, Emotion, Goober, next-yak, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
+          content="styled-components, Emotion, Goober, @yak/react, StyleX, Panda, Tailwind — identical workloads, measured SSR + client cost."
         />
         <meta name="twitter:image" content="https://jantimon.github.io/css-in-js-bench/assets/social-card.jpg" />
         <link rel="canonical" href="https://jantimon.github.io/css-in-js-bench/" />
@@ -1043,7 +1043,7 @@ function mountEditor(ed) {
   const tabsOf = (lane) => [...rows.find(r => r.dataset.tabsLane===lane).querySelectorAll('.ed-tab')];
   const firstCode = (lane) => tabsOf(lane).find(t => t.dataset.art!=='preview').dataset.art;
   // Carry the open tab to another lane. File names differ by extension across lanes
-  // (next-yak text.tsx vs StyleX text.ts), so a missing name falls back to the same stem;
+  // (@yak/react text.tsx vs StyleX text.ts), so a missing name falls back to the same stem;
   // anything still unmatched (a lane without a preview image, say) opens the entry file.
   const carry = (art, lane) => {
     const tabs = tabsOf(lane);

@@ -86,11 +86,11 @@ for reading, but the byte sizes and class counts in the status bar are measured 
 raw emitted output. Since every lane renders identically, the preview is the same image
 for all of them
 
-Every lane is built in production mode (React's prod runtime). The next-yak lanes all use
-published npm packages, in two API flavours (styled and css-prop) across two build
-settings: `next-yak` / `next-yak-css`, which fold static styles at build time, and
-`next-yak-nofold` / `next-yak-css-nofold`, which set `foldStatic: false` to keep the
-runtime path
+Every lane is built in production mode (React's prod runtime). The yak-react lanes run
+[`@yak/react`](https://www.npmjs.com/package/@yak/react) in two API flavours (styled and
+css-prop) across two build settings: `yak-react` / `yak-react-css`, which fold static
+styles at build time, and `yak-react-nofold` / `yak-react-css-nofold`, which set
+`foldStatic: false` to keep the runtime path
 
 The report is `BENCHMARK.html` plus a sibling `assets/` folder: screenshots and the
 editor's Shiki-highlighted code files, loaded one at a time via an `<iframe>` (keeps the
@@ -147,7 +147,7 @@ so the build continues from the first unfinished stage.
 Results merge per cell, so a filtered run replaces only the cells it measures:
 
 ```bash
-pnpm gen:samples --tech 'next-yak*'            # only lanes whose folder name matches (glob)
+pnpm gen:samples --tech 'yak-react*'           # only lanes whose folder name matches (glob)
 pnpm gen:samples --case 'realistic-button'     # only matching cases (glob)
 pnpm gen:samples --measure=microbench,payload  # only these measures (default: all)
 pnpm build --from wpd                          # then WPD, verify and report for everything
@@ -179,15 +179,17 @@ leaked `$prop` fails) and identical pixels, and the hydrate build matches the SS
 static checks always run; the pixel and hydrate checks reuse the screenshots and `dist/` a full
 run produced, and are skipped when those are absent. Diffs land in `result/verify/`.
 
-### How the next-yak lanes get the library
+### How the yak-react lanes get the library
 
-Every next-yak lane pins a published npm version, so `pnpm install` is all it takes.
+Every yak-react lane pins the same published
+[`@yak/react`](https://www.npmjs.com/package/@yak/react) version, so `pnpm install` is all
+it takes.
 There are two settings, each as a styled + css-prop pair:
 
-- `next-yak` / `next-yak-css` — folding on, the default. A static styled usage compiles to
+- `yak-react` / `yak-react-css` — folding on, the default. A static styled usage compiles to
   a plain element with a `className`, and a static `css` prop becomes a plain `className`,
   both skipping the runtime wrapper.
-- `next-yak-nofold` / `next-yak-css-nofold` — `foldStatic: false` passed to `viteYak` in
+- `yak-react-nofold` / `yak-react-css-nofold` — `foldStatic: false` passed to `viteYak` in
   each lane's vite configs, which turns folding off and keeps the runtime path, so the two
   pairs isolate what folding is worth.
 
@@ -278,7 +280,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 |---|---|---|
 | author | vanilla, vanilla-solid | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
-| build-extracted | next-yak (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | @yak/react (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | cn, tailwind-merge | real Tailwind JIT over the rendered HTML |
@@ -295,7 +297,7 @@ That split means:
 
 - report tweak (charts, copy, layout): just push, the site re-renders from the committed
   samples without re-measuring
-- new numbers (lane changed, next-yak version bumped, new case): run `pnpm build` on a quiet
+- new numbers (lane changed, @yak/react version bumped, new case): run `pnpm build` on a quiet
   machine and commit the updated `result/`
 
 `BENCHMARK.html` / `BENCHMARK.md` / `BENCHMARK.zip` are build output and gitignored, the
@@ -306,7 +308,7 @@ deployed site is the canonical copy (the zip is downloadable there for offline s
 `gen` and `report` import only from inside this repository (the report reads `result/`,
 never the lane sources). Every lane is isolated to its own package under `techs/`, so
 library authors can tune their lane via a PR that touches only `techs/<their-lib>/`, see
-"Add a lane" above. Lane PRs don't need Rust unless they touch the next-yak lanes, and
+"Add a lane" above. Lane PRs don't need Rust, and
 `pnpm gen:samples --tech '<your-lane>'` only builds your lane
 
 ### Interaction samples

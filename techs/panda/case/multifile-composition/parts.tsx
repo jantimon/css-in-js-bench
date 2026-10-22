@@ -3,7 +3,7 @@ import React, { type ButtonHTMLAttributes, type FunctionComponent, type Keyboard
 import { css, cx } from "styled-system/css";
 
 // Panda CSS port of the real-project Tabs component (galaxus design system).
-// Renders pixel-identically to the next-yak version: responsive copy typography,
+// Renders pixel-identically to the @yak/react version: responsive copy typography,
 // normal/active/hover/focus-visible/disabled states, an animated active underline
 // via CSS anchor positioning (per-tab ::after fallback under @supports), a
 // ::before WCAG 40px min-target, hidden-scrollbar overflow, and a composed

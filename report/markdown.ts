@@ -16,7 +16,7 @@ import { httpMeasurementNote, type HttpProtocol } from "./http-results.ts";
 import { MEASUREMENT_TITLES, type CaseAnalysis, type MeasurementKey, type StudyAnalysis } from "./analysis-schema.ts";
 
 // The curated lanes, in report order. Dir names (data keys); labels come from package.json.
-const MD_TECHS = ["next-yak", "next-yak-css", "stylex-layers", "bamboo", "cn", "styled-components"] as const;
+const MD_TECHS = ["yak-react", "yak-react-css", "stylex-layers", "bamboo", "cn", "styled-components"] as const;
 
 export interface MdSection {
   caseId: string;
@@ -204,8 +204,8 @@ sort best-first.
   cleared. Median of 3, per lane — one build compiles every workload, so this is not per-case. This is
   developer experience and it depends on the machine; it says nothing about what users get.
 
-**Attribution caveat:** next-yak's compiler inlines its css-prop resolution, so that styling work runs
-from next-yak's own runtime rather than a call into a package. wpd bills it to the **styling lib**
+**Attribution caveat:** @yak/react's compiler inlines its css-prop resolution, so that styling work runs
+from @yak/react's own runtime rather than a call into a package. wpd bills it to the **styling lib**
 bucket, never to **component**.`;
 
 /** Build the full agent-readable markdown report. */

@@ -1,6 +1,6 @@
 // cn — a 3-level wrapper chain (L2→L1→L0), each level prepending its own utility
 // fragment and re-running cn's cn() so the class list is concatenated THREE times per
-// render (next-yak flattened this at build time). Default-exports a single-instance
+// render (@yak/react flattened this at build time). Default-exports a single-instance
 // render(i) (§6).
 import React, { type FunctionComponent } from "react";
 import { cn } from "cn";
