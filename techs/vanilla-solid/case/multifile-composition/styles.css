@@ -1,6 +1,6 @@
 /* Author-written CSS for the Tabs group — the ceiling every lane compiles toward.
    Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR entry
-   imports it ?raw. Mirrors what next-yak/styled extract: responsive copy typography,
+   imports it ?raw. Mirrors what @yak/react/styled extract: responsive copy typography,
    the normal/active/hover/focus-visible/disabled state matrix, an animated active
    underline via CSS anchor positioning (per-tab ::after fallback under @supports), a
    ::before WCAG 40px min-target, hidden-scrollbar overflow and a full-width variant. */

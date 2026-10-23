@@ -2,7 +2,7 @@
 // whose class list is fixed use a plain className string (as a user would write it);
 // cn() is only called where there's something to resolve — the two always-on buttons
 // and the conditional discount badge run twMerge(clsx()) over composed token bundles +
-// conditional fragments on EVERY render (next-yak did all of this at build time).
+// conditional fragments on EVERY render (@yak/react did all of this at build time).
 // Default-exports a single-instance render(i) (§6); the harness loops it. Class
 // strings + the per-item data formula are verbatim from the original twmerge product-grid lane.
 import React, { type FunctionComponent } from "react";

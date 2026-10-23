@@ -10,7 +10,7 @@ export default {
   description:
     "The EXACT Tabs workload — identical DOM, identical CSS — but the styled primitives are moved " +
     "to an imported parts.tsx module, the way a design system ships components. Per-module " +
-    "compile-time optimizations such as next-yak's JSX folding cannot see across the module " +
+    "compile-time optimizations such as @yak/react's JSX folding cannot see across the module " +
     "boundary, while runtime libraries do not care about file layout. Any gap between this case " +
     "and tabs is the cost of that boundary.",
   note: "identical to tabs except for the module boundary",

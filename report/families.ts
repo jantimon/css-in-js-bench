@@ -37,12 +37,12 @@ export const FAMILIES: Family[] = [
     ],
   },
   {
-    group: "next-yak",
+    group: "yak",
     items: [
-      { tech: "next-yak", short: "styled" },
-      { tech: "next-yak-nofold", short: "styled, no fold" },
-      { tech: "next-yak-css", short: "css-prop" },
-      { tech: "next-yak-css-nofold", short: "css-prop, no fold" },
+      { tech: "yak-react", short: "styled" },
+      { tech: "yak-react-nofold", short: "styled, no fold" },
+      { tech: "yak-react-css", short: "css-prop" },
+      { tech: "yak-react-css-nofold", short: "css-prop, no fold" },
       { tech: "yak-solid", short: "styled" },
       { tech: "yak-solid-nofold", short: "styled, no fold" },
     ],

@@ -11,10 +11,10 @@ export default {
   description:
     "The IDENTICAL ladder as button-variants — same declarations, same three modules, same rendered " +
     "element — but each module exports a component instead of a style value: GhostPrimaryButton wraps " +
-    "GhostButton wraps Button. next-yak collapses the chain at construction, so three levels stay one " +
+    "GhostButton wraps Button. @yak/react collapses the chain at construction, so three levels stay one " +
     "React element; the runtime and utility lanes render three components and re-merge at every level. " +
     "The gap to button-variants is what the component API costs, with the file layout held constant. " +
-    "The next-yak css-prop lanes have no cell here: the css prop resolves only top-scope values, so a " +
+    "The @yak/react css-prop lanes have no cell here: the css prop resolves only top-scope values, so a " +
     "style fragment cannot reach a component through a prop — that API composes fragments at build time " +
     "or not at all.",
   note: "same ladder, same three modules, as JSX components",

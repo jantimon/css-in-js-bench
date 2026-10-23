@@ -1,6 +1,6 @@
 /* Author-written CSS for the product grid — the ceiling every lane compiles
    toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla
-   SSR entry imports it ?raw. Mirrors what next-yak/styled extract: a responsive
+   SSR entry imports it ?raw. Mirrors what @yak/react/styled extract: a responsive
    grid, hover guarded behind (hover: hover), :focus-visible rings, WCAG
    min-target-size ::before pseudo-elements, reduced-motion handling, a per-tile
    container query and proper a11y semantics. */

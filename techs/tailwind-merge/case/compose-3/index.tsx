@@ -1,6 +1,6 @@
 // tailwind-merge — a 3-level wrapper chain (L2→L1→L0), each level prepending its own
 // utility fragment and re-running twMerge(clsx()) so the class list is parsed and
-// conflict-resolved THREE times per render (next-yak flattened this at build time).
+// conflict-resolved THREE times per render (@yak/react flattened this at build time).
 // Default-exports a single-instance render(i) (§6). Sub-components are verbatim from the
 // original twmerge compose-3 lane.
 import React, { type FunctionComponent } from "react";

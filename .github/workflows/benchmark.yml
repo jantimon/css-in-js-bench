@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       tech:
-        description: "Lane glob, e.g. next-yak* (empty = all). Filtered runs are never committed."
+        description: "Lane glob, e.g. yak-* (empty = all). Filtered runs are never committed."
         required: false
         default: ""
       case:

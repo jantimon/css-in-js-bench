@@ -1,7 +1,7 @@
 /* Author-written CSS for the 6-level composition — the ceiling every lane compiles
    toward. Returned verbatim as the `css` half of renderCase() (§6.1); the vanilla SSR
    entry imports it ?raw. Maps the styled-components L0→…→L5 chain onto six flat class
-   names on one element — what next-yak flattens the wrapper chain to. */
+   names on one element — what @yak/react flattens the wrapper chain to. */
 .btn {
   display: inline-flex;
   align-items: center;

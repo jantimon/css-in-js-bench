@@ -1,0 +1,18 @@
+{
+  "name": "yak-react-css-nofold",
+  "description": "@yak/react (css prop) foldStatic: false",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#a21caf",
+    "buildPlugin": "yak",
+    "appStylesheet": null,
+    "cssKind": "extracted",
+    "defaultOff": true
+  },
+  "dependencies": {
+    "@yak/react": "10.0.0",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

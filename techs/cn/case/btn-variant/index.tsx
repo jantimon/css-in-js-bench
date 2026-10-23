@@ -1,5 +1,5 @@
 // cn — a variant button whose class list is assembled from conditional utility
-// fragments and concatenated by cn's cn() on EVERY render (next-yak did this at build
+// fragments and concatenated by cn's cn() on EVERY render (@yak/react did this at build
 // time). Default-exports a single-instance render(i) (§6); the harness loops it.
 import React, { type FunctionComponent } from "react";
 import { cn } from "cn";

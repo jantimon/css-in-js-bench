@@ -20,7 +20,7 @@ async function bundle(tech: string, kind: "hydrate" | "microbench") {
   return outDir;
 }
 
-const techs = process.env.BROWSER_STYLES_TECHS?.split(",") ?? ["vanilla", "vanilla-solid", "tailwind-merge", "panda", "stylex", "next-yak", "yak-solid", "bamboo"];
+const techs = process.env.BROWSER_STYLES_TECHS?.split(",") ?? ["vanilla", "vanilla-solid", "tailwind-merge", "panda", "stylex", "yak-react", "yak-solid", "bamboo"];
 for (const tech of techs) {
   test(`${tech} serves working CSS before hydration, after update, and on cold mount`, { timeout: 180_000 }, async (t) => {
     const browser = await chromium.launch();

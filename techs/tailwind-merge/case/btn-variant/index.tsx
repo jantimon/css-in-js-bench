@@ -1,5 +1,5 @@
 // tailwind-merge — a variant button whose class list is assembled from conditional
-// utility fragments, then conflict-resolved by twMerge(clsx()) on EVERY render (next-yak
+// utility fragments, then conflict-resolved by twMerge(clsx()) on EVERY render (@yak/react
 // did this at build time). Default-exports a single-instance render(i) (§6); the harness
 // loops it. The per-item prop shape is verbatim from the original twmerge btn-variant lane.
 import React, { type FunctionComponent } from "react";

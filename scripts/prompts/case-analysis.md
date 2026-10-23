@@ -28,8 +28,8 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
      rank by ms at the largest n.
 2. `winner` = the best lane's dirname. `top3` = the three best lanes (fewer if fewer exist),
    with the exact reduced value and `ratioToBaseline = value / the baseline lane's value`
-   (raw quotient, never inverted). The baseline lane is the default next-yak lane
-   (`next-yak`), or null if it has no data in this case.
+   (raw quotient, never inverted). The baseline lane is the default yak-react lane
+   (`yak-react`), or null if it has no data in this case.
 3. `why` must name the MECHANISM, grounded in the numbers — not restate the ranking. Use the
    WPD data: SSR CPU attribution (react vs lib vs component self-time, byPackage), span
    slices (js/style/layout/paint/gc/idle), blame counts (style-recalcs, forced layouts), and
@@ -53,14 +53,14 @@ For EVERY case in `BENCHMARK.json`, write `result/analysis/<caseId>.json` follow
 5. `headline`: one sentence, the case's single most useful takeaway.
 6. `crossCase`: only where sibling cases exist — link tabs ↔ multifile-composition (module
    boundary vs JSX folding) and dyn-translate ↔ dyn-fair (direct vs idiomatic dynamic values; for the
-   next-yak lanes the gap is what their CSS-variable path costs over a plain inline style)
+   yak-react lanes the gap is what their CSS-variable path costs over a plain inline style)
    with the concrete deltas.
    FRAMING for dynamic values (dyn-fair and any study-level finding about it): the "best
    practice" implementations for libraries without native dynamic-value support are
    HAND-WRITTEN workarounds — the developer manually splits static class from dynamic
-   inline style, replicating by hand what next-yak compiles automatically. Reaching parity
+   inline style, replicating by hand what @yak/react compiles automatically. Reaching parity
    that way is a build-time optimization done manually, per component, forever. Never frame
-   it as "the cost belongs to the other libraries' direct pattern" — frame it as: next-yak
+   it as "the cost belongs to the other libraries' direct pattern" — frame it as: @yak/react
    ships the optimization as a feature; elsewhere the same result costs developer discipline
    on every dynamic value. State both halves: what parity costs the developer, and that the
    direct pattern is what you get when nobody pays that cost.
@@ -114,7 +114,7 @@ Also write `result/analysis/study.json` per the `StudyAnalysis` type in
   (see rule 3's AUDIENCE paragraph — introduce each case as "the Example `<caseId>` shown
   below", backtick identifiers).
 - `libraryHints`: one entry per LIBRARY (not per lane), each under ~140 chars — use
-  `next-yak` as the dirname for the next-yak entry.
+  `yak-react` as the dirname for the @yak/react entry.
 - DEFAULT-OFF LANES (`bench.defaultOff` in techs/*/package.json — check which lanes carry
   it): never make them the subject of a finding or a hint. They are diagnostic variants
   (e.g. the foldStatic:false pair), extreme outliers (e.g. panda-props),

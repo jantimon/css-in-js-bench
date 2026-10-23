@@ -2,8 +2,7 @@
 // the pnpm workspace (npm install in its own folder) so the benchmark's default `pnpm install`
 // stays light — wpd pulls Puppeteer + downloads Chrome/Firefox, which most contributors don't need.
 //
-// This is an OPT-IN heavy setup, like scripts/setup-next-yak.mjs. Run it once before the
-// `render-timing` measurement:
+// This is an OPT-IN heavy setup. Run it once before the `render-timing` measurement:
 //   node scripts/setup-wpd.mjs            install wpd + Chrome + Firefox into vendor/wpd
 //   node scripts/setup-wpd.mjs --force    reinstall even if already present
 // Then: pnpm gen:wpd  (resolves vendor/wpd/node_modules/.bin/wpd; the WPD lanes require this

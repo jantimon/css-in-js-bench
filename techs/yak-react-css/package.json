@@ -1,0 +1,17 @@
+{
+  "name": "yak-react-css",
+  "description": "@yak/react (css prop)",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#d946ef",
+    "buildPlugin": "yak",
+    "appStylesheet": null,
+    "cssKind": "extracted"
+  },
+  "dependencies": {
+    "@yak/react": "10.0.0",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}

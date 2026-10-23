@@ -9,7 +9,7 @@
 //
 //   pnpm gen:samples                             full battery · all techs · all cases
 //   pnpm gen:samples --measure=microbench        narrow to listed measurements
-//   pnpm gen:samples --tech 'next-yak*'          glob over tech dirnames
+//   pnpm gen:samples --tech 'yak-react*'         glob over tech dirnames
 //   pnpm gen:samples --case 'realistic-button'   glob over cases
 import { build } from "vite";
 import { execSync, execFileSync } from "node:child_process";
@@ -29,7 +29,7 @@ import { verify } from "./verify.ts";
 import { serveBrowserFixture } from "./scripts/browser-fixture.ts";
 import { settleStatic, validateBrowserFixtureWithRetry } from "./scripts/browser-validation.ts";
 
-// next-yak's SWC plugin chooses dev vs prod class naming from process.env.NODE_ENV at
+// @yak/swc chooses dev vs prod class naming from process.env.NODE_ENV at
 // PLUGIN INIT — which is BEFORE `vite build` sets NODE_ENV itself. If we don't pin it
 // here, the first lane built in a run (and any yak-only run) silently transforms in DEV
 // mode (longer class names, unoptimized) — an unfair, non-deterministic mix. Pin prod for
@@ -93,7 +93,7 @@ function parseArgs(argv: string[]) {
   }
   return out;
 }
-// dirname glob: only `*` is supported (matches the spec's `next-yak*` examples).
+// dirname glob: only `*` is supported (matches the spec's `yak-react*` examples).
 const globToRe = (g: string) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
 const matches = (glob: string | undefined, name: string) => !glob || globToRe(glob).test(name);
 
@@ -124,7 +124,7 @@ async function buildTech(tech: string, measurement: Measurement): Promise<SsrMod
   if (!existsSync(configPath)) throw new Error(`${tech}: missing vite.${measurement}.config.ts`);
   // Import the config module directly (gen runs under tsx/ESM) instead of letting
   // vite re-bundle it — vite's config loader requires() the file, which breaks on
-  // ESM-only plugins like next-yak/vite. Resolve fn/promise → inline config.
+  // ESM-only plugins like @yak/react/vite. Resolve fn/promise → inline config.
   let cfg = (await import(pathToFileURL(configPath).href + `?t=${Date.now()}`)).default;
   if (typeof cfg === "function") cfg = cfg();
   cfg = await cfg;
