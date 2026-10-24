@@ -21,6 +21,7 @@ export default defineConfig({
       focusVisible: "&:is(:focus-visible, [data-focus-visible])",
     },
   },
-  jsxFramework: "react",
+  // `hash` is left at its default: class names are hashed in production builds and
+  // `bamboo cssgen` output, and readable under `vite dev`.
   outdir: "styled-system",
 });
