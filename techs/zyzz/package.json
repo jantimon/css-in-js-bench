@@ -1,0 +1,17 @@
+{
+  "name": "zyzz",
+  "description": "Zyzz",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#0ea5e9",
+    "buildPlugin": "zyzz",
+    "appStylesheet": null,
+    "cssKind": "extracted"
+  },
+  "dependencies": {
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev",
+    "zyzz": "0.0.42"
+  }
+}

@@ -16,6 +16,7 @@ export function logoFor(tech: string): string | null {
   if (tech === "vanilla" || tech === "vanilla-solid") return "assets/logos/vanilla.avif";
   if (tech === "styled-components") return "assets/logos/styled-components.avif";
   if (tech.startsWith("plumeria")) return "assets/logos/plumeria.avif";
+  if (tech.startsWith("zyzz")) return "assets/logos/zyzz.svg";
   return null;
 }
 
@@ -48,6 +49,8 @@ export const TECH_ALIASES: Record<string, string> = {
   "stylex-solid": "stylex-solid",
   "cn-solid": "cn-solid",
   "plumeria-solid": "plumeria-solid",
+  zyzz: "zyzz",
+  Zyzz: "zyzz",
 };
 
 // A technology's logo (when one is mapped) followed by its label text. The <img> is decorative

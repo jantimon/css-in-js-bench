@@ -281,6 +281,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 | author | vanilla, vanilla-solid | the co-located `styles.css`, read `?raw` |
 | runtime | styled-components, Emotion, Goober | the lib's SSR critical-CSS API at render time |
 | build-extracted | @yak/react (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
+| build-extracted | Zyzz | the zyzz sheet emitted via `ssrEmitAssets`, sliced to the classes used |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
 | utility | cn, tailwind-merge | real Tailwind JIT over the rendered HTML |
