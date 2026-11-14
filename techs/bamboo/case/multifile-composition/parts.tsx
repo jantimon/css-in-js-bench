@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { type ButtonHTMLAttributes, type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
+import React, { type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
 import { css, cx } from "styled-system/css";
 
 // Bamboo port of the real-project Tabs component (galaxus design system).
@@ -99,9 +99,10 @@ const tabBaseStyle = css({
   borderStyle: "none",
 });
 
-interface ITabProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ITabProps {
   isActive?: boolean;
   disabled?: boolean;
+  children?: ReactNode;
 }
 
 const tabListItemStyle = css({
@@ -113,31 +114,24 @@ const tabListItemStyle = css({
   minWidth: "40px",
 });
 
-const TabInternal = ({ isActive, disabled, className, ...props }: ITabProps) => (
+const Tab: FunctionComponent<ITabProps> = ({ isActive, disabled, children }) => (
   <li role="presentation" className={tabListItemStyle}>
     <button
-      {...props}
       type="button"
       role="tab"
       disabled={disabled}
       aria-selected={isActive}
       tabIndex={isActive ? 0 : -1}
-      className={className}
-    />
+      className={cx(
+        tabBaseStyle,
+        normalTabStyle,
+        focusVisibleTabStyle,
+        isActive ? activeTabStyle : hoverDisabledTabStyle,
+      )}
+    >
+      {children}
+    </button>
   </li>
-);
-
-const Tab = ({ isActive, ...props }: ITabProps) => (
-  <TabInternal
-    {...props}
-    isActive={isActive}
-    className={cx(
-      tabBaseStyle,
-      normalTabStyle,
-      focusVisibleTabStyle,
-      isActive ? activeTabStyle : hoverDisabledTabStyle,
-    )}
-  />
 );
 
 const tabListStyle = css({
