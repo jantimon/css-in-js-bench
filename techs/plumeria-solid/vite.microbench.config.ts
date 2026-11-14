@@ -18,7 +18,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [plumeria.vite(), solid({ ssr: true })],
+  plugins: [plumeria.vite({ styleProp: "classStyle" }), solid({ ssr: true })],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/microbench",

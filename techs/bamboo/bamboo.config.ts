@@ -21,6 +21,5 @@ export default defineConfig({
       focusVisible: "&:is(:focus-visible, [data-focus-visible])",
     },
   },
-  jsxFramework: "react",
   outdir: "styled-system",
 });

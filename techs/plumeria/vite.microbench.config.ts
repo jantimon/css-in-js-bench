@@ -13,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [react(), plumeria.vite()],
+  plugins: [react(), plumeria.vite({ styleProp: "classStyle" })],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/microbench",

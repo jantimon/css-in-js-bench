@@ -14,7 +14,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [browserStyles(here, "native"), plumeria.vite(), solid({ ssr: true })],
+  plugins: [browserStyles(here, "native"), plumeria.vite({ styleProp: "classStyle" }), solid({ ssr: true })],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/hydrate",
