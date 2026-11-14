@@ -4,6 +4,21 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  dev:
+    '@pandacss/dev':
+      specifier: 2.5.0
+      version: 2.5.0
+    react:
+      specifier: ^19.3.1
+      version: 19.3.1
+    react-dom:
+      specifier: ^19.3.1
+      version: 19.3.1
+    styled-components:
+      specifier: ^6.6.0
+      version: 6.6.0
+
 importers:
 
   .:
@@ -38,9 +53,6 @@ importers:
       shiki:
         specifier: ^4.6.0
         version: 4.6.0
-      tailwindcss:
-        specifier: ^4.3.5
-        version: 4.3.5
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -74,6 +86,13 @@ importers:
       react-dom:
         specifier: catalog:dev
         version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: 4.3.5
+        version: 4.3.5(vite@8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      tailwindcss:
+        specifier: 4.3.5
+        version: 4.3.5
 
   techs/cn-solid:
     dependencies:
@@ -90,6 +109,12 @@ importers:
       '@solidjs/vite-plugin':
         specifier: 3.0.0-next.57
         version: 3.0.0-next.57(@babel/core@7.29.13)(@solidjs/web@2.0.0-rc.21(solid-js@2.0.0-rc.21))(solid-js@2.0.0-rc.21)(vite@8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      '@tailwindcss/vite':
+        specifier: 4.3.5
+        version: 4.3.5(vite@8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      tailwindcss:
+        specifier: 4.3.5
+        version: 4.3.5
 
   techs/emotion:
     dependencies:
@@ -278,6 +303,13 @@ importers:
       tailwind-merge:
         specifier: 3.7.0
         version: 3.7.0
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: 4.3.5
+        version: 4.3.5(vite@8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      tailwindcss:
+        specifier: 4.3.5
+        version: 4.3.5
 
   techs/vanilla:
     dependencies:
@@ -1962,6 +1994,11 @@ packages:
   '@tailwindcss/oxide@4.3.5':
     resolution: {integrity: sha512-PynqGLZsZvwM9tqD/CUxkOIfyd6K5elZ2MooauzJryP/UqXYgi3yYbtt3N0Xe+MHV/eFKPFQCEfIKAqlAS1CBg==}
     engines: {node: '>= 20'}
+
+  '@tailwindcss/vite@4.3.5':
+    resolution: {integrity: sha512-BCNiY0a1ZjdOHVqw7kyb7U72BwfMF3dfUuN+tQsLWky/J5JOI/r7abibglXfygrZhVO/3u3V+E25kkKTeMkXaQ==}
+    peerDependencies:
+      vite: ^5.2.0 || ^6 || ^7 || ^8
 
   '@toon-format/toon@2.3.1':
     resolution: {integrity: sha512-sWqEMeAJGMda9qRrfPKrX3C4c33CO9SJuvJzzrcBEn5sbDB+k6pSLkDsfN0rVnLQwR97MV3sDgVbcxQNsq8xVw==}
@@ -4690,6 +4727,13 @@ snapshots:
       '@tailwindcss/oxide-wasm32-wasi': 4.3.5
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.5
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.5
+
+  '@tailwindcss/vite@4.3.5(vite@8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))':
+    dependencies:
+      '@tailwindcss/node': 4.3.5
+      '@tailwindcss/oxide': 4.3.5
+      tailwindcss: 4.3.5
+      vite: 8.3.8(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
 
   '@toon-format/toon@2.3.1': {}
 

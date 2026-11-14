@@ -4,6 +4,7 @@
 // (yak SWC, StyleX, …) exactly like vite.microbench.config.ts.
 import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -12,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [browserStyles(here, "tailwind"), react()],
+  plugins: [browserStyles(here, "tailwind"), tailwindcss(), react()],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/hydrate",

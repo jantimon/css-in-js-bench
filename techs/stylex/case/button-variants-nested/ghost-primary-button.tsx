@@ -5,8 +5,8 @@ import { GhostButton } from "./ghost-button";
 
 const styles = stylex.create({
   ghostPrimary: {
-    borderColor: "#2563eb",
-    color: "#2563eb",
+    borderColor: "oklch(54.6% 0.245 262.881)",
+    color: "oklch(54.6% 0.245 262.881)",
   },
 });
 

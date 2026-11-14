@@ -1,5 +1,5 @@
 /** Brand override on top of ghost. */
 export const ghostPrimaryButton = `
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: oklch(54.6% 0.245 262.881);
+  color: oklch(54.6% 0.245 262.881);
 `;

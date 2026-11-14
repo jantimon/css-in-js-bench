@@ -2,15 +2,15 @@
 // that markup needs: NOT something the lib authors (cn only joins/merges the class
 // strings at runtime) but the REAL Tailwind stylesheet for exactly the utility
 // classes that appear in the rendered HTML. Preflight is off, so we measure only the
-// utilities used (§6.1, the honest cost); scripts/tailwind.mjs holds the Tailwind
-// input and theme.
+// utilities used (§6.1, the honest cost); the stylesheet is built from this lane's
+// tailwind.css by scripts/tailwind-ssr.mjs.
 // Identical CSS strategy to tailwind-merge.
 //
 // The harness contract renderCase(caseId, n) is SYNCHRONOUS, but Tailwind's compiler
 // is async. We bridge that by running it in a short-lived child node process
 // (execFileSync) that reads the HTML on stdin and writes the CSS on stdout — keeping
 // renderCase sync while still emitting genuine Tailwind output. The child imports
-// scripts/tailwind.mjs from the benchmarks root (cwd = the redesign root, derived from
+// scripts/tailwind-ssr.mjs from the benchmarks root (cwd = the redesign root, derived from
 // this file's location so it's independent of the caller's process.cwd()).
 import React from "react";
 import { renderToString } from "react-dom/server";
@@ -23,6 +23,7 @@ const renders = import.meta.glob<{ default: RenderCase }>("./case/*/index.tsx", 
 
 // this file builds to techs/<tech>/dist/microbench/entry.mjs → 4 dirs up is redesign/.
 const REDESIGN_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const LANE_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Inline worker: read HTML from stdin, emit the Tailwind CSS for exactly its
 // utility classes. Async (Tailwind's compiler is) but invoked synchronously by the
@@ -31,8 +32,8 @@ const TW_WORKER = `
 let html = "";
 process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) html += chunk;
-const { tailwindCssForHtml } = await import("./scripts/tailwind.mjs");
-process.stdout.write(await tailwindCssForHtml(html));
+const { tailwindCssForHtml } = await import("./scripts/tailwind-ssr.mjs");
+process.stdout.write(await tailwindCssForHtml(process.argv[1], html));
 `;
 
 function tailwindCss(html: string): string {
@@ -40,7 +41,7 @@ function tailwindCss(html: string): string {
   // markup for candidate classes, so the escaped form hides arbitrary-variant utilities such as
   // [&_li]:flex-1. Unescape for the scan so every utility the markup actually uses is generated.
   const scan = html.replace(/&amp;/g, "&").replace(/&quot;/g, String.fromCharCode(34)).replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-  return execFileSync(process.execPath, ["--input-type=module", "-e", TW_WORKER], {
+  return execFileSync(process.execPath, ["--input-type=module", "-e", TW_WORKER, LANE_DIR], {
     input: scan,
     cwd: REDESIGN_ROOT,
     encoding: "utf8",

@@ -9,10 +9,10 @@ interface P {
 }
 
 const Button = styled.button<P>`
-  display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:8px 16px;font-size:14px;line-height:20px;font-weight:500;background-color:#2563eb;color:#ffffff;
-  ${(p) => !p.$active && css`background-color:#d1d5db;color:#6b7280;`}
-  ${(p) => p.$variant === 'secondary' && css`background-color:#f3f4f6;color:#111827;`}
-  ${(p) => p.$variant === 'ghost' && css`background-color:transparent;color:#2563eb;`}
+  display:inline-flex;align-items:center;justify-content:center;border-radius:6px;padding:8px 16px;font-size:14px;line-height:20px;font-weight:500;background-color:oklch(54.6% 0.245 262.881);color:#ffffff;
+  ${(p) => !p.$active && css`background-color:oklch(87.2% 0.01 258.338);color:oklch(55.1% 0.027 264.364);`}
+  ${(p) => p.$variant === 'secondary' && css`background-color:oklch(96.7% 0.003 264.542);color:oklch(21% 0.034 264.665);`}
+  ${(p) => p.$variant === 'ghost' && css`background-color:transparent;color:oklch(54.6% 0.245 262.881);`}
   ${(p) => p.$fullWidth && css`width:100%;`}
 `;
 

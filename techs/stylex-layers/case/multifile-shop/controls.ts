@@ -15,10 +15,10 @@ export const controlsStyles = stylex.create({
     fontSize: "18px",
     lineHeight: 1,
     padding: "4px",
-    color: { default: "#9ca3af", ":hover": "#ef4444" },
+    color: { default: "oklch(70.7% 0.022 261.325)", ":hover": "oklch(63.7% 0.237 25.331)" },
     transition: { default: "color 0.15s ease", [media.reduce]: "none" },
   },
-  wishlistOn: { color: "#ef4444" },
+  wishlistOn: { color: "oklch(63.7% 0.237 25.331)" },
   addToCart: {
     marginTop: "auto",
     position: "relative",
@@ -27,12 +27,12 @@ export const controlsStyles = stylex.create({
     fontSize: "14px",
     fontWeight: 600,
     color: "#fff",
-    backgroundColor: { default: "#2563eb", ":hover:not(:disabled)": "#1d4ed8" },
+    backgroundColor: { default: "oklch(54.6% 0.245 262.881)", ":hover:not(:disabled)": "oklch(48.8% 0.243 264.376)" },
     transition: { default: "background-color 0.15s ease", [media.reduce]: "none" },
   },
   addToCartDisabled: {
-    backgroundColor: "#d1d5db",
-    color: "#6b7280",
+    backgroundColor: "oklch(87.2% 0.01 258.338)",
+    color: "oklch(55.1% 0.027 264.364)",
     cursor: "not-allowed",
   },
 });

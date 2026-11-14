@@ -12,19 +12,19 @@ export const controlsStyles = css.create({
     padding: 4,
     fontSize: 18,
     lineHeight: 1,
-    color: "#9ca3af",
+    color: "oklch(70.7% 0.022 261.325)",
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderRadius: 9999,
     transition: "color 0.15s ease",
     ":hover": {
-      color: "#ef4444"
+      color: "oklch(63.7% 0.237 25.331)"
     },
     [media.reduce]: {
       transition: "none"
     }
   },
   wishlistOn: {
-    color: "#ef4444"
+    color: "oklch(63.7% 0.237 25.331)"
   },
   addToCart: {
     position: "relative",
@@ -33,11 +33,11 @@ export const controlsStyles = css.create({
     fontSize: 14,
     fontWeight: 600,
     color: "#fff",
-    backgroundColor: "#2563eb",
+    backgroundColor: "oklch(54.6% 0.245 262.881)",
     borderRadius: 6,
     transition: "background-color 0.15s ease",
     ":hover:not(:disabled)": {
-      backgroundColor: "#1d4ed8"
+      backgroundColor: "oklch(48.8% 0.243 264.376)"
     },
     [media.desktop]: {
       padding: "9px 12px"
@@ -47,8 +47,8 @@ export const controlsStyles = css.create({
     }
   },
   addToCartDisabled: {
-    color: "#6b7280",
+    color: "oklch(55.1% 0.027 264.364)",
     cursor: "not-allowed",
-    backgroundColor: "#d1d5db"
+    backgroundColor: "oklch(87.2% 0.01 258.338)"
   },
 });

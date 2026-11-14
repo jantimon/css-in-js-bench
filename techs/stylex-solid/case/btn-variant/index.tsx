@@ -10,10 +10,10 @@ interface P {
 }
 
 const styles = stylex.create({
-    base: { display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", padding: "8px 16px", fontSize: "14px", lineHeight: "20px", fontWeight: "500", backgroundColor: "#2563eb", color: "#ffffff" },
-    r0: { backgroundColor: "#d1d5db", color: "#6b7280" },
-    r1: { backgroundColor: "#f3f4f6", color: "#111827" },
-    r2: { backgroundColor: "transparent", color: "#2563eb" },
+    base: { display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", padding: "8px 16px", fontSize: "14px", lineHeight: "20px", fontWeight: "500", backgroundColor: "oklch(54.6% 0.245 262.881)", color: "#ffffff" },
+    r0: { backgroundColor: "oklch(87.2% 0.01 258.338)", color: "oklch(55.1% 0.027 264.364)" },
+    r1: { backgroundColor: "oklch(96.7% 0.003 264.542)", color: "oklch(21% 0.034 264.665)" },
+    r2: { backgroundColor: "transparent", color: "oklch(54.6% 0.245 262.881)" },
     r3: { width: "100%" },
 });
 

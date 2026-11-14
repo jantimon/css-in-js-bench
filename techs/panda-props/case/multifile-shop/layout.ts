@@ -28,7 +28,7 @@ export const card = {
   // width they land in — not the viewport.
   containerType: "inline-size",
   containerName: "tile",
-  border: "1px solid #e5e7eb",
+  border: "1px solid oklch(92.8% 0.006 264.531)",
   borderRadius: "8px",
   padding: "12px",
   background: "#fff",
@@ -49,7 +49,7 @@ export const cardCss = {
 export const imageWrap = {
   position: "relative",
   aspectRatio: "1",
-  background: "#f3f4f6",
+  background: "oklch(96.7% 0.003 264.542)",
   borderRadius: "6px",
   overflow: "hidden",
 } as const;
@@ -57,5 +57,5 @@ export const imageWrap = {
 export const imagePlaceholder = {
   position: "absolute",
   inset: "0",
-  background: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+  background: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
 } as const;

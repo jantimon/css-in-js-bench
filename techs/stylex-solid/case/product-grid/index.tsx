@@ -36,7 +36,7 @@ const shared = stylex.create({
     },
   },
   focusRing: {
-    outline: { default: null, ":focus-visible": "2px solid #2563eb" },
+    outline: { default: null, ":focus-visible": "2px solid oklch(54.6% 0.245 262.881)" },
     outlineOffset: { default: null, ":focus-visible": "2px" },
   },
 });
@@ -61,7 +61,7 @@ const styles = stylex.create({
     containerName: "tile",
     borderWidth: "1px",
     borderStyle: "solid",
-    borderColor: "#e5e7eb",
+    borderColor: "oklch(92.8% 0.006 264.531)",
     borderRadius: "8px",
     padding: "12px",
     backgroundColor: "#fff",
@@ -71,14 +71,14 @@ const styles = stylex.create({
   imageWrap: {
     position: "relative",
     aspectRatio: "1",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "oklch(96.7% 0.003 264.542)",
     borderRadius: "6px",
     overflow: "hidden",
   },
   imagePlaceholder: {
     position: "absolute",
     inset: 0,
-    backgroundImage: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+    backgroundImage: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
   },
   badge: {
     position: "absolute",
@@ -89,9 +89,9 @@ const styles = stylex.create({
     fontSize: "12px",
     fontWeight: 700,
     color: "#fff",
-    backgroundColor: "#f59e0b",
+    backgroundColor: "oklch(76.9% 0.188 70.08)",
   },
-  badgeHigh: { backgroundColor: "#dc2626" },
+  badgeHigh: { backgroundColor: "oklch(57.7% 0.245 27.325)" },
   wishlist: {
     position: "absolute",
     top: "6px",
@@ -103,10 +103,10 @@ const styles = stylex.create({
     fontSize: "18px",
     lineHeight: 1,
     padding: "4px",
-    color: { default: "#9ca3af", ":hover": "#ef4444" },
+    color: { default: "oklch(70.7% 0.022 261.325)", ":hover": "oklch(63.7% 0.237 25.331)" },
     transition: { default: "color 0.15s ease", [reduce]: "none" },
   },
-  wishlistOn: { color: "#ef4444" },
+  wishlistOn: { color: "oklch(63.7% 0.237 25.331)" },
   title: {
     margin: "8px 0 4px",
     fontSize: { default: "14px", [desktop]: "15px", [wide]: "16px" },
@@ -118,10 +118,10 @@ const styles = stylex.create({
   rating: {
     height: "8px",
     borderRadius: "4px",
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "oklch(92.8% 0.006 264.531)",
     overflow: "hidden",
   },
-  ratingFill: { height: "100%", backgroundColor: "#fbbf24" },
+  ratingFill: { height: "100%", backgroundColor: "oklch(82.8% 0.189 84.429)" },
   fillW: (pct: number) => ({ width: `${pct}%` }),
   priceRow: {
     display: "flex",
@@ -129,8 +129,8 @@ const styles = stylex.create({
     gap: { default: "6px", [wide]: "10px" },
     margin: "6px 0 10px",
   },
-  oldPrice: { fontSize: "12px", color: "#9ca3af", textDecoration: "line-through" },
-  nowPrice: { fontSize: "16px", fontWeight: 700, color: "#111827" },
+  oldPrice: { fontSize: "12px", color: "oklch(70.7% 0.022 261.325)", textDecoration: "line-through" },
+  nowPrice: { fontSize: "16px", fontWeight: 700, color: "oklch(21% 0.034 264.665)" },
   addToCart: {
     marginTop: "auto",
     position: "relative",
@@ -140,13 +140,13 @@ const styles = stylex.create({
     fontSize: "14px",
     fontWeight: 600,
     color: "#fff",
-    backgroundColor: { default: "#2563eb", ":hover:not(:disabled)": "#1d4ed8" },
+    backgroundColor: { default: "oklch(54.6% 0.245 262.881)", ":hover:not(:disabled)": "oklch(48.8% 0.243 264.376)" },
     cursor: "pointer",
     transition: { default: "background-color 0.15s ease", [reduce]: "none" },
   },
   addToCartDisabled: {
-    backgroundColor: "#d1d5db",
-    color: "#6b7280",
+    backgroundColor: "oklch(87.2% 0.01 258.338)",
+    color: "oklch(55.1% 0.027 264.364)",
     cursor: "not-allowed",
   },
 });

@@ -16,19 +16,19 @@ const styles = css.create({
     fontWeight: 500,
     lineHeight: "20px",
     color: "#ffffff",
-    backgroundColor: "#2563eb",
+    backgroundColor: "oklch(54.6% 0.245 262.881)",
     borderRadius: 6
   },
   inactive: {
-    color: "#6b7280",
-    backgroundColor: "#d1d5db"
+    color: "oklch(55.1% 0.027 264.364)",
+    backgroundColor: "oklch(87.2% 0.01 258.338)"
   },
   secondary: {
-    color: "#111827",
-    backgroundColor: "#f3f4f6"
+    color: "oklch(21% 0.034 264.665)",
+    backgroundColor: "oklch(96.7% 0.003 264.542)"
   },
   ghost: {
-    color: "#2563eb",
+    color: "oklch(54.6% 0.245 262.881)",
     backgroundColor: "transparent"
   },
   full: {

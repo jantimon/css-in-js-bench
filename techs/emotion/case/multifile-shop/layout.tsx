@@ -10,7 +10,7 @@ export const Card = styled("li", transient)`
      width they land in — not the viewport. */
   container-type: inline-size;
   container-name: tile;
-  border: 1px solid #e5e7eb;
+  border: 1px solid oklch(92.8% 0.006 264.531);
   border-radius: 8px;
   padding: 12px;
   background: #fff;
@@ -28,7 +28,7 @@ export const Card = styled("li", transient)`
 export const ImageWrap = styled("div", transient)`
   position: relative;
   aspect-ratio: 1;
-  background: #f3f4f6;
+  background: oklch(96.7% 0.003 264.542);
   border-radius: 6px;
   overflow: hidden;
 `;
@@ -36,5 +36,5 @@ export const ImageWrap = styled("div", transient)`
 export const ImagePlaceholder = styled("div", transient)`
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%);
 `;

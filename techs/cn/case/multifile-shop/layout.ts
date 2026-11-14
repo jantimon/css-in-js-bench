@@ -4,4 +4,4 @@ export const CARD =
 
 export const IMAGE_WRAP = "relative aspect-square bg-gray-100 rounded-md overflow-hidden";
 
-export const IMAGE_PLACEHOLDER = "absolute inset-0 bg-[linear-gradient(135deg,#f3f4f6_0%,#e5e7eb_100%)]";
+export const IMAGE_PLACEHOLDER = "absolute inset-0 bg-linear-135 from-[#f3f4f6] to-[#e5e7eb]";

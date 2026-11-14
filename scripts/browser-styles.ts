@@ -32,20 +32,16 @@ export function browserStyles(root: string, kind: SheetKind): Plugin {
     },
     transform(code, id) {
       if (id !== resolve(root, "client-entry.tsx") || kind === "vanilla" || kind === "native") return;
-      const stylesheet = kind === "panda" ? resolve(root, "panda.css") : virtualCss;
+      const stylesheet = kind === "panda" ? resolve(root, "panda.css") : kind === "tailwind" ? resolve(root, "tailwind.css") : virtualCss;
       return { code: `${code}\nimport ${JSON.stringify(stylesheet)};`, map: null };
     },
     resolveId(id) {
       if (id === virtualCss) return cssId;
     },
-    async load(id) {
+    load(id) {
       if (id !== cssId) return;
       // StyleX appends its collected rules to this linked Vite CSS asset.
       if (kind === "stylex") return "/*! StyleX extracted styles. */";
-      if (kind === "tailwind") {
-        const { tailwindCssForSources } = await import("./tailwind.mjs");
-        return tailwindCssForSources(resolve(root, "case"), "**/*.{ts,tsx}");
-      }
     },
   };
 }

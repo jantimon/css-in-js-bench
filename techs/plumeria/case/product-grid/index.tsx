@@ -46,7 +46,7 @@ const shared = css.create({
   },
   focusRing: {
     ":focus-visible": {
-      outline: "2px solid #2563eb",
+      outline: "2px solid oklch(54.6% 0.245 262.881)",
       outlineOffset: 2
     },
   },
@@ -58,7 +58,7 @@ const styles = css.create({
     flexDirection: "column",
     padding: 12,
     backgroundColor: "#fff",
-    borderColor: "#e5e7eb",
+    borderColor: "oklch(92.8% 0.006 264.531)",
     borderStyle: "solid",
     borderWidth: 1,
     borderRadius: 8,
@@ -76,13 +76,13 @@ const styles = css.create({
     position: "relative",
     aspectRatio: "1",
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "oklch(96.7% 0.003 264.542)",
     borderRadius: 6
   },
   imagePlaceholder: {
     position: "absolute",
     inset: 0,
-    backgroundImage: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+    backgroundImage: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
   },
   badge: {
     position: "absolute",
@@ -92,11 +92,11 @@ const styles = css.create({
     fontSize: 12,
     fontWeight: 700,
     color: "#fff",
-    backgroundColor: "#f59e0b",
+    backgroundColor: "oklch(76.9% 0.188 70.08)",
     borderRadius: 4
   },
   badgeHigh: {
-    backgroundColor: "#dc2626"
+    backgroundColor: "oklch(57.7% 0.245 27.325)"
   },
   wishlist: {
     position: "absolute",
@@ -105,21 +105,21 @@ const styles = css.create({
     padding: 4,
     fontSize: 18,
     lineHeight: 1,
-    color: "#9ca3af",
+    color: "oklch(70.7% 0.022 261.325)",
     cursor: "pointer",
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderWidth: 0,
     borderRadius: 9999,
     transition: "color 0.15s ease",
     ":hover": {
-      color: "#ef4444"
+      color: "oklch(63.7% 0.237 25.331)"
     },
     [reduce]: {
       transition: "none"
     }
   },
   wishlistOn: {
-    color: "#ef4444"
+    color: "oklch(63.7% 0.237 25.331)"
   },
   title: {
     margin: "8px 0 4px",
@@ -138,12 +138,12 @@ const styles = css.create({
   rating: {
     height: 8,
     overflow: "hidden",
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "oklch(92.8% 0.006 264.531)",
     borderRadius: 4
   },
   ratingFill: {
     height: "100%",
-    backgroundColor: "#fbbf24"
+    backgroundColor: "oklch(82.8% 0.189 84.429)"
   },
   fillW: (pct: number = 0) => ({
     width: `${pct}%`
@@ -159,13 +159,13 @@ const styles = css.create({
   },
   oldPrice: {
     fontSize: 12,
-    color: "#9ca3af",
+    color: "oklch(70.7% 0.022 261.325)",
     textDecoration: "line-through"
   },
   nowPrice: {
     fontSize: 16,
     fontWeight: 700,
-    color: "#111827"
+    color: "oklch(21% 0.034 264.665)"
   },
   addToCart: {
     position: "relative",
@@ -175,12 +175,12 @@ const styles = css.create({
     fontWeight: 600,
     color: "#fff",
     cursor: "pointer",
-    backgroundColor: "#2563eb",
+    backgroundColor: "oklch(54.6% 0.245 262.881)",
     borderWidth: 0,
     borderRadius: 6,
     transition: "background-color 0.15s ease",
     ":hover:not(:disabled)": {
-      backgroundColor: "#1d4ed8"
+      backgroundColor: "oklch(48.8% 0.243 264.376)"
     },
     [desktop]: {
       padding: "9px 12px"
@@ -190,9 +190,9 @@ const styles = css.create({
     }
   },
   addToCartDisabled: {
-    color: "#6b7280",
+    color: "oklch(55.1% 0.027 264.364)",
     cursor: "not-allowed",
-    backgroundColor: "#d1d5db"
+    backgroundColor: "oklch(87.2% 0.01 258.338)"
   },
 });
 

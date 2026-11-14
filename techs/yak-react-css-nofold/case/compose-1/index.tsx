@@ -7,7 +7,7 @@ import React from 'react';
 import { css } from '@yak/react';
 
 const ComposedButton: React.FunctionComponent<{ children?: React.ReactNode }> = ({ children }) => (
-  <button css={css`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`}>{children}</button>
+  <button css={css`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:oklch(54.6% 0.245 262.881);color:#fff;`}>{children}</button>
 );
 
 export default (i: number) => <ComposedButton>{i}</ComposedButton>;

@@ -16,15 +16,15 @@
   font-weight: 600;
   line-height: 20px;
   cursor: pointer;
-  background: #2563eb;
+  background: oklch(54.6% 0.245 262.881);
   color: #fff;
 }
 .btn-ghost {
   background: transparent;
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: oklch(87.2% 0.01 258.338);
+  color: oklch(37.3% 0.034 259.733);
 }
 .btn-ghost-primary {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: oklch(54.6% 0.245 262.881);
+  color: oklch(54.6% 0.245 262.881);
 }

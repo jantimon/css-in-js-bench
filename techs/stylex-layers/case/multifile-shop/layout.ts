@@ -24,7 +24,7 @@ export const layoutStyles = stylex.create({
     containerName: "tile",
     borderWidth: "1px",
     borderStyle: "solid",
-    borderColor: "#e5e7eb",
+    borderColor: "oklch(92.8% 0.006 264.531)",
     borderRadius: "8px",
     padding: "12px",
     backgroundColor: "#fff",
@@ -34,13 +34,13 @@ export const layoutStyles = stylex.create({
   imageWrap: {
     position: "relative",
     aspectRatio: "1",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "oklch(96.7% 0.003 264.542)",
     borderRadius: "6px",
     overflow: "hidden",
   },
   imagePlaceholder: {
     position: "absolute",
     inset: 0,
-    backgroundImage: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+    backgroundImage: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
   },
 });
