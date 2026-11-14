@@ -21,16 +21,16 @@
   "//deps": "The gen/report toolchain + measurement harness deps (this is the workspace root; the lanes under techs/* declare their own styling deps).",
   "devDependencies": {
     "@jantimon/web-performance-debugger": "1.5.0",
-    "@playwright/test": "^1.63.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "autocannon": "^8.0.0",
-    "postcss": "^8.5.28",
-    "prettier": "^3.9.6",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "shiki": "^3.23.0",
+    "@playwright/test": "^1.65.1",
+    "@vitejs/plugin-react": "^6.3.0",
+    "autocannon": "^9.0.0",
+    "postcss": "^8.5.33",
+    "prettier": "^3.10.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "shiki": "^4.6.0",
     "tailwindcss": "^3.4.19",
-    "tsx": "^4.23.13",
-    "vite": "^8.3.0"
+    "tsx": "^4.23.15",
+    "vite": "^8.3.8"
   }
 }
