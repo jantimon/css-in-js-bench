@@ -1,6 +1,6 @@
 // Standalone microbench build for tailwind-merge (utility-CSS family). No build
 // plugin — just the React JSX transform. The CSS isn't authored by the lib at all;
-// it's the real Tailwind JIT stylesheet for exactly the utility classes that land
+// it's the real Tailwind stylesheet for exactly the utility classes that land
 // in the rendered HTML, generated inside ssr-entry.tsx (not extracted here).
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";

@@ -16,6 +16,8 @@
     "solid-js": "2.0.0-rc.21"
   },
   "devDependencies": {
-    "@solidjs/vite-plugin": "3.0.0-next.57"
+    "@solidjs/vite-plugin": "3.0.0-next.57",
+    "@tailwindcss/vite": "4.3.5",
+    "tailwindcss": "4.3.5"
   }
 }

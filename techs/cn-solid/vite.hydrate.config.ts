@@ -4,6 +4,7 @@
 // gen subtracts from the yak-solid lane's bundle.
 import { browserStyles } from "../../scripts/browser-styles.ts";
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import solid from "@solidjs/vite-plugin";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -12,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: here,
-  plugins: [browserStyles(here, "tailwind"), solid({ ssr: true })],
+  plugins: [browserStyles(here, "tailwind"), tailwindcss(), solid({ ssr: true })],
   define: { "process.env.NODE_ENV": '"production"' },
   build: {
     outDir: "dist/hydrate",

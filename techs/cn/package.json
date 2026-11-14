@@ -13,5 +13,9 @@
     "cn": "0.5.2",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.5",
+    "tailwindcss": "4.3.5"
   }
 }

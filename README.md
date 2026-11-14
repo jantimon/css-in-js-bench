@@ -251,7 +251,7 @@ Create `techs/<name>/`:
    Copy the closest existing lane and swap the `plugins` array (runtime libs: just
    `react()`, build-plugin libs: add `viteYak`/`stylexVite` + `ssrEmitAssets:true`)
 3. `ssr-entry.tsx`: export `renderCase(caseId, n): { html, css }` (and `renderHtml` if
-   CSS collection is build-time work, e.g. a Tailwind JIT or a sheet slice, so the
+   CSS collection is build-time work, e.g. a Tailwind build or a sheet slice, so the
    microbench times rendering, not extraction). Discover cases with
    `import.meta.glob("./case/*/index.tsx")`
 4. `case/<id>/index.tsx` for each case the lane covers, default-exporting
@@ -283,7 +283,7 @@ Each lane's `ssr-entry.tsx` collects CSS the way that family does in production:
 | build-extracted | @yak/react (×4: styled + css-prop, folding on and off), @yak/solid | the yak sheet emitted via `ssrEmitAssets`, read back |
 | build-atomic | StyleX | the stylex plugin's emitted sheet |
 | atomic-prebuilt | Panda (css fn / style props) | a `panda cssgen` sheet, sliced to the classes used |
-| utility | cn, tailwind-merge | real Tailwind JIT over the rendered HTML |
+| utility | cn, tailwind-merge | real Tailwind over the rendered HTML |
 
 ## How the site is published
 
