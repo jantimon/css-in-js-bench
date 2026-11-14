@@ -1,18 +1,16 @@
 // tailwind-merge SSR entry — utility-CSS family. Renders n instances, then produces
 // the CSS that markup needs: NOT something the lib authors (tailwind-merge only
-// conflict-resolves the class strings at runtime) but the REAL Tailwind JIT
+// conflict-resolves the class strings at runtime) but the REAL Tailwind
 // stylesheet for exactly the utility classes that appear in the rendered HTML.
 // Preflight is off, so we measure only the utilities used (§6.1, the honest cost);
-// `@tailwind base` then contributes just the `*` defaults rule whose custom properties
-// utilities such as gradients read.
+// scripts/tailwind.mjs holds the Tailwind input and theme.
 //
-// The harness contract renderCase(caseId, n) is SYNCHRONOUS, but Tailwind v3's JIT
-// engine is async (its postcss plugin rejects .process(...).css / .sync()). We bridge
-// that by running the JIT in a short-lived child node process (execFileSync) that
-// reads the HTML on stdin and writes the CSS on stdout — keeping renderCase sync while
-// still emitting genuine Tailwind output. The child resolves tailwindcss/postcss from
-// the benchmarks node_modules chain (cwd = the redesign root, derived from this file's
-// location so it's independent of the caller's process.cwd()).
+// The harness contract renderCase(caseId, n) is SYNCHRONOUS, but Tailwind's compiler
+// is async. We bridge that by running it in a short-lived child node process
+// (execFileSync) that reads the HTML on stdin and writes the CSS on stdout — keeping
+// renderCase sync while still emitting genuine Tailwind output. The child imports
+// scripts/tailwind.mjs from the benchmarks root (cwd = the redesign root, derived from
+// this file's location so it's independent of the caller's process.cwd()).
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { execFileSync } from "node:child_process";
@@ -25,22 +23,19 @@ const renders = import.meta.glob<{ default: RenderCase }>("./case/*/index.tsx", 
 // this file builds to techs/<tech>/dist/microbench/entry.mjs → 4 dirs up is redesign/.
 const REDESIGN_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
-// Inline worker: read HTML from stdin, emit the Tailwind JIT CSS for exactly its
-// utility classes. Async (Tailwind v3 requires it) but invoked synchronously by the
+// Inline worker: read HTML from stdin, emit the Tailwind CSS for exactly its
+// utility classes. Async (Tailwind's compiler is) but invoked synchronously by the
 // parent via execFileSync, so renderCase stays sync.
 const TW_WORKER = `
 let html = "";
 process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) html += chunk;
-const { default: tailwindcss } = await import("tailwindcss");
-const { default: postcss } = await import("postcss");
-const tw = tailwindcss({ content: [{ raw: html, extension: "html" }], corePlugins: { preflight: false } });
-const res = await postcss([tw]).process("@tailwind base; @tailwind utilities;", { from: undefined });
-process.stdout.write(res.css);
+const { tailwindCssForHtml } = await import("./scripts/tailwind.mjs");
+process.stdout.write(await tailwindCssForHtml(html));
 `;
 
 function tailwindCss(html: string): string {
-  // React HTML-escapes class attributes (& -> &amp;, " -> &quot;); Tailwind's JIT scans this
+  // React HTML-escapes class attributes (& -> &amp;, " -> &quot;); Tailwind's scanner reads this
   // markup for candidate classes, so the escaped form hides arbitrary-variant utilities such as
   // [&_li]:flex-1. Unescape for the scan so every utility the markup actually uses is generated.
   const scan = html.replace(/&amp;/g, "&").replace(/&quot;/g, String.fromCharCode(34)).replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
@@ -53,7 +48,7 @@ function tailwindCss(html: string): string {
 }
 
 // The production SSR hot path the microbench times: renderToString + tailwind-merge's
-// per-element class resolution (what actually runs per request). The Tailwind JIT
+// per-element class resolution (what actually runs per request). Tailwind's CSS generation
 // below is build-time work, so it is deliberately EXCLUDED from this — see renderCase.
 export function renderHtml(caseId: string, n: number): string {
   const mod = renders[`./case/${caseId}/index.tsx`];

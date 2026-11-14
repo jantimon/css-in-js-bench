@@ -44,7 +44,7 @@ const Tile = (props: { p: () => Product }) => {
           aria-pressed={props.p().wishlisted ? "true" : "false"}
           aria-label={props.p().wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           class={cn(
-            "absolute top-1.5 right-1.5 border-none rounded-full bg-white/80 cursor-pointer text-lg leading-none p-1 transition-colors duration-150 motion-reduce:transition-none",
+            "absolute top-1.5 right-1.5 border-none rounded-full bg-[rgba(255,255,255,0.8)] cursor-pointer text-lg leading-none p-1 transition-colors duration-150 motion-reduce:transition-none",
             "[@media(hover:hover)]:hover:text-red-500",
             FOCUS_RING,
             TAP_TARGET,

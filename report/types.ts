@@ -77,7 +77,7 @@ export type RenderCaseFn = (caseId: string, n: number) => RenderResult;
 
 /**
  * Optional hot-path render for the microbench: the production SSR work ONLY (no
- * snapshot/payload CSS collection). Build-time-CSS libs (tailwind JIT, panda slice)
+ * snapshot/payload CSS collection). Build-time-CSS libs (Tailwind build, panda slice)
  * MUST export this so the throughput timer measures rendering, not CSS extraction.
  * If absent, gen falls back to `renderCase(...).html`.
  */
