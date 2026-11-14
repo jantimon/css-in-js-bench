@@ -12,14 +12,14 @@ export const wishlist = {
   fontSize: "18px",
   lineHeight: "1",
   padding: "4px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   transition: "color 0.15s ease",
 } as const;
 
 export const wishlistCss = {
   "@media (hover: hover)": {
     _hover: {
-      color: "#ef4444",
+      color: "oklch(63.7% 0.237 25.331)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {
@@ -35,14 +35,14 @@ export const addToCart = {
   fontSize: "14px",
   fontWeight: "600",
   color: "#fff",
-  background: "#2563eb",
+  background: "oklch(54.6% 0.245 262.881)",
   transition: "background-color 0.15s ease",
 } as const;
 
 export const addToCartCss = {
   "@media (hover: hover)": {
     "&:hover:not(:disabled)": {
-      background: "#1d4ed8",
+      background: "oklch(48.8% 0.243 264.376)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {

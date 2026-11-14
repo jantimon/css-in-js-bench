@@ -7,7 +7,7 @@ import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
-    l0: { display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", backgroundColor: "#2563eb", color: "#fff" },
+    l0: { display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", backgroundColor: "oklch(54.6% 0.245 262.881)", color: "#fff" },
 });
 
 const ComposedButton = ({ children }: { children?: React.ReactNode }) => <button {...stylex.props(styles.l0)}>{children}</button>;

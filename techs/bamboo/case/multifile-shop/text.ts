@@ -12,10 +12,10 @@ export const badge = css({
   fontSize: "12px",
   fontWeight: "700",
   color: "#fff",
-  background: "#f59e0b",
+  background: "oklch(76.9% 0.188 70.08)",
 });
 
-export const badgeHigh = css({ background: "#dc2626" });
+export const badgeHigh = css({ background: "oklch(57.7% 0.245 27.325)" });
 
 export const title = css({
   margin: "8px 0 4px",
@@ -36,13 +36,13 @@ export const title = css({
 export const rating = css({
   height: "8px",
   borderRadius: "4px",
-  background: "#e5e7eb",
+  background: "oklch(92.8% 0.006 264.531)",
   overflow: "hidden",
 });
 
 export const ratingFill = css({
   height: "100%",
-  background: "#fbbf24",
+  background: "oklch(82.8% 0.189 84.429)",
 });
 
 export const priceRow = css({
@@ -58,12 +58,12 @@ export const priceRow = css({
 
 export const oldPrice = css({
   fontSize: "12px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   textDecoration: "line-through",
 });
 
 export const nowPrice = css({
   fontSize: "16px",
   fontWeight: "700",
-  color: "#111827",
+  color: "oklch(21% 0.034 264.665)",
 });

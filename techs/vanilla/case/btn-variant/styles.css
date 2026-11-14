@@ -11,20 +11,20 @@
   font-size: 14px;
   line-height: 20px;
   font-weight: 500;
-  background-color: #2563eb;
+  background-color: oklch(54.6% 0.245 262.881);
   color: #ffffff;
 }
 .btnInactive {
-  background-color: #d1d5db;
-  color: #6b7280;
+  background-color: oklch(87.2% 0.01 258.338);
+  color: oklch(55.1% 0.027 264.364);
 }
 .btnSecondary {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: oklch(96.7% 0.003 264.542);
+  color: oklch(21% 0.034 264.665);
 }
 .btnGhost {
   background-color: transparent;
-  color: #2563eb;
+  color: oklch(54.6% 0.245 262.881);
 }
 .btnFull {
   width: 100%;

@@ -15,7 +15,7 @@ import { css } from '@yak/react';
 interface P { children?: React.ReactNode; className?: string }
 
 const L0: React.FunctionComponent<P> = (props) => (
-  <button css={css`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`} {...props} />
+  <button css={css`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:oklch(54.6% 0.245 262.881);color:#fff;`} {...props} />
 );
 const L1: React.FunctionComponent<P> = (props) => (
   <L0 css={css`border-left:1px solid hsl(53 70% 50%);padding-left:2px;`} {...props} />

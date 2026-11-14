@@ -23,8 +23,8 @@ const Button: FunctionComponent<P> = ({ $active, $fullWidth, $variant, children 
       fontSize="14px"
       lineHeight="20px"
       fontWeight="500"
-      backgroundColor={$variant === "ghost" ? "transparent" : $variant === "secondary" ? "#f3f4f6" : !$active ? "#d1d5db" : "#2563eb"}
-      color={$variant === "ghost" ? "#2563eb" : $variant === "secondary" ? "#111827" : !$active ? "#6b7280" : "#ffffff"}
+      backgroundColor={$variant === "ghost" ? "transparent" : $variant === "secondary" ? "oklch(96.7% 0.003 264.542)" : !$active ? "oklch(87.2% 0.01 258.338)" : "oklch(54.6% 0.245 262.881)"}
+      color={$variant === "ghost" ? "oklch(54.6% 0.245 262.881)" : $variant === "secondary" ? "oklch(21% 0.034 264.665)" : !$active ? "oklch(55.1% 0.027 264.364)" : "#ffffff"}
       width={$fullWidth ? "100%" : undefined}
   >{children}</styled.button>
 );
