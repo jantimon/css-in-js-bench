@@ -10,7 +10,7 @@ const transient = { shouldForwardProp: (p: string) => p[0] !== "$" };
 
 interface P { children?: React.ReactNode; }
 
-const L0 = styled("button", transient)`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`;
+const L0 = styled("button", transient)`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:oklch(54.6% 0.245 262.881);color:#fff;`;
 const L1 = styled(L0, transient)`border-left:1px solid hsl(53 70% 50%);padding-left:2px;`;
 const L2 = styled(L1, transient)`border-left:2px solid hsl(106 70% 50%);padding-left:4px;`;
 export default (i: number) => {

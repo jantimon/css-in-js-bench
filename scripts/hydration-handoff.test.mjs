@@ -80,7 +80,7 @@ test("runtime styles survive SSR, hydration and the first input change", { timeo
         assert.ok(initialRules.length > 0, "SSR supplies usable CSS before JavaScript");
         if (caseId === "btn-variant") {
           assert.equal(initial[0].padding, "8px 16px");
-          assert.equal(initial[0].background, "rgb(209, 213, 219)");
+          assert.equal(initial[0].background, "oklch(0.872 0.01 258.338)");
         } else {
           assert.equal(initial[0].width, "8px");
           assert.equal(initial[2].transform, "matrix(1, 0, 0, 1, 2, 0)");
@@ -97,7 +97,7 @@ test("runtime styles survive SSR, hydration and the first input change", { timeo
         assert.deepEqual(changed.map((value) => value.text), ["1", "2", "3"]);
         if (caseId === "btn-variant") {
           assert.equal(changed[0].padding, "8px 16px");
-          assert.equal(changed[0].background, "rgb(243, 244, 246)");
+          assert.equal(changed[0].background, "oklch(0.967 0.003 264.542)");
         } else {
           assert.deepEqual(changed.map((value) => value.transform), [1, 2, 3].map((i) => `matrix(1, 0, 0, 1, ${i}, 0)`));
         }

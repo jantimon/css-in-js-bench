@@ -31,7 +31,7 @@ export const shared = stylex.create({
     },
   },
   focusRing: {
-    outline: { default: null, ":focus-visible": "2px solid #2563eb" },
+    outline: { default: null, ":focus-visible": "2px solid oklch(54.6% 0.245 262.881)" },
     outlineOffset: { default: null, ":focus-visible": "2px" },
   },
 });

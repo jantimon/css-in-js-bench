@@ -12,7 +12,7 @@ export const badge = css`
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: #f59e0b;
+  background: oklch(76.9% 0.188 70.08);
 `;
 
 export const title = css`
@@ -34,7 +34,7 @@ export const title = css`
 export const rating = css`
   height: 8px;
   border-radius: 4px;
-  background: #e5e7eb;
+  background: oklch(92.8% 0.006 264.531);
   overflow: hidden;
 `;
 
@@ -42,7 +42,7 @@ export const rating = css`
 // the compiler turns into a CSS variable); the mixin holds the static part.
 export const ratingFill = css`
   height: 100%;
-  background: #fbbf24;
+  background: oklch(82.8% 0.189 84.429);
 `;
 
 export const priceRow = css`
@@ -58,14 +58,14 @@ export const priceRow = css`
 
 export const oldPrice = css`
   font-size: 12px;
-  color: #9ca3af;
+  color: oklch(70.7% 0.022 261.325);
   text-decoration: line-through;
 `;
 
 export const nowPrice = css`
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: oklch(21% 0.034 264.665);
 `;
 
 export const srOnlyBox = css`

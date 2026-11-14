@@ -5,6 +5,6 @@
 import React from 'react';
 import { css } from 'styled-system/css';
 
-const ComposedButton = ({ children }: { children?: React.ReactNode }) => <button className={css({ display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", background: "#2563eb", color: "#fff" })}>{children}</button>;
+const ComposedButton = ({ children }: { children?: React.ReactNode }) => <button className={css({ display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", background: "oklch(54.6% 0.245 262.881)", color: "#fff" })}>{children}</button>;
 
 export default (i: number) => <ComposedButton>{i}</ComposedButton>;

@@ -56,7 +56,7 @@ const minTargetSize = css({
 
 const focusRing = css({
   _focusVisible: {
-    outline: "2px solid #2563eb",
+    outline: "2px solid oklch(54.6% 0.245 262.881)",
     outlineOffset: "2px",
   },
 });
@@ -86,7 +86,7 @@ const card = css({
   // width they land in — not the viewport.
   containerType: "inline-size",
   containerName: "tile",
-  border: "1px solid #e5e7eb",
+  border: "1px solid oklch(92.8% 0.006 264.531)",
   borderRadius: "8px",
   padding: "12px",
   background: "#fff",
@@ -104,7 +104,7 @@ const card = css({
 const imageWrap = css({
   position: "relative",
   aspectRatio: "1",
-  background: "#f3f4f6",
+  background: "oklch(96.7% 0.003 264.542)",
   borderRadius: "6px",
   overflow: "hidden",
 });
@@ -112,7 +112,7 @@ const imageWrap = css({
 const imagePlaceholder = css({
   position: "absolute",
   inset: "0",
-  background: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+  background: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
 });
 
 const badge = css({
@@ -124,9 +124,9 @@ const badge = css({
   fontSize: "12px",
   fontWeight: "700",
   color: "#fff",
-  background: "#f59e0b",
+  background: "oklch(76.9% 0.188 70.08)",
 });
-const badgeHigh = css({ background: "#dc2626" });
+const badgeHigh = css({ background: "oklch(57.7% 0.245 27.325)" });
 
 const wishlist = css({
   position: "absolute",
@@ -139,18 +139,18 @@ const wishlist = css({
   fontSize: "18px",
   lineHeight: "1",
   padding: "4px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   transition: "color 0.15s ease",
   "@media (hover: hover)": {
     _hover: {
-      color: "#ef4444",
+      color: "oklch(63.7% 0.237 25.331)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {
     transition: "none",
   },
 });
-const wishlistOn = css({ color: "#ef4444" });
+const wishlistOn = css({ color: "oklch(63.7% 0.237 25.331)" });
 
 const title = css({
   margin: "8px 0 4px",
@@ -171,7 +171,7 @@ const title = css({
 const rating = css({
   height: "8px",
   borderRadius: "4px",
-  background: "#e5e7eb",
+  background: "oklch(92.8% 0.006 264.531)",
   overflow: "hidden",
 });
 
@@ -182,7 +182,7 @@ const rating = css({
 // computed-style parity gate holds.
 const ratingFill = css({
   height: "100%",
-  background: "#fbbf24",
+  background: "oklch(82.8% 0.189 84.429)",
 });
 
 const priceRow = css({
@@ -198,19 +198,19 @@ const priceRow = css({
 
 const oldPrice = css({
   fontSize: "12px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   textDecoration: "line-through",
 });
 
 const nowPrice = css({
   fontSize: "16px",
   fontWeight: "700",
-  color: "#111827",
+  color: "oklch(21% 0.034 264.665)",
 });
 
 const addToCart = css({
   marginTop: "auto",
-  _disabled: { background: "#d1d5db", color: "#6b7280", cursor: "not-allowed" },
+  _disabled: { background: "oklch(87.2% 0.01 258.338)", color: "oklch(55.1% 0.027 264.364)", cursor: "not-allowed" },
   position: "relative",
   border: "none",
   borderRadius: "6px",
@@ -218,12 +218,12 @@ const addToCart = css({
   fontSize: "14px",
   fontWeight: "600",
   color: "#fff",
-  background: "#2563eb",
+  background: "oklch(54.6% 0.245 262.881)",
   cursor: "pointer",
   transition: "background-color 0.15s ease",
   "@media (hover: hover)": {
     "&:hover:not(:disabled)": {
-      background: "#1d4ed8",
+      background: "oklch(48.8% 0.243 264.376)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {

@@ -5,7 +5,7 @@
 import React from 'react';
 import { styled } from '@yak/react';
 
-const L0 = styled.button`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`;
+const L0 = styled.button`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:oklch(54.6% 0.245 262.881);color:#fff;`;
 const L1 = styled(L0)`border-left:1px solid hsl(53 70% 50%);padding-left:2px;`;
 const L2 = styled(L1)`border-left:2px solid hsl(106 70% 50%);padding-left:4px;`;
 const L3 = styled(L2)`border-left:3px solid hsl(159 70% 50%);padding-left:6px;`;

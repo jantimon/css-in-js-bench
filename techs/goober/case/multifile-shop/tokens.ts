@@ -43,7 +43,7 @@ export const minTargetSize = css`
 
 export const focusRing = css`
   &:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid oklch(54.6% 0.245 262.881);
     outline-offset: 2px;
   }
 `;

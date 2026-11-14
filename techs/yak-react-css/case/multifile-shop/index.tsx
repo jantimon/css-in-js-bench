@@ -40,7 +40,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           <span
             css={css`
               ${badge};
-              ${() => high && css`background: #dc2626;`}
+              ${() => high && css`background: oklch(57.7% 0.245 27.325);`}
             `}
           >
             <span css={css`${srOnly}`}>Reduced by </span>-{p.discount}%
@@ -53,7 +53,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           css={css`
             ${button};
             ${wishlist};
-            ${() => on && css`color: #ef4444;`}
+            ${() => on && css`color: oklch(63.7% 0.237 25.331);`}
           `}
         >
           <span aria-hidden="true">♥</span>
@@ -88,8 +88,8 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           ${() =>
             disabled &&
             css`
-              background: #d1d5db;
-              color: #6b7280;
+              background: oklch(87.2% 0.01 258.338);
+              color: oklch(55.1% 0.027 264.364);
               cursor: not-allowed;
             `}
         `}

@@ -1,0 +1,6 @@
+/* The lane's Tailwind entry: v4's default theme and utilities, without preflight, so the
+   stylesheet holds only the utilities the cases use (§6.1). Classes come from the cases. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./case";

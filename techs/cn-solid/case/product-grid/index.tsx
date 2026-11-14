@@ -33,7 +33,7 @@ const Tile = (props: { p: () => Product }) => {
   return (
     <li class="flex flex-col [container-type:inline-size] [container-name:tile] border border-solid border-gray-200 rounded-lg p-3 bg-white transition-shadow duration-150 [@media(hover:hover)]:hover:shadow-md motion-reduce:transition-none">
       <div class="relative aspect-square bg-gray-100 rounded-md overflow-hidden">
-        <div aria-hidden="true" class="absolute inset-0 bg-[linear-gradient(135deg,#f3f4f6_0%,#e5e7eb_100%)]" />
+        <div aria-hidden="true" class="absolute inset-0 bg-linear-135 from-[#f3f4f6] to-[#e5e7eb]" />
         {props.p().discount > 0 && (
           <span class={cn("absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-xs leading-[normal] font-bold text-white", props.p().discount >= 30 ? "bg-red-600" : "bg-amber-500")}>
             <span class="sr-only">Reduced by </span>-{props.p().discount}%
@@ -44,7 +44,7 @@ const Tile = (props: { p: () => Product }) => {
           aria-pressed={props.p().wishlisted ? "true" : "false"}
           aria-label={props.p().wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           class={cn(
-            "absolute top-1.5 right-1.5 border-none rounded-full bg-white/80 cursor-pointer text-lg leading-none p-1 transition-colors duration-150 motion-reduce:transition-none",
+            "absolute top-1.5 right-1.5 border-none rounded-full bg-[rgba(255,255,255,0.8)] cursor-pointer text-lg leading-none p-1 transition-colors duration-150 motion-reduce:transition-none",
             "[@media(hover:hover)]:hover:text-red-500",
             FOCUS_RING,
             TAP_TARGET,

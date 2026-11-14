@@ -10,10 +10,10 @@ interface P {
 
 const Button: FunctionComponent<P> = ({ $active, $fullWidth, $variant, children }) => (
   <button className={css(
-    { display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", padding: "8px 16px", fontSize: "14px", lineHeight: "20px", fontWeight: "500", backgroundColor: "#2563eb", color: "#ffffff" },
-    !$active && { backgroundColor: "#d1d5db", color: "#6b7280" },
-    $variant === 'secondary' && { backgroundColor: "#f3f4f6", color: "#111827" },
-    $variant === 'ghost' && { backgroundColor: "transparent", color: "#2563eb" },
+    { display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", padding: "8px 16px", fontSize: "14px", lineHeight: "20px", fontWeight: "500", backgroundColor: "oklch(54.6% 0.245 262.881)", color: "#ffffff" },
+    !$active && { backgroundColor: "oklch(87.2% 0.01 258.338)", color: "oklch(55.1% 0.027 264.364)" },
+    $variant === 'secondary' && { backgroundColor: "oklch(96.7% 0.003 264.542)", color: "oklch(21% 0.034 264.665)" },
+    $variant === 'ghost' && { backgroundColor: "transparent", color: "oklch(54.6% 0.245 262.881)" },
     $fullWidth && { width: "100%" },
   )}>{children}</button>
 );

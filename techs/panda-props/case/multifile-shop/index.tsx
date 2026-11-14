@@ -28,7 +28,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <styled.div {...imageWrap}>
       <styled.div aria-hidden="true" {...imagePlaceholder} />
       {p.discount > 0 && (
-        <styled.span {...badge} background={p.discount >= 30 ? "#dc2626" : "#f59e0b"}>
+        <styled.span {...badge} background={p.discount >= 30 ? "oklch(57.7% 0.245 27.325)" : "oklch(76.9% 0.188 70.08)"}>
           <styled.span {...srOnly}>Reduced by </styled.span>-{p.discount}%
         </styled.span>
       )}
@@ -39,7 +39,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
         {...buttonBase}
         {...wishlist}
         css={[wishlistCss, focusRing, minTargetSize]}
-        color={p.wishlisted ? "#ef4444" : "#9ca3af"}
+        color={p.wishlisted ? "oklch(63.7% 0.237 25.331)" : "oklch(70.7% 0.022 261.325)"}
       >
         <span aria-hidden="true">♥</span>
       </styled.button>
@@ -68,8 +68,8 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
       {...buttonBase}
       {...addToCart}
       css={[addToCartCss, focusRing, minTargetSize]}
-      background={!p.inStock ? "#d1d5db" : "#2563eb"}
-      color={!p.inStock ? "#6b7280" : "#fff"}
+      background={!p.inStock ? "oklch(87.2% 0.01 258.338)" : "oklch(54.6% 0.245 262.881)"}
+      color={!p.inStock ? "oklch(55.1% 0.027 264.364)" : "#fff"}
       cursor={!p.inStock ? "not-allowed" : "pointer"}
     >
       {p.inStock ? "Add to cart" : "Sold out"}

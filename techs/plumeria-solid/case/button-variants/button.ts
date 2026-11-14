@@ -14,7 +14,7 @@ export const buttonStyles = css.create({
     lineHeight: "20px",
     color: "#fff",
     cursor: "pointer",
-    backgroundColor: "#2563eb",
+    backgroundColor: "oklch(54.6% 0.245 262.881)",
     borderColor: "transparent",
     borderStyle: "solid",
     borderWidth: 1,

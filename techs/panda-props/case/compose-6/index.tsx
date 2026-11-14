@@ -12,7 +12,7 @@ import React from 'react';
 import { styled } from 'styled-system/jsx';
 import { css } from 'styled-system/css';
 
-const l0 = css.raw({ display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", background: "#2563eb", color: "#fff" });
+const l0 = css.raw({ display: "inline-flex", alignItems: "center", borderRadius: "6px", padding: "8px 16px", background: "oklch(54.6% 0.245 262.881)", color: "#fff" });
 const l1 = css.raw({ borderLeft: "1px solid hsl(53 70% 50%)", paddingLeft: "2px" });
 const l2 = css.raw({ borderLeft: "2px solid hsl(106 70% 50%)", paddingLeft: "4px" });
 const l3 = css.raw({ borderLeft: "3px solid hsl(159 70% 50%)", paddingLeft: "6px" });

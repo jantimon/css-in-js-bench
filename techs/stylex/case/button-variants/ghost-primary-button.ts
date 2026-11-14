@@ -5,7 +5,7 @@ import * as stylex from "@stylexjs/stylex";
 // each level below overrides only the colour.
 export const ghostPrimaryStyles = stylex.create({
   ghostPrimary: {
-    borderColor: "#2563eb",
-    color: "#2563eb",
+    borderColor: "oklch(54.6% 0.245 262.881)",
+    color: "oklch(54.6% 0.245 262.881)",
   },
 });
