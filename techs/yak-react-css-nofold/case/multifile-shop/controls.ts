@@ -15,11 +15,11 @@ export const wishlist = css`
   font-size: 18px;
   line-height: 1;
   padding: 4px;
-  color: #9ca3af;
+  color: oklch(70.7% 0.022 261.325);
   transition: color 0.15s ease;
   @media (hover: hover) {
     &:hover {
-      color: #ef4444;
+      color: oklch(63.7% 0.237 25.331);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -35,11 +35,11 @@ export const addToCart = css`
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  background: #2563eb;
+  background: oklch(54.6% 0.245 262.881);
   transition: background-color 0.15s ease;
   @media (hover: hover) {
     &:hover:not(:disabled) {
-      background: #1d4ed8;
+      background: oklch(48.8% 0.243 264.376);
     }
   }
   @media (prefers-reduced-motion: reduce) {

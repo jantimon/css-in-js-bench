@@ -17,6 +17,6 @@ export const button = css.raw({
   fontWeight: "600",
   lineHeight: "20px",
   cursor: "pointer",
-  background: "#2563eb",
+  background: "oklch(54.6% 0.245 262.881)",
   color: "#fff",
 });

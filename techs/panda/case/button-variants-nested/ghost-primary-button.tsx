@@ -4,8 +4,8 @@ import { css } from "styled-system/css";
 import { GhostButton } from "./ghost-button";
 
 const ghostPrimary = css.raw({
-  borderColor: "#2563eb",
-  color: "#2563eb",
+  borderColor: "oklch(54.6% 0.245 262.881)",
+  color: "oklch(54.6% 0.245 262.881)",
 });
 
 export const GhostPrimaryButton = ({ styles, className, children }: { styles?: Parameters<typeof css>[0]; className?: string; children?: React.ReactNode }) => (

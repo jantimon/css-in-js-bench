@@ -18,7 +18,7 @@ export const buttonStyles = stylex.create({
     fontWeight: "600",
     lineHeight: "20px",
     cursor: "pointer",
-    backgroundColor: "#2563eb",
+    backgroundColor: "oklch(54.6% 0.245 262.881)",
     color: "#fff",
   },
 });

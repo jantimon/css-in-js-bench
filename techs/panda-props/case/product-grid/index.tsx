@@ -58,7 +58,7 @@ const minTargetSize = {
 
 const focusRing = {
   _focusVisible: {
-    outline: "2px solid #2563eb",
+    outline: "2px solid oklch(54.6% 0.245 262.881)",
     outlineOffset: "2px",
   },
 } as const;
@@ -91,7 +91,7 @@ const card = {
   // width they land in — not the viewport.
   containerType: "inline-size",
   containerName: "tile",
-  border: "1px solid #e5e7eb",
+  border: "1px solid oklch(92.8% 0.006 264.531)",
   borderRadius: "8px",
   padding: "12px",
   background: "#fff",
@@ -112,7 +112,7 @@ const cardCss = {
 const imageWrap = {
   position: "relative",
   aspectRatio: "1",
-  background: "#f3f4f6",
+  background: "oklch(96.7% 0.003 264.542)",
   borderRadius: "6px",
   overflow: "hidden",
 } as const;
@@ -120,7 +120,7 @@ const imageWrap = {
 const imagePlaceholder = {
   position: "absolute",
   inset: "0",
-  background: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+  background: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
 } as const;
 
 const badge = {
@@ -132,7 +132,7 @@ const badge = {
   fontSize: "12px",
   fontWeight: "700",
   color: "#fff",
-  background: "#f59e0b",
+  background: "oklch(76.9% 0.188 70.08)",
 } as const;
 
 const wishlist = {
@@ -146,14 +146,14 @@ const wishlist = {
   fontSize: "18px",
   lineHeight: "1",
   padding: "4px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   transition: "color 0.15s ease",
 } as const;
 
 const wishlistCss = {
   "@media (hover: hover)": {
     _hover: {
-      color: "#ef4444",
+      color: "oklch(63.7% 0.237 25.331)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {
@@ -183,7 +183,7 @@ const titleCss = {
 const rating = {
   height: "8px",
   borderRadius: "4px",
-  background: "#e5e7eb",
+  background: "oklch(92.8% 0.006 264.531)",
   overflow: "hidden",
 } as const;
 
@@ -194,7 +194,7 @@ const rating = {
 // computed-style parity gate holds.
 const ratingFill = {
   height: "100%",
-  background: "#fbbf24",
+  background: "oklch(82.8% 0.189 84.429)",
 } as const;
 
 const priceRow = {
@@ -213,14 +213,14 @@ const priceRowCss = {
 
 const oldPrice = {
   fontSize: "12px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   textDecoration: "line-through",
 } as const;
 
 const nowPrice = {
   fontSize: "16px",
   fontWeight: "700",
-  color: "#111827",
+  color: "oklch(21% 0.034 264.665)",
 } as const;
 
 const addToCart = {
@@ -232,7 +232,7 @@ const addToCart = {
   fontSize: "14px",
   fontWeight: "600",
   color: "#fff",
-  background: "#2563eb",
+  background: "oklch(54.6% 0.245 262.881)",
   cursor: "pointer",
   transition: "background-color 0.15s ease",
 } as const;
@@ -240,7 +240,7 @@ const addToCart = {
 const addToCartCss = {
   "@media (hover: hover)": {
     "&:hover:not(:disabled)": {
-      background: "#1d4ed8",
+      background: "oklch(48.8% 0.243 264.376)",
     },
   },
   "@media (prefers-reduced-motion: reduce)": {
@@ -266,7 +266,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
     <styled.div {...imageWrap}>
       <styled.div aria-hidden="true" {...imagePlaceholder} />
       {p.discount > 0 && (
-        <styled.span {...badge} background={p.discount >= 30 ? "#dc2626" : "#f59e0b"}>
+        <styled.span {...badge} background={p.discount >= 30 ? "oklch(57.7% 0.245 27.325)" : "oklch(76.9% 0.188 70.08)"}>
           <styled.span {...srOnly}>Reduced by </styled.span>-{p.discount}%
         </styled.span>
       )}
@@ -276,7 +276,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
         aria-label={p.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
         {...wishlist}
         css={[wishlistCss, focusRing, minTargetSize]}
-        color={p.wishlisted ? "#ef4444" : "#9ca3af"}
+        color={p.wishlisted ? "oklch(63.7% 0.237 25.331)" : "oklch(70.7% 0.022 261.325)"}
       >
         <span aria-hidden="true">♥</span>
       </styled.button>
@@ -304,8 +304,8 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => (
       aria-label={p.inStock ? `Add ${p.title} to cart` : `${p.title} is sold out`}
       {...addToCart}
       css={[addToCartCss, focusRing, minTargetSize]}
-      background={!p.inStock ? "#d1d5db" : "#2563eb"}
-      color={!p.inStock ? "#6b7280" : "#fff"}
+      background={!p.inStock ? "oklch(87.2% 0.01 258.338)" : "oklch(54.6% 0.245 262.881)"}
+      color={!p.inStock ? "oklch(55.1% 0.027 264.364)" : "#fff"}
       cursor={!p.inStock ? "not-allowed" : "pointer"}
     >
       {p.inStock ? "Add to cart" : "Sold out"}

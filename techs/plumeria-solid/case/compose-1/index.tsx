@@ -12,7 +12,7 @@ const styles = css.create({
     alignItems: "center",
     padding: "8px 16px",
     color: "#fff",
-    background: "#2563eb",
+    background: "oklch(54.6% 0.245 262.881)",
     borderRadius: 6
   },
 });

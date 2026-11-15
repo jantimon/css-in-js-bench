@@ -6,7 +6,7 @@
 import React from 'react';
 import { styled } from 'styled-components';
 
-const ComposedButton = styled.button`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:#2563eb;color:#fff;`;
+const ComposedButton = styled.button`display:inline-flex;align-items:center;border-radius:6px;padding:8px 16px;background:oklch(54.6% 0.245 262.881);color:#fff;`;
 
 export default (i: number) => {
   return <ComposedButton>{i}</ComposedButton>;

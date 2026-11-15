@@ -24,7 +24,7 @@ export const layoutStyles = css.create({
     flexDirection: "column",
     padding: 12,
     backgroundColor: "#fff",
-    borderColor: "#e5e7eb",
+    borderColor: "oklch(92.8% 0.006 264.531)",
     borderStyle: "solid",
     borderWidth: 1,
     borderRadius: 8,
@@ -42,12 +42,12 @@ export const layoutStyles = css.create({
     position: "relative",
     aspectRatio: "1",
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "oklch(96.7% 0.003 264.542)",
     borderRadius: 6
   },
   imagePlaceholder: {
     position: "absolute",
     inset: 0,
-    backgroundImage: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+    backgroundImage: "linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%)",
   },
 });
