@@ -136,7 +136,7 @@ async function buildTech(tech: string, measurement: Measurement): Promise<SsrMod
 
 // ---- microbench sampler: SSR render throughput (renders/sec, higher better) -----
 // Times the production SSR render ONLY (renderHtml) — never the snapshot/payload CSS
-// collection (a tailwind JIT or panda slice is build-time work, not per-request).
+// collection (a Tailwind build or panda slice is build-time work, not per-request).
 function microbench(renderHtml: RenderHtmlFn, caseId: string, n: number): number[] {
   const { warmup } = benchConfig;
   const sampleCount = samplesFor("microbench");
