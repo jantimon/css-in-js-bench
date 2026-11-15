@@ -49,8 +49,11 @@ jobs:
           if [[ "${{ github.event_name }}" != "schedule" ]]; then
             echo "Not a scheduled run"; echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # A scheduled run checks out the commit main had when it was queued. Look up the
+          # last results commit on the current main, so a run that finished while this one
+          # waited for the machine counts.
           last=$(git log -1 --format=%H --grep='^bench: update results' \
-            --author='41898283+github-actions\[bot\]' HEAD)
+            --author='41898283+github-actions\[bot\]' origin/main)
           if [[ -z "$last" ]]; then
             echo "No earlier benchmark commit"; echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -59,7 +62,10 @@ jobs:
           base=$(git log -1 --format='%(trailers:key=Benchmarked-Commit,valueonly)' "$last" | head -n1)
           base=${base:-$last}
           echo "Last benchmark: $last (measured $base)"
-          if git diff --quiet "$base" HEAD -- . ':(exclude)result/'; then
+          if git merge-base --is-ancestor HEAD "$base"; then
+            echo "This commit or a newer one is already benchmarked, skip"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$base" HEAD -- . ':(exclude)result/'; then
             echo "No changes outside result/ since the last benchmark, skip"
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
