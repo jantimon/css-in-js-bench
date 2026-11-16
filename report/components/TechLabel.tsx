@@ -9,7 +9,7 @@ export function logoFor(tech: string): string | null {
   if (tech.startsWith("yak-react") || tech.startsWith("yak-solid")) return "assets/logos/yak.svg";
   if (tech === "tailwind-merge" || tech === "cn" || tech === "cn-solid") return "assets/logos/tailwind.avif";
   if (tech === "panda" || tech === "panda-props" || tech === "panda-recipe") return "assets/logos/panda.avif";
-  if (tech === "bamboo") return "assets/logos/bamboo.png";
+  if (tech === "bamboo" || tech === "bamboo-solid") return "assets/logos/bamboo.png";
   if (tech.startsWith("stylex")) return "assets/logos/stylex.avif";
   if (tech === "emotion") return "assets/logos/emotion.avif";
   if (tech === "goober") return "assets/logos/goober.avif";
@@ -48,6 +48,7 @@ export const TECH_ALIASES: Record<string, string> = {
   "stylex-solid": "stylex-solid",
   "cn-solid": "cn-solid",
   "plumeria-solid": "plumeria-solid",
+  "bamboo-solid": "bamboo-solid",
 };
 
 // A technology's logo (when one is mapped) followed by its label text. The <img> is decorative

@@ -1,0 +1,22 @@
+{
+  "name": "bamboo-solid",
+  "description": "Bamboo on Solid",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#a3e635",
+    "buildPlugin": null,
+    "appStylesheet": "bamboo",
+    "cssKind": "atomic",
+    "framework": "solid"
+  },
+  "dependencies": {
+    "@bamboocss/dev": "1.64.1",
+    "@bamboocss/vite": "1.64.1",
+    "@solidjs/web": "2.0.0-rc.21",
+    "solid-js": "2.0.0-rc.21"
+  },
+  "devDependencies": {
+    "@solidjs/vite-plugin": "3.0.0-next.57"
+  }
+}
