@@ -11,7 +11,7 @@ export const badge = {
   fontSize: "12px",
   fontWeight: "700",
   color: "#fff",
-  background: "#f59e0b",
+  background: "oklch(76.9% 0.188 70.08)",
 } as const;
 
 export const title = {
@@ -36,13 +36,13 @@ export const titleCss = {
 export const rating = {
   height: "8px",
   borderRadius: "4px",
-  background: "#e5e7eb",
+  background: "oklch(92.8% 0.006 264.531)",
   overflow: "hidden",
 } as const;
 
 export const ratingFill = {
   height: "100%",
-  background: "#fbbf24",
+  background: "oklch(82.8% 0.189 84.429)",
 } as const;
 
 export const priceRow = {
@@ -61,12 +61,12 @@ export const priceRowCss = {
 
 export const oldPrice = {
   fontSize: "12px",
-  color: "#9ca3af",
+  color: "oklch(70.7% 0.022 261.325)",
   textDecoration: "line-through",
 } as const;
 
 export const nowPrice = {
   fontSize: "16px",
   fontWeight: "700",
-  color: "#111827",
+  color: "oklch(21% 0.034 264.665)",
 } as const;

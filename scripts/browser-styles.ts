@@ -43,10 +43,11 @@ export function browserStyles(root: string, kind: SheetKind): Plugin {
       // StyleX appends its collected rules to this linked Vite CSS asset.
       if (kind === "stylex") return "/*! StyleX extracted styles. */";
       if (kind === "tailwind") {
-        const [{ default: postcss }, { default: tailwindcss }] = await Promise.all([import("postcss"), import("tailwindcss")]);
+        const [{ default: postcss }, { default: tailwindcss }, { v4Palette }] = await Promise.all([import("postcss"), import("tailwindcss"), import("./tailwind-v4-palette.mjs")]);
         const result = await postcss([tailwindcss({
           content: [resolve(root, "case/**/*.{ts,tsx}")],
           corePlugins: { preflight: false },
+          theme: { extend: { colors: v4Palette } },
         })]).process("@tailwind base; @tailwind utilities;", { from: undefined });
         return result.css;
       }

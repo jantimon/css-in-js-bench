@@ -12,7 +12,7 @@ const ComposedButton = ({ children }: { children?: React.ReactNode }) => (
     alignItems="center"
     borderRadius="6px"
     padding="8px 16px"
-    background="#2563eb"
+    background="oklch(54.6% 0.245 262.881)"
     color="#fff"
   >{children}</styled.button>
 );

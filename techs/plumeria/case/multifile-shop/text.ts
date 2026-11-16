@@ -12,11 +12,11 @@ export const textStyles = css.create({
     fontSize: 12,
     fontWeight: 700,
     color: "#fff",
-    backgroundColor: "#f59e0b",
+    backgroundColor: "oklch(76.9% 0.188 70.08)",
     borderRadius: 4
   },
   badgeHigh: {
-    backgroundColor: "#dc2626"
+    backgroundColor: "oklch(57.7% 0.245 27.325)"
   },
   title: {
     margin: "8px 0 4px",
@@ -35,12 +35,12 @@ export const textStyles = css.create({
   rating: {
     height: 8,
     overflow: "hidden",
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "oklch(92.8% 0.006 264.531)",
     borderRadius: 4
   },
   ratingFill: {
     height: "100%",
-    backgroundColor: "#fbbf24"
+    backgroundColor: "oklch(82.8% 0.189 84.429)"
   },
   fillW: (pct: number = 0) => ({
     width: `${pct}%`
@@ -56,12 +56,12 @@ export const textStyles = css.create({
   },
   oldPrice: {
     fontSize: 12,
-    color: "#9ca3af",
+    color: "oklch(70.7% 0.022 261.325)",
     textDecoration: "line-through"
   },
   nowPrice: {
     fontSize: 16,
     fontWeight: 700,
-    color: "#111827"
+    color: "oklch(21% 0.034 264.665)"
   },
 });

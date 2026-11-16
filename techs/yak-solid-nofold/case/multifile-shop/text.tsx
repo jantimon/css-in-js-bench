@@ -13,8 +13,8 @@ export const Badge = styled.span<{ $high: boolean }>`
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: #f59e0b;
-  ${({ $high }) => $high && css`background: #dc2626;`}
+  background: oklch(76.9% 0.188 70.08);
+  ${({ $high }) => $high && css`background: oklch(57.7% 0.245 27.325);`}
 `;
 
 export const Title = styled.h3`
@@ -36,13 +36,13 @@ export const Title = styled.h3`
 export const Rating = styled.div`
   height: 8px;
   border-radius: 4px;
-  background: #e5e7eb;
+  background: oklch(92.8% 0.006 264.531);
   overflow: hidden;
 `;
 
 export const RatingFill = styled.div<{ $pct: number }>`
   height: 100%;
-  background: #fbbf24;
+  background: oklch(82.8% 0.189 84.429);
   width: ${({ $pct }) => $pct}%;
 `;
 
@@ -59,14 +59,14 @@ export const PriceRow = styled.div`
 
 export const OldPrice = styled.span`
   font-size: 12px;
-  color: #9ca3af;
+  color: oklch(70.7% 0.022 261.325);
   text-decoration: line-through;
 `;
 
 export const NowPrice = styled.span`
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: oklch(21% 0.034 264.665);
 `;
 
 export const SrOnly = styled.span`

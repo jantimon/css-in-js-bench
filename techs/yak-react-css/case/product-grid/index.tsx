@@ -54,7 +54,7 @@ const minTargetSize = css`
 
 const focusRing = css`
   &:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid oklch(54.6% 0.245 262.881);
     outline-offset: 2px;
   }
 `;
@@ -83,7 +83,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
         flex-direction: column;
         container-type: inline-size;
         container-name: tile;
-        border: 1px solid #e5e7eb;
+        border: 1px solid oklch(92.8% 0.006 264.531);
         border-radius: 8px;
         padding: 12px;
         background: #fff;
@@ -102,7 +102,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
         css={css`
           position: relative;
           aspect-ratio: 1;
-          background: #f3f4f6;
+          background: oklch(96.7% 0.003 264.542);
           border-radius: 6px;
           overflow: hidden;
         `}
@@ -112,7 +112,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           css={css`
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            background: linear-gradient(135deg in oklab, #f3f4f6 0%, #e5e7eb 100%);
           `}
         />
         {p.discount > 0 && (
@@ -126,8 +126,8 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
               font-size: 12px;
               font-weight: 700;
               color: #fff;
-              background: #f59e0b;
-              ${() => high && css`background: #dc2626;`}
+              background: oklch(76.9% 0.188 70.08);
+              ${() => high && css`background: oklch(57.7% 0.245 27.325);`}
             `}
           >
             <span css={css`${srOnly}`}>Reduced by </span>-{p.discount}%
@@ -148,11 +148,11 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
             font-size: 18px;
             line-height: 1;
             padding: 4px;
-            color: #9ca3af;
+            color: oklch(70.7% 0.022 261.325);
             transition: color 0.15s ease;
             @media (hover: hover) {
               &:hover {
-                color: #ef4444;
+                color: oklch(63.7% 0.237 25.331);
               }
             }
             @media (prefers-reduced-motion: reduce) {
@@ -160,7 +160,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
             }
             ${focusRing}
             ${minTargetSize}
-            ${() => on && css`color: #ef4444;`}
+            ${() => on && css`color: oklch(63.7% 0.237 25.331);`}
           `}
         >
           <span aria-hidden="true">♥</span>
@@ -190,7 +190,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
         css={css`
           height: 8px;
           border-radius: 4px;
-          background: #e5e7eb;
+          background: oklch(92.8% 0.006 264.531);
           overflow: hidden;
         `}
       >
@@ -198,7 +198,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           aria-hidden="true"
           css={css`
             height: 100%;
-            background: #fbbf24;
+            background: oklch(82.8% 0.189 84.429);
             width: ${() => pct}%;
           `}
         />
@@ -218,7 +218,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           <span
             css={css`
               font-size: 12px;
-              color: #9ca3af;
+              color: oklch(70.7% 0.022 261.325);
               text-decoration: line-through;
             `}
           >
@@ -229,7 +229,7 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           css={css`
             font-size: 16px;
             font-weight: 700;
-            color: #111827;
+            color: oklch(21% 0.034 264.665);
           `}
         >
           {p.discount > 0 && <span css={css`${srOnly}`}>Now </span>}${p.price.toFixed(2)}
@@ -247,12 +247,12 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           font-size: 14px;
           font-weight: 600;
           color: #fff;
-          background: #2563eb;
+          background: oklch(54.6% 0.245 262.881);
           cursor: pointer;
           transition: background-color 0.15s ease;
           @media (hover: hover) {
             &:hover:not(:disabled) {
-              background: #1d4ed8;
+              background: oklch(48.8% 0.243 264.376);
             }
           }
           @media (prefers-reduced-motion: reduce) {
@@ -266,8 +266,8 @@ const Tile: FunctionComponent<{ p: Product }> = ({ p }) => {
           ${() =>
             disabled &&
             css`
-              background: #d1d5db;
-              color: #6b7280;
+              background: oklch(87.2% 0.01 258.338);
+              color: oklch(55.1% 0.027 264.364);
               cursor: not-allowed;
             `}
         `}

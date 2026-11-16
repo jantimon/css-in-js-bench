@@ -15,17 +15,17 @@ export const Wishlist = styled(Button, transient)<{ $on: boolean }>`
   font-size: 18px;
   line-height: 1;
   padding: 4px;
-  color: #9ca3af;
+  color: oklch(70.7% 0.022 261.325);
   transition: color 0.15s ease;
   @media (hover: hover) {
     &:hover {
-      color: #ef4444;
+      color: oklch(63.7% 0.237 25.331);
     }
   }
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-  ${({ $on }) => $on && css`color: #ef4444;`}
+  ${({ $on }) => $on && css`color: oklch(63.7% 0.237 25.331);`}
 `;
 
 export const AddToCart = styled(Button, transient)<{ $disabled: boolean }>`
@@ -36,11 +36,11 @@ export const AddToCart = styled(Button, transient)<{ $disabled: boolean }>`
   font-size: 14px;
   font-weight: 600;
   color: #fff;
-  background: #2563eb;
+  background: oklch(54.6% 0.245 262.881);
   transition: background-color 0.15s ease;
   @media (hover: hover) {
     &:hover:not(:disabled) {
-      background: #1d4ed8;
+      background: oklch(48.8% 0.243 264.376);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -52,8 +52,8 @@ export const AddToCart = styled(Button, transient)<{ $disabled: boolean }>`
   ${({ $disabled }) =>
     $disabled &&
     css`
-      background: #d1d5db;
-      color: #6b7280;
+      background: oklch(87.2% 0.01 258.338);
+      color: oklch(55.1% 0.027 264.364);
       cursor: not-allowed;
     `}
 `;
