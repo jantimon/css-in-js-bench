@@ -42,7 +42,8 @@ function rules(): Map<string, string> {
   let i = 0;
   const add = (selector: string, body: string) => {
     if (ROOT_SELECTOR.test(selector)) {
-      for (const d of body.matchAll(/(--(?:\\.|[\w.-])+)\s*:\s*([^;]+);/g))
+      // The sheet is minified, which drops the `;` after a block's last declaration.
+      for (const d of body.matchAll(/(--(?:\\.|[\w.-])+)\s*:\s*([^;]+)(?:;|$)/g))
         if (!tokenMap!.has(d[1])) tokenMap!.set(d[1], d[2].trim());
       return;
     }
