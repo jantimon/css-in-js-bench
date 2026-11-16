@@ -75,6 +75,25 @@ importers:
         specifier: catalog:dev
         version: 19.3.1(react@19.3.1)
 
+  techs/bamboo-solid:
+    dependencies:
+      '@bamboocss/dev':
+        specifier: 1.64.1
+        version: 1.64.1
+      '@bamboocss/vite':
+        specifier: 1.64.1
+        version: 1.64.1(vite@8.3.8(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15))
+      '@solidjs/web':
+        specifier: 2.0.0-rc.21
+        version: 2.0.0-rc.21(solid-js@2.0.0-rc.21)
+      solid-js:
+        specifier: 2.0.0-rc.21
+        version: 2.0.0-rc.21
+    devDependencies:
+      '@solidjs/vite-plugin':
+        specifier: 3.0.0-next.57
+        version: 3.0.0-next.57(@babel/core@7.29.13)(@solidjs/web@2.0.0-rc.21(solid-js@2.0.0-rc.21))(solid-js@2.0.0-rc.21)(vite@8.3.8(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15))
+
   techs/cn:
     dependencies:
       cn:
