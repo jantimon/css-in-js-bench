@@ -1,7 +1,8 @@
 // Bamboo — every variant is its own STATIC css() call (the compiler rejects
 // conditional objects inside one css() call as open runtime styling); the finite
-// selection happens at the call site through cx(), which after compilation joins
-// precompiled class-string literals.
+// selection happens at the call site through cx(), which the compiler turns into
+// a ternary choosing between finished class strings, one per combination of its
+// four conditions.
 import React, { type FunctionComponent } from 'react';
 import { css, cx } from 'styled-system/css';
 
