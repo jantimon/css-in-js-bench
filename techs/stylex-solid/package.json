@@ -11,13 +11,13 @@
     "framework": "solid"
   },
   "dependencies": {
-    "@solidjs/web": "2.0.0-rc.21",
+    "@solidjs/web": "2.0.1",
     "@stylexjs/stylex": "0.19.2",
     "@stylexjs/unplugin": "0.19.2",
-    "solid-js": "2.0.0-rc.21",
+    "solid-js": "2.0.1",
     "unplugin": "2.3.11"
   },
   "devDependencies": {
-    "@solidjs/vite-plugin": "3.0.0-next.57"
+    "@solidjs/vite-plugin": "3.0.1"
   }
 }
