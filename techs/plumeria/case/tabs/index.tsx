@@ -1,10 +1,11 @@
-// Like the StyleX lane, this uses the per-tab underline fallback and threads full-width
-// styles to the li/button because Plumeria does not support descendant selectors.
+// Full-width styles are threaded to the li/button because Plumeria does not support
+// descendant selectors.
 // Compound states are explicit because simultaneous pseudo-classes are not inferred.
 import React, { type ButtonHTMLAttributes, type FunctionComponent, type KeyboardEvent, type ReactNode } from "react";
 import * as css from "@plumeria/core";
 
 const desktop = "@media (min-width: 992px)";
+const anchor = "@supports (anchor-name: --test)";
 
 const styles = css.create({
   list: {
@@ -18,7 +19,20 @@ const styles = css.create({
     whiteSpace: "nowrap",
     listStyle: "none",
     scrollbarWidth: "none",
-    boxShadow: "inset 0 -1px 0 0 #ddd"
+    boxShadow: "inset 0 -1px 0 0 #ddd",
+    [anchor]: {
+      "::before": {
+        position: "absolute",
+        positionAnchor: "--active-tab",
+        right: "anchor(right)",
+        bottom: 0,
+        left: "anchor(left)",
+        height: 3,
+        content: '""',
+        backgroundColor: "#eeb524",
+        transition: "left 150ms ease-out, right 150ms ease-out"
+      }
+    }
   },
   item: {
     display: "block",
@@ -93,6 +107,13 @@ const styles = css.create({
   },
   active: {
     color: "#000",
+    [anchor]: {
+      anchorName: "--active-tab",
+      "::after": {
+        borderBottomColor: "#ddd",
+        opacity: 0
+      }
+    },
     "::after": {
       borderBottomColor: "#eeb524"
     },
