@@ -1,13 +1,13 @@
 // Plumeria on Solid — multifile-composition. The SAME Tabs as the tabs case, with
 // the styles and the Tab/Tabs primitives moved into this module and only the workload
 // left in index.tsx.
-// The style translation (dropped anchor-positioning underline, `fullWidth` threaded to the
-// li/button instead of descendant selectors, explicit compound states) is identical to the
-// tabs case — see its header for why.
+// The style translation (`fullWidth` threaded to the li/button instead of descendant
+// selectors, explicit compound states) is identical to the tabs case — see its header for why.
 import type { JSX } from "@solidjs/web";
 import * as css from "@plumeria/core";
 
 const desktop = "@media (min-width: 992px)";
+const anchor = "@supports (anchor-name: --test)";
 
 const styles = css.create({
   list: {
@@ -21,7 +21,20 @@ const styles = css.create({
     whiteSpace: "nowrap",
     listStyle: "none",
     scrollbarWidth: "none",
-    boxShadow: "inset 0 -1px 0 0 #ddd"
+    boxShadow: "inset 0 -1px 0 0 #ddd",
+    [anchor]: {
+      "::before": {
+        position: "absolute",
+        positionAnchor: "--active-tab",
+        right: "anchor(right)",
+        bottom: 0,
+        left: "anchor(left)",
+        height: 3,
+        content: '""',
+        backgroundColor: "#eeb524",
+        transition: "left 150ms ease-out, right 150ms ease-out"
+      }
+    }
   },
   item: {
     display: "block",
@@ -96,6 +109,13 @@ const styles = css.create({
   },
   active: {
     color: "#000",
+    [anchor]: {
+      anchorName: "--active-tab",
+      "::after": {
+        borderBottomColor: "#ddd",
+        opacity: 0
+      }
+    },
     "::after": {
       borderBottomColor: "#eeb524"
     },
