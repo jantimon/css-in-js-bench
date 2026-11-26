@@ -15,15 +15,26 @@ import type { RenderCase } from "../../report/types";
 
 const renders = import.meta.glob<{ default: RenderCase }>("./case/*/index.tsx", { eager: true });
 
-// class → its full rule text (base + any pseudo rules + any @media/@container/@supports
-// variants, each re-wrapped in its at-rule), keyed by the unescaped FIRST atomic class so it
-// matches the bare class token in the rendered HTML. A brace-aware walk (not a flat regex) is
-// required: Bamboo nests the responsive/container variants inside @media/@container blocks, and
-// a flat `.class{…}` match would lift those rules OUT of their at-rule and apply them
-// unconditionally (e.g. the `@container tile (min-width:240px)` title bump firing at every
-// width). @layer wrappers are flattened (children emitted at top level — the slice is critical
-// CSS, not layer-ordered) but conditional at-rules are preserved verbatim.
-let ruleMap: Map<string, string> | null = null;
+// The sheet's rules, in the order it writes them, each with the @media/@container/@supports headers
+// around it (outermost first) and the classes its selector names, unescaped so they match the bare
+// class tokens in the rendered HTML. A brace-aware walk (not a flat regex) is required: Bamboo nests
+// the responsive/container variants inside @media/@container blocks, and a flat `.class{…}` match
+// would lift those rules OUT of their at-rule and apply them unconditionally (e.g. the
+// `@container tile (min-width:240px)` title bump firing at every width).
+//
+// @layer wrappers are flattened, so the slice is plain rules, and between two of equal specificity
+// the later one wins. That keeps the sheet's cascade only because the sheet opens each layer once,
+// in the order its `@layer` statement declares them, so a later rule is in the same layer or a later
+// one; the walk throws on a sheet that reopens a layer. The slice keeps the sheet's order for the
+// same reason: in the order classes first appear in the markup, product-grid's
+// `@media (prefers-reduced-motion: reduce){transition:none}` came before the `transition: color` it
+// overrides, so reduced motion kept a transition the shipped sheet turns off.
+interface SheetRule {
+  at: string[];
+  text: string;
+  classes: string[];
+}
+let sheetRules: SheetRule[] | null = null;
 // Bamboo, like Panda, tokenizes some literal values (e.g. `transparent` → var(--colors-transparent)) and
 // DEFINES those vars in a `:root`/`:where(:root,:host)` block under `@layer tokens`. Those root
 // blocks carry no atomic class, so a class-keyed slice emits `var(--spacing-0)` with the variable
@@ -33,12 +44,14 @@ let ruleMap: Map<string, string> | null = null;
 // here and re-emit only the REFERENCED tokens as a slice preamble (cssFor).
 let tokenMap: Map<string, string> | null = null;
 const ROOT_SELECTOR = /(?:^|,)\s*(?::root\b|:where\(\s*:root|:host\b|\[data-bamboo)/i;
-function rules(): Map<string, string> {
-  if (ruleMap) return ruleMap;
-  ruleMap = new Map();
+function rules(): SheetRule[] {
+  if (sheetRules) return sheetRules;
+  sheetRules = [];
   tokenMap = new Map();
   const src = bambooSheet.replace(/\/\*[\s\S]*?\*\//g, "");
   const cond: string[] = []; // active @media/@container/@supports headers (outermost → innermost)
+  const layers: string[] = []; // the @layer blocks the walk is inside (outermost → innermost)
+  const opened = new Set<string>(); // every @layer block opened so far, by its path
   let i = 0;
   const add = (selector: string, body: string) => {
     if (ROOT_SELECTOR.test(selector)) {
@@ -48,13 +61,11 @@ function rules(): Map<string, string> {
       return;
     }
     // Bamboo shares one declaration atom across conditions with a comma selector
-    // (`.after\:pos_absolute::after,.before\:pos_absolute::before{…}`), so a rule must be
-    // reachable from EVERY class it names, not just the first — a render may use only the
-    // second. cssFor dedupes by rule text, so double-keying never double-emits.
+    // (`.after\:pos_absolute::after,.before\:pos_absolute::before{…}`), so a rule is the page's when
+    // ANY class it names is in the markup — a render may use only the second.
     const classes = [...selector.matchAll(/\.((?:\\.|[\w-])+)/g)].map((m) => m[1].replace(/\\(.)/g, "$1"));
     if (!classes.length) return; // a rule without a class key (e.g. a @keyframes step) — skip, as before
-    const rule = cond.reduceRight((inner, h) => `${h}{${inner}}`, `${selector}{${body}}`);
-    for (const cls of new Set(classes)) ruleMap!.set(cls, (ruleMap!.get(cls) ?? "") + rule + "\n");
+    sheetRules!.push({ at: [...cond], text: `${selector}{${body}}`, classes });
   };
   const block = () => {
     while (i < src.length) {
@@ -68,7 +79,14 @@ function rules(): Map<string, string> {
       i++; // consume "{"
       const at = header.toLowerCase();
       if (at.startsWith("@layer")) {
-        block(); // flatten: descend without wrapping
+        // flatten: descend without wrapping
+        const name = header.slice("@layer".length).trim();
+        const path = [...layers, name].join(".");
+        if (opened.has(path)) throw new Error(`bamboo: the sheet reopens @layer ${path}, so its order is not the cascade's`);
+        opened.add(path);
+        layers.push(name);
+        block();
+        layers.pop();
       } else if (at.startsWith("@media") || at.startsWith("@container") || at.startsWith("@supports")) {
         cond.push(header);
         block();
@@ -85,27 +103,30 @@ function rules(): Map<string, string> {
     }
   };
   block();
-  return ruleMap;
+  return sheetRules;
 }
 function cssFor(html: string): string {
-  const map = rules();
-  const seen = new Set<string>();
-  const emitted = new Set<string>(); // rule text — comma-shared atoms are keyed under every class
-  let css = "";
+  const used = new Set<string>();
   for (const m of html.matchAll(/class="([^"]*)"/g))
     for (const raw of m[1].split(/\s+/)) {
       // class attributes are HTML-escaped (Bamboo's &-selector and content:"" classes carry
-      // &amp; / &quot; in the markup); unescape so tokens match the unescaped rule-map keys.
+      // &amp; / &quot; in the markup); unescape so tokens match the unescaped rule keys.
       const t = raw.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, String.fromCharCode(34)).replace(/&#39;/g, "'").replace(/&amp;/g, "&");
-      if (t && !seen.has(t)) {
-        seen.add(t);
-        const rule = map.get(t);
-        if (rule && !emitted.has(rule)) {
-          emitted.add(rule);
-          css += rule + "\n";
-        }
-      }
+      if (t) used.add(t);
     }
+  // The page's rules in the sheet's order, each at-rule opened once for the run of rules inside it.
+  let css = "";
+  let open: string[] = [];
+  for (const rule of rules()) {
+    if (!rule.classes.some((cls) => used.has(cls))) continue;
+    let kept = 0;
+    while (kept < open.length && kept < rule.at.length && open[kept] === rule.at[kept]) kept++;
+    css += "}".repeat(open.length - kept);
+    for (const header of rule.at.slice(kept)) css += `${header}{`;
+    open = rule.at;
+    css += rule.text + "\n";
+  }
+  css += "}".repeat(open.length);
   // Prepend the design tokens this slice actually references (resolving nested var() chains), so
   // var(--spacing-0) et al. resolve instead of collapsing to their initial value.
   const need = new Set<string>();
