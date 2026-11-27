@@ -54,6 +54,7 @@ export const FAMILIES: Family[] = [
       { tech: "panda-props", short: "style props" },
       { tech: "panda-recipe", short: "recipe" },
       { tech: "bamboo", short: "Bamboo" },
+      { tech: "bamboo-solid", short: "Bamboo" },
     ],
   },
   {
