@@ -520,10 +520,9 @@ async function main() {
                   <h3 className="chart-title">
                     SSR render throughput
                     <InfoTip>
-                      Uses tinybench to measure how fast Node turns components into an HTML string. Each sample is one
-                      render of the whole workload, after warmup at the same size and a full garbage collection.
-                      Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
-                      Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
+                      How many components Node renders to an HTML string per second.
+                      <span className="tip-p">Measured with tinybench: each sample renders all components of this page once, after a warm-up and a full garbage collection. Only rendering is timed; building, HTTP and the browser are left out.</span>
+                      <span className="tip-p">Every component counts: a page of 400 product cards counts as 400 renders.</span>
                     </InfoTip>
                     <HideMeasure k="microbench" />
                   </h3>
@@ -544,11 +543,9 @@ async function main() {
                     <h3 className="chart-title">
                       SSR throughput under load
                       <InfoTip>
-                        Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
-                        rendering the whole workload into an HTML fragment, and transferring and receiving the response.
-                        Clients keep concurrent connections open. Each request renders the full workload, so a workload
-                        of 400 product tiles counts as one request. Excludes build time, browser rendering and external
-                        network latency.
+                        How many whole pages a Node server delivers per second while many clients ask at once.
+                        <span className="tip-p">Measured with autocannon on this machine: each request renders all components of this page to HTML and sends the response back, over several open connections. Building, browser work and real network delay are left out.</span>
+                        <span className="tip-p">One request is one whole page: a page of 400 product cards counts as one request.</span>
                       </InfoTip>
                       <HideMeasure k="autocannon" />
                     </h3>
@@ -572,10 +569,9 @@ async function main() {
                     <h3 className="chart-title">
                       SSR render time split
                       <InfoTip>
-                        One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
-                        and <b>your components</b>. Framework work can differ when a lane removes component calls.
-                        <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
-                        (<code>web-performance-debugger</code> {wpdVersion}).
+                        Where one server render spends its time: the <b>UI framework</b> (React or Solid), the <b>styling library</b> and <b>your components</b>. <b>other</b> is garbage collection and work inside Node.
+                        <span className="tip-p">Taken from a sampled CPU profile, matched back to the source files. Framework time can differ between libraries when a library removes component calls.</span>
+                        <span className="tip-p tip-src">Tool: web-performance-debugger {wpdVersion}</span>
                       </InfoTip>
                       <HideMeasure k="attribution" />
                     </h3>
@@ -592,8 +588,8 @@ async function main() {
                     <h3 className="chart-title">
                       Scaling
                       <InfoTip>
-                        Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
-                        per element stays put as the page gets bigger.
+                        Server render time as the page grows from a handful of components to thousands.
+                        <span className="tip-p">A flatter line means each extra component adds the same small cost, however big the page gets.</span>
                       </InfoTip>
                       <HideMeasure k="nsweep" />
                     </h3>
@@ -610,11 +606,10 @@ async function main() {
                     <h3 className="chart-title">
                       Client hydration
                       <InfoTip>
-                        The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
-                        state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
-                        and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
-                        profiles a span through the next frame and shows JavaScript, style, layout and paint
-                        (<code>web-performance-debugger</code> {wpdVersion}).
+                        How long the framework needs to take over the HTML the server sent: it attaches event handlers and sets up state without rebuilding the markup. This step is called <b>hydration</b>.
+                        <span className="tip-p">The median duration starts on a fully loaded page and stops when the framework has written to the page (React's useLayoutEffect, Solid's flush), before the browser paints.</span>
+                        <span className="tip-p">The breakdown comes from a separate Chrome profile that runs until the next frame is drawn, so it also includes style, layout and paint.</span>
+                        <span className="tip-p tip-src">Tool: web-performance-debugger {wpdVersion}</span>
                       </InfoTip>
                       <HideMeasure k="hydrate" />
                     </h3>
@@ -631,11 +626,9 @@ async function main() {
                     <h3 className="chart-title">
                       Interaction update
                       <InfoTip>
-                        Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
-                        React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
-                        is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
-                        to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
-                        Use vanilla lanes as references; compilers and styled runtimes can also remove component work.
+                        How long it takes until every component shows a new value after one state change. Each value goes from <code>i</code> to <code>i + 1</code>, so every element really updates: React sets state, Solid sets a signal.
+                        <span className="tip-p">Both run a few times first, and resetting the values is not timed. Timing stops at the first animation frame; the Chrome profile runs one frame longer to include the browser's rendering work. This is not the same as Google's INP metric.</span>
+                        <span className="tip-p">The times include the framework itself, so compare against the vanilla version with plain CSS. Compilers and runtime libraries can also remove some component work.</span>
                       </InfoTip>
                       <HideMeasure k="inp" />
                     </h3>
@@ -652,9 +645,9 @@ async function main() {
                     <h3 className="chart-title">
                       Cold mount
                       <InfoTip>
-                        The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
-                        before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
-                        during that work. The separate profiled span includes the next frame's rendering work.
+                        How long it takes to render all components into an empty part of an already loaded page.
+                        <span className="tip-p">Timing stops when the framework has written to the page, before paint; page load and network are not included. A library that creates CSS at runtime may insert its styles during this step.</span>
+                        <span className="tip-p">The Chrome profile is a separate run that also includes the next frame's style, layout and paint.</span>
                       </InfoTip>
                       <HideMeasure k="mount" />
                     </h3>
@@ -671,12 +664,9 @@ async function main() {
                     <h3 className="chart-title">
                       Browser render work
                       <InfoTip>
-                        The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
-                        where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
-                        instance, so the engine recalculates styles once per instance instead of once for the page.
-                        <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
-                        milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
-                        engine.
+                        The browser's own work after the components appear: recalculating styles, layout and painting, not JavaScript.
+                        <span className="tip-p">Libraries that write CSS at runtime can make this slower: if they add a style rule per component, the browser recalculates styles once per component instead of once for the page. Chrome counts how often it recalculated styles; a badge shows the count when it is not one.</span>
+                        <span className="tip-p">Firefox reports sampled times instead, where a zero can mean the sample missed the work. Compare values within one browser.</span>
                       </InfoTip>
                       <HideMeasure k="render-timing" />
                     </h3>
@@ -693,9 +683,8 @@ async function main() {
                     <h3 className="chart-title">
                       Page bytes
                       <InfoTip>
-                        Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
-                        CSS, and the server HTML. Solid marks every element with a hydration key and React needs
-                        none, so read the HTML column across frameworks with that in mind.
+                        How many gzipped bytes the browser downloads: the JavaScript the styling library adds on top of a page with only the framework, the CSS, and the HTML from the server.
+                        <span className="tip-p">Solid marks every element with a hydration key and React does not, so Solid pages carry more HTML. Keep that in mind when you compare across frameworks.</span>
                       </InfoTip>
                       <HideMeasure k="payload" />
                     </h3>
@@ -716,10 +705,9 @@ async function main() {
                   <h3 className="chart-title">
                     Build time
                     <InfoTip>
-                      How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
-                      lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
-                      nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
-                      about what users get.
+                      How long a full production build takes, for the same bundle that page bytes measures.
+                      <span className="tip-p"><b>cold</b> deletes caches and generated code first, so it includes regenerating them; <b>warm</b> runs the build again with nothing deleted. Median of 3 runs.</span>
+                      <span className="tip-p">This affects developers, not users, and depends on the machine.</span>
                     </InfoTip>
                     <HideMeasure k="buildtime" />
                   </h3>
@@ -732,9 +720,9 @@ async function main() {
           <section className="outro" id="how-measured">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
-              <li><b><a href="https://github.com/tinylibs/tinybench">tinybench</a></b> — renders each workload to an HTML string in Node and counts instance renders per second. A full garbage collection runs before every sample.</li>
-              <li><b>autocannon</b> — {httpNote}</li>
-              <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
+              <li><b><a href="https://github.com/tinylibs/tinybench">tinybench</a></b>: renders each test page to an HTML string in Node and counts component renders per second. A full garbage collection runs before every sample.</li>
+              <li><b>autocannon</b>: {httpNote}</li>
+              <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b>: records CPU and render profiles in Chrome, Firefox and Node and matches the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
               Source, raw data and methodology: <a href="https://github.com/jantimon/css-in-js-bench">github.com/jantimon/css-in-js-bench</a>.
