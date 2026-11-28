@@ -33,14 +33,17 @@ const C = 2 * Math.PI * R;
 /** A DevTools "Summary"-style donut of one profile's active work, the active time in the middle. */
 export function Donut({ row }: { row: WpdBreakdownRow }) {
   const total = activeMs(row);
+  // Arcs are sized by the sum of the drawn slices, not by span minus idle: the two can differ by
+  // rounding or a missing slice, and the ring must close exactly at the top.
+  const drawn = ACTIVE.reduce((sum, [key]) => sum + (row.span.slices[key] ?? 0), 0);
   let offset = 0;
   return (
     <svg className="pd-donut" viewBox="0 0 100 100" width={84} height={84} aria-hidden="true">
       <g transform="rotate(-90 50 50)">
         {ACTIVE.map(([key, color]) => {
           const ms = row.span.slices[key];
-          if (!ms || total <= 0) return null;
-          const len = (ms / total) * C;
+          if (!ms || drawn <= 0) return null;
+          const len = (ms / drawn) * C;
           const arc = <circle key={key} cx={50} cy={50} r={R} fill="none" stroke={color} strokeWidth={STROKE} strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} />;
           offset += len;
           return arc;
