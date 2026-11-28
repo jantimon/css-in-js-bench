@@ -28,6 +28,7 @@ export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: stri
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech} {...tipRow}>
           <BarTip
             title={b.label}
+            tech={b.tech}
             lines={[
               { label: "median", value: `${Math.round(b.value).toLocaleString()} ${unit}` },
               ...(b.spread > 0 ? [{ label: "spread", value: `±${Math.round(b.spread * 100)}%` }] : []),
@@ -41,9 +42,6 @@ export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: stri
           </span>
           <span className={"bar-val" + (b.value === best ? " bar-best" : "")}>
             {Math.round(b.value).toLocaleString()}
-            <span className="bar-unit"> {unit}</span>
-            {b.spread > 0 ? <span className="bar-spread"> ±{Math.round(b.spread * 100)}%</span> : null}
-            {b.msPer1kElems !== undefined ? <span className="bar-breakdown">({b.msPer1kElems.toFixed(2)} ms / 1k elems)</span> : null}
           </span>
         </div>
       ))}

@@ -43,6 +43,7 @@ export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
           <div className={"bar-row" + (breaks[index] ? " gap-before" : "")} data-tech={row.tech} key={row.tech} {...tipRow}>
             <BarTip
               title={row.label}
+              tech={row.tech}
               lines={[
                 ...SEGMENTS.flatMap(([key, color, label]) => {
                   const value = row.span.slices[key];
@@ -50,6 +51,7 @@ export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
                 }),
                 { label: "active", value: `${activeMs(row).toFixed(1)} ms` },
                 { label: "span", value: `${row.span.wallMs.toFixed(1)} ms` },
+                ...(median !== undefined ? [{ label: "profiled median", value: `${median.toFixed(1)} ms` }] : []),
                 ...(row.timing?.stats
                   ? [{ label: `${row.timing.samplesMs.length} samples`, value: `${row.timing.stats.minMs.toFixed(1)}–${row.timing.stats.maxMs.toFixed(1)} ms` }]
                   : []),
@@ -64,8 +66,7 @@ export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
               })}
             </span>
             <span className="bar-val">
-              {activeMs(row).toFixed(1)}<span className="bar-unit"> ms</span>
-              <span className="bar-breakdown">(+{row.span.slices.idle.toFixed(1)} idle{median !== undefined ? ` · ${median.toFixed(1)} median, n=${row.timing?.samplesMs.length}` : ""})</span>
+              {activeMs(row).toFixed(1)}
             </span>
           </div>
         );

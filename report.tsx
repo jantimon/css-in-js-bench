@@ -499,156 +499,199 @@ async function main() {
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code" data-screen-only>
-              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
+              <h3 className="chart-title">Source and output<HideMeasure k="code" /></h3>
               <Editor caseId={caseId} lanes={editorLanes} caseIds={caseIds} />
             </div>
-            <div data-measure="microbench">
-              <h3 className="chart-title">
-                <span className="ct-main">SSR render throughput</span> <span className="ct-sub">(renders / sec · higher is better)</span>
-                <InfoTip>
-                  Uses tinybench to measure how fast Node turns components into an HTML string. Each sample is one
-                  render of the whole workload, after warmup at the same size and a full garbage collection.
-                  Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
-                  Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
-                  Higher is better.
-                </InfoTip>
-                <HideMeasure k="microbench" />
-              </h3>
-              <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
+            <div data-group="Server" data-measure="microbench">
+              <div className="ch-head">
+                <div className="ch-text">
+                  <h3 className="chart-title">
+                    SSR render throughput
+                    <InfoTip>
+                      Uses tinybench to measure how fast Node turns components into an HTML string. Each sample is one
+                      render of the whole workload, after warmup at the same size and a full garbage collection.
+                      Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
+                      Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
+                    </InfoTip>
+                    <HideMeasure k="microbench" />
+                  </h3>
+                  <p className="ch-cap">Component renders per second in Node. Longer bars are better.</p>
+                </div>
+                <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
                 <span className="tm-word">tiny<b>bench</b></span>
-                <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={20} height={20} loading="lazy" />
+                <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={18} height={18} loading="lazy" />
               </a>
+              </div>
               <BarChart bars={bars} unit="r/s" higherBetter />
             </div>
             {acanBars.length ? (
               <div data-measure="autocannon">
-                <h3 className="chart-title">
-                  <span className="ct-main">SSR throughput under load</span> <span className="ct-sub">(requests / sec · higher is better)</span>
-                  <InfoTip>
-                    Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
-                    rendering the whole workload into an HTML fragment, and transferring and receiving the response.
-                    Clients keep concurrent connections open. Each request renders the full workload, so a workload
-                    of 400 product tiles counts as one request. Excludes build time, browser rendering and external
-                    network latency. Higher is better.
-                  </InfoTip>
-                  <HideMeasure k="autocannon" />
-                </h3>
-                <a className="tool-mark" href="https://github.com/mcollina/autocannon" title="autocannon by Matteo Collina">
-                  <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={24} height={24} loading="lazy" />
-                  <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={20} height={20} loading="lazy" />
-                  autocannon
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      SSR throughput under load
+                      <InfoTip>
+                        Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
+                        rendering the whole workload into an HTML fragment, and transferring and receiving the response.
+                        Clients keep concurrent connections open. Each request renders the full workload, so a workload
+                        of 400 product tiles counts as one request. Excludes build time, browser rendering and external
+                        network latency.
+                      </InfoTip>
+                      <HideMeasure k="autocannon" />
+                    </h3>
+                    <p className="ch-cap">HTTP requests per second; each request renders the whole page. Longer bars are better.</p>
+                  </div>
+                  <a className="tool-mark" href="https://github.com/mcollina/autocannon" title="autocannon by Matteo Collina">
+                  <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
+                  <span className="tm-name">autocannon</span>
+                  <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
                 </a>
+                </div>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
                 <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
               <div data-measure="attribution">
-                <h3 className="chart-title">
-                  <span className="ct-main">Where the SSR render time goes</span> <span className="ct-sub">(Node CPU profile · median ms / render)</span>
-                  <InfoTip>
-                    One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
-                    and <b>your components</b>. Framework work can differ when a lane removes component calls.
-                    <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
-                    (<code>web-performance-debugger</code> {wpdVersion}).
-                  </InfoTip>
-                  <HideMeasure k="attribution" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      SSR render time split
+                      <InfoTip>
+                        One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
+                        and <b>your components</b>. Framework work can differ when a lane removes component calls.
+                        <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
+                        (<code>web-performance-debugger</code> {wpdVersion}).
+                      </InfoTip>
+                      <HideMeasure k="attribution" />
+                    </h3>
+                    <p className="ch-cap">Median milliseconds per render, from a Node CPU profile. Shorter bars are better.</p>
+                  </div>
+                </div>
                 <AttributionChart rows={attrRows} />
               </div>
             ) : null}
             {hydWpdRows.length || hydBars.length ? (
-              <div data-measure="hydrate">
-                <h3 className="chart-title">
-                  <span className="ct-main">Client hydration</span> <span className="ct-sub">(ms · lower is better)</span>
-                  <InfoTip>
-                    The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
-                    state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
-                    and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
-                    profiles a span through the next frame and shows JavaScript, style, layout and paint
-                    (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="hydrate" />
-                </h3>
+              <div data-group="Browser" data-measure="hydrate">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Client hydration
+                      <InfoTip>
+                        The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
+                        state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
+                        and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
+                        profiles a span through the next frame and shows JavaScript, style, layout and paint
+                        (<code>web-performance-debugger</code> {wpdVersion}).
+                      </InfoTip>
+                      <HideMeasure k="hydrate" />
+                    </h3>
+                    <p className="ch-cap">Milliseconds until the framework takes over the server HTML. Shorter bars are better.</p>
+                  </div>
+                </div>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
                 <ProfileSection rows={hydWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
-                <h3 className="chart-title">
-                  <span className="ct-main">Interaction update</span> <span className="ct-sub">(ms · lower is better)</span>
-                  <InfoTip>
-                    Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
-                    React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
-                    is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
-                    to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
-                    Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="inp" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Interaction update
+                      <InfoTip>
+                        Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
+                        React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
+                        is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
+                        to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
+                        Use vanilla lanes as references; compilers and styled runtimes can also remove component work.
+                      </InfoTip>
+                      <HideMeasure k="inp" />
+                    </h3>
+                    <p className="ch-cap">Milliseconds until every instance shows its new value. Shorter bars are better.</p>
+                  </div>
+                </div>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
                 <ProfileSection rows={inpWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {mountWpdRows.length || mountBars.length ? (
               <div data-measure="mount">
-                <h3 className="chart-title">
-                  <span className="ct-main">Cold mount</span> <span className="ct-sub">(ms · lower is better)</span>
-                  <InfoTip>
-                    The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
-                    before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
-                    during that work. The separate profiled span includes the next frame's rendering work.
-                    Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="mount" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Cold mount
+                      <InfoTip>
+                        The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
+                        before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
+                        during that work. The separate profiled span includes the next frame's rendering work.
+                      </InfoTip>
+                      <HideMeasure k="mount" />
+                    </h3>
+                    <p className="ch-cap">Milliseconds to render the workload into an empty page. Shorter bars are better.</p>
+                  </div>
+                </div>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
                 <ProfileSection rows={mountWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {rtRows.length ? (
               <div data-measure="render-timing">
-                <h3 className="chart-title">
-                  <span className="ct-main">Browser render-work on a cold mount</span> <span className="ct-sub">(style-recalc / layout / paint · Chrome + Firefox)</span>
-                  <InfoTip>
-                    The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
-                    where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
-                    instance, so the engine recalculates styles once per instance instead of once for the page.
-                    <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
-                    milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
-                    engine. Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="render-timing" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Browser render work
+                      <InfoTip>
+                        The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
+                        where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
+                        instance, so the engine recalculates styles once per instance instead of once for the page.
+                        <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
+                        milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
+                        engine.
+                      </InfoTip>
+                      <HideMeasure k="render-timing" />
+                    </h3>
+                    <p className="ch-cap">Milliseconds of style recalculation, layout and paint on a cold mount. Shorter bars are better.</p>
+                  </div>
+                </div>
                 <RenderTimingChart rows={rtRows} />
               </div>
             ) : null}
             {payRows.length ? (
-              <div data-measure="payload">
-                <h3 className="chart-title">
-                  <span className="ct-main">Page bytes shipped</span> <span className="ct-sub">(JS + CSS + HTML, gzipped · lower is better)</span>
-                  <InfoTip>
-                    Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
-                    CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
-                    none, so read the HTML column across frameworks with that in mind.
-                  </InfoTip>
-                  <HideMeasure k="payload" />
-                </h3>
-                <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={420} height={140} loading="lazy" data-screen-only />
+              <div data-group="Bytes" data-measure="payload">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Page bytes
+                      <InfoTip>
+                        Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
+                        CSS, and the server HTML. Solid marks every element with a hydration key and React needs
+                        none, so read the HTML column across frameworks with that in mind.
+                      </InfoTip>
+                      <HideMeasure k="payload" />
+                    </h3>
+                    <p className="ch-cap">Gzipped kilobytes of JavaScript, CSS and HTML. Shorter bars are better.</p>
+                  </div>
+                  <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={210} height={70} loading="lazy" data-screen-only />
+                </div>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
             ) : null}
             {sweepLines.length ? (
-              <div data-measure="nsweep">
-                <h3 className="chart-title">
-                  <span className="ct-main">Scaling</span> <span className="ct-sub">(SSR render time (ms) vs instance count)</span>
-                  <InfoTip>
-                    Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
-                    per element stays put as the page gets bigger.
-                  </InfoTip>
-                  <HideMeasure k="nsweep" />
-                </h3>
+              <div data-group="Server" data-measure="nsweep">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Scaling
+                      <InfoTip>
+                        Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
+                        per element stays put as the page gets bigger.
+                      </InfoTip>
+                      <HideMeasure k="nsweep" />
+                    </h3>
+                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows. Flatter lines are better.</p>
+                  </div>
+                </div>
                 <LineChart lines={sweepLines} />
               </div>
             ) : null}
@@ -657,16 +700,21 @@ async function main() {
           })}
           {buildRows.length ? (
             <section className="buildtime" data-measure="buildtime" id="buildtime">
-              <h3 className="chart-title">
-                <span className="ct-main">Build time</span> <span className="ct-sub">(full client build · lower is better)</span>
-                <InfoTip>
-                  How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
-                  lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
-                  nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
-                  about what users get.
-                </InfoTip>
-                <HideMeasure k="buildtime" />
-              </h3>
+              <div className="ch-head">
+                <div className="ch-text">
+                  <h3 className="chart-title">
+                    Build time
+                    <InfoTip>
+                      How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
+                      lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
+                      nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
+                      about what users get.
+                    </InfoTip>
+                    <HideMeasure k="buildtime" />
+                  </h3>
+                  <p className="ch-cap">Milliseconds for a full client build. Shorter bars are better.</p>
+                </div>
+              </div>
               <BuildTimeChart rows={buildRows} />
             </section>
           ) : null}
@@ -818,19 +866,26 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .case{margin:0 0 18px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .case>summary::-webkit-details-marker{display:none}
-.case-title{font-size:19px;font-weight:680}
+.case-title{font-size:24px;font-weight:700}
 .case-sub{color:var(--muted);font-size:14px}
 .chip{font:11.5px/1 ui-monospace,monospace;color:var(--muted);background:var(--raised);border:1px solid var(--raised-2);border-radius:6px;padding:4px 8px}
-.case-desc{color:var(--muted);margin:0 0 8px;max-width:92ch;font-size:13.5px}
-.ct-main{color:var(--fg);font-size:14px;text-transform:none;letter-spacing:0;font-weight:650}
-.ct-sub{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px}
-.chart-title{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
-.case-analysis{border-left:3px solid #3fb950;padding:2px 0 2px 14px;margin:0 0 10px}
-.sum-headline{margin:0 0 10px;color:var(--fg);font-size:13.5px;max-width:92ch}
+.case-desc{color:var(--muted);margin:0 0 12px;max-width:64ch;font-size:14px;line-height:1.55}
+.chart-title{font-size:17px;line-height:1.3;color:var(--fg);margin:0;font-weight:650}
+/* Chart heading row: name + caption on the left, the tool mark or banner on the right. */
+.ch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 18px}
+.ch-text{min-width:0}
+.ch-cap{margin:4px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
+.case [data-measure]{margin-top:48px}
+.case [data-group]{padding-top:28px;border-top:1px solid var(--line);margin-top:56px}
+.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2)}
+.case [data-measure="code"]{margin-top:28px}
+.case [data-measure="code"] .chart-title{margin:0 0 12px}
+.case-analysis{margin:0 0 16px}
+.sum-headline{margin:0 0 10px;color:var(--fg);font-size:15px;line-height:1.5;max-width:64ch}
 .case-analysis .sum-headline{margin:0}
 .sum-stale{margin-left:10px;padding:2px 7px;border:1px solid #9e6a03;border-radius:999px;color:#d29922;font-size:11px;white-space:nowrap}
 .sum-winner{display:inline-flex;align-items:center;gap:6px;color:var(--fg);font-size:13px;font-weight:600;flex:0 0 auto}
-.sum-why{margin:4px 0;color:var(--fg-3);font-size:13px;max-width:92ch}
+.sum-why{margin:4px 0;color:var(--fg-3);font-size:13px;max-width:64ch}
 .study{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--panel);margin-bottom:24px}
 .study-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
 .study-title{font-size:14px;font-weight:650}
@@ -845,7 +900,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study-docs a{color:var(--link)}
 .study-foot{margin:14px 0 0;color:var(--muted-2);font-size:11px}
 @media screen and (max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
-.sum-cross{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:92ch}
+.sum-cross{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:64ch}
 .study .sum-cross{padding-top:8px;border-top:1px dashed var(--line-2)}
 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid var(--line-2);border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:var(--muted);cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
 .info:hover{color:var(--fg-2);border-color:var(--muted-2)}
@@ -854,27 +909,27 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
 .info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
 .info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
-.bars,.attr{display:grid;grid-template-columns:230px 1fr max-content;column-gap:12px;row-gap:7px;align-items:center}
+.bars,.attr{display:grid;grid-template-columns:220px 1fr minmax(56px,max-content);column-gap:14px;row-gap:9px;align-items:center}
 .bars{margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
 .bar-row.tech-off{display:none}
-.bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:var(--fg-2);font-size:13px}
+.bar-label{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;color:var(--fg-2);font-size:13px}
 .bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .tech-logo{width:14px;height:14px;object-fit:contain;vertical-align:-2px;border-radius:3px;flex:none}
 .tech-pill .tech-logo{width:13px;height:13px}
 .ed-file .tech-logo,.lc-legend .tech-logo{margin-right:5px}
 .bar-track{background:var(--raised);border-radius:5px;height:16px;overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:5px}
-.bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
+.bar-val{font-variant-numeric:tabular-nums;font-size:13px;text-align:right;white-space:nowrap}
 .bar-best{font-weight:700;color:#3fb950}
 /* The measuring tool's logo with its author's avatar, at the start of a chart title. The logo is
    dark grey on transparent, so it sits on a white tile in both themes. */
-.tool-mark{display:flex;width:max-content;align-items:center;margin:-2px 0 12px;font-size:14px;font-weight:600;color:var(--fg-2);text-decoration:none}
+.tool-mark{display:flex;flex:none;align-items:center;gap:8px;height:30px;padding:0 6px 0 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--raised);font-size:13px;font-weight:600;color:var(--fg-2);text-decoration:none}
 .tool-mark:hover{color:var(--fg)}
-.tm-word{font:500 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em;padding:6px 8px;border-radius:7px;background:var(--raised);border:1px solid var(--line-2);color:var(--fg-2)}
+.tm-word{font:500 14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em;color:var(--fg-2)}
 .tm-word b{color:#f0b429;font-weight:700}
-.tm-logo{width:30px;height:30px;padding:4px;box-sizing:border-box;border-radius:6px;background:#fff}
-.tm-av{width:24px;height:24px;margin:0 9px 0 -9px;position:relative;top:7px;border-radius:50%;box-shadow:0 0 0 2px var(--panel)}
+.tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}
+.tm-av{width:18px;height:18px;border-radius:50%}
 /* DevTools-style summary cards in front of the Chrome-profiled charts: fastest and slowest visible lane. */
 .pd{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 16px}
 .pd-card{flex:1 1 260px;max-width:360px;border:1px solid var(--line);border-radius:10px;padding:10px 14px 12px;background:var(--raised);position:relative}
@@ -891,12 +946,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .pd-total{font-weight:700;color:var(--fg);padding-top:2px}
 @media screen{.prof:not(.prof-few) .pd,.prof-few .wpd-breakdown{display:none}}
 @media print{.pd,.prof-diff{display:none}}
-.prof{margin-top:22px;padding-top:14px;border-top:1px dashed var(--line-2)}
-.prof-title{margin:0 0 4px;color:var(--muted-2)}
+.prof{margin-top:36px}
+.prof-title{margin:0;font-size:15px;font-weight:650;color:var(--fg)}
+.prof>.ch-cap{margin-bottom:12px}
 .prof-diff{margin:0 0 12px;font-size:12.5px;color:var(--fg-2)}
-@media screen{.chart-banner~.attr>.attr-legend{display:none}}
 /* A small picture above a chart title that shows what the chart is about. */
-.chart-banner{display:block;width:min(228px,100%);height:auto;margin:0 0 14px;border-radius:8px;border:1px solid var(--line)}
+.chart-banner{display:block;flex:none;width:210px;height:auto;border-radius:6px;border:1px solid var(--line-2)}
 /* Bar hover card: the hovered (or, on touch screens, tapped) row's track becomes the anchor and
    the card sits above it. position:fixed escapes the track's overflow:hidden. Browsers without
    anchor positioning show no card. */
@@ -904,7 +959,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 @supports (anchor-name:--a){
   .bar-row[tabindex]{outline:none}
   .bar-tip{position:fixed;position-anchor:--bar-tip;position-area:top;position-try-fallbacks:flip-block;margin:6px 0;grid-template-columns:auto auto;gap:3px 14px;align-items:baseline;width:max-content;max-width:calc(100vw - 24px);background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.4 -apple-system,system-ui,sans-serif;color:var(--fg-2);box-shadow:0 8px 24px rgba(0,0,0,.55);z-index:30;pointer-events:none}
-  .bt-title{grid-column:1/-1;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .bt-title{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-weight:600;color:var(--fg);margin-bottom:3px}
   .bt-key{display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
   .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
   .bt-val{text-align:right;font-variant-numeric:tabular-nums}
@@ -927,12 +982,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.rt .bar-label{display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
+.rt .bar-label{display:flex;gap:7px;justify-content:space-between;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
 .rt-eng{color:var(--muted-2);font-size:11px;flex:none}
 .rt-badge{margin-left:8px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
-.rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:var(--muted-2)}
-.rt .bar-val{min-width:150px}
+.rt-note{grid-column:1/-1;margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:64ch}
+.rt-badge{margin-left:6px}
 .wpd-breakdown{margin-top:8px}
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:var(--muted);font-size:10px}
@@ -991,7 +1046,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .bd-kind{color:var(--fg-3)}
 .outro{border:1px solid var(--line);border-radius:12px;padding:6px 20px 16px;background:var(--panel);margin-top:24px}
 .outro-tools{margin:0;padding-left:18px;color:var(--fg-3);font-size:13px}
-.outro-tools li{margin:6px 0;max-width:100ch}
+.outro-tools li{margin:6px 0;max-width:64ch}
 .outro-tools b{color:var(--fg)}
 .outro-run{color:var(--muted);font-size:13px;margin:12px 0 0;max-width:100ch}
 .outro a{color:var(--link)}
@@ -1018,6 +1073,8 @@ a.mono:hover{text-decoration:underline}
   .bar-breakdown{display:block;margin-left:0;font-size:10.5px}
   .rt .bar-label{justify-content:flex-start}
   .rt .bar-val{min-width:0}
+  .ch-head{flex-wrap:wrap}
+  .chart-banner{width:160px}
   .editor{display:block}
   .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
   .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}

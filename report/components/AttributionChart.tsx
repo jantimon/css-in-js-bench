@@ -44,6 +44,7 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
           <BarTip
             title={r.label}
+            tech={r.tech}
             lines={[
               ...BUCKETS.map(([k, c, label]) => ({ label, color: c, value: `${(r[k] as number).toFixed(2)} ms · ${pct(r[k] as number, r.renderMs)}` })),
               { label: "median render", value: `${r.renderMs.toFixed(2)} ms` },
@@ -59,7 +60,6 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
           </span>
           <span className="bar-val">
             {r.renderMs.toFixed(2)}
-            <span className="bar-unit"> ms</span>
           </span>
         </div>
       ))}

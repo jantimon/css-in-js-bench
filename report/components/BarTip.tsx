@@ -1,4 +1,5 @@
 import React from "react";
+import { logoFor } from "./TechLabel.tsx";
 
 export interface TipLine {
   label: string;
@@ -24,11 +25,12 @@ export interface TipRank {
 // screens a tap focuses the row (tabIndex -1 keeps it out of the tab order) and shows the card.
 // The rank line and the note are rewritten by rescaleBars() in report.tsx to count only the
 // lanes the tech filter shows; the server text counts every lane.
-export function BarTip({ title, lines, rank, note }: { title: string; lines: TipLine[]; rank?: TipRank; note?: string }) {
+export function BarTip({ title, tech, lines, rank, note }: { title: string; tech?: string; lines: TipLine[]; rank?: TipRank; note?: string }) {
+  const logo = tech ? logoFor(tech) : null;
   const best = rank?.rows[0];
   return (
     <span className="bar-tip" role="tooltip" data-screen-only>
-      <span className="bt-title">{title}</span>
+      <span className="bt-title">{logo ? <img className="tech-logo" src={logo} alt="" /> : null}{title}</span>
       {lines.map((l) => (
         <React.Fragment key={l.label}>
           <span className="bt-key">

@@ -53,6 +53,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
       <div className={"bar-row" + (first ? " gap-before" : "")} data-tech={r.tech} key={`${r.tech}-${engine}`} {...tipRow}>
         <BarTip
           title={`${r.label} · ${engine}`}
+          tech={r.tech}
           lines={[
             ...segs.map(([k, c, label]) => {
               const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
@@ -75,8 +76,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         </span>
         <span className="bar-val">
           {total.toFixed(1)}
-          <span className="bar-unit"> ms</span>
-          {engine === "Chrome" && typeof m.styleCount === "number" ? (
+          {engine === "Chrome" && typeof m.styleCount === "number" && m.styleCount !== 1 ? (
             <span className="rt-badge" title="Chrome style-recalc count — one per runtime-injected style vs one for extracted CSS">
               {m.styleCount} recalc{m.styleCount === 1 ? "" : "s"}
             </span>
@@ -101,9 +101,8 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
       ))}
       <p className="rt-note">
         {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
-        Cold mount of {sorted[0]?.n ?? 0} instances. Chrome's trustworthy signal is the <b>style-recalc count</b> (badge);
-        Firefox reports sampled Gecko style/layout <b>ms</b> but no main-thread paint. A zero sampled slice is not proof
-        that no work occurred; Chrome's exact count badges are the reliable presence/absence signal.
+        Cold mount of {sorted[0]?.n ?? 0} instances. Chrome recalculated styles once per mount unless a badge shows
+        another count. Firefox samples style and layout time and reports no main-thread paint, so a zero can mean "not sampled".
       </p>
     </div>
   );

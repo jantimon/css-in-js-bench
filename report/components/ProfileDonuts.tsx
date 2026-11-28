@@ -21,7 +21,7 @@ export function ProfileSection({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; 
   return (
     <div className={"prof" + (sorted.length <= FEW_LANES ? " prof-few" : "")}>
       <h4 className="prof-title">
-        <span className="ct-main">Where the time goes</span> <span className="ct-sub">(one Chrome profile · ms active · lower is better)</span>
+        Where the time goes
         <InfoTip>
           A separate measurement from the chart above: one Chrome profile per lane (web-performance-debugger {wpdVersion}).
           Each lane is one named action, including the next frame. Lanes rank by active time, the span minus idle frame wait.
@@ -29,6 +29,7 @@ export function ProfileSection({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; 
           overhead.
         </InfoTip>
       </h4>
+      <p className="ch-cap">Active milliseconds in one Chrome profile, split by kind of work. Shorter bars are better.</p>
       <p className="prof-diff" data-screen-only>{sorted.length > 1 ? diffText(sorted[0], sorted[sorted.length - 1]) : ""}</p>
       <div className="pd" data-screen-only>
         {sorted.map((row) => (

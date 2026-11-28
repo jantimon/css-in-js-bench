@@ -31,6 +31,7 @@ export function BuildTimeChart({ rows }: { rows: BuildTimeRow[] }) {
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
           <BarTip
             title={r.label}
+            tech={r.tech}
             lines={[
               { label: "cold build", value: `${Math.round(r.coldMs).toLocaleString()} ms${r.coldSpread > 0 ? ` ±${Math.round(r.coldSpread * 100)}%` : ""}` },
               ...(r.warmMs !== undefined ? [{ label: "warm build", value: `${Math.round(r.warmMs).toLocaleString()} ms` }] : []),

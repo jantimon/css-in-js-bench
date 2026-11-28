@@ -42,6 +42,7 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
         <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
           <BarTip
             title={r.label}
+            tech={r.tech}
             lines={[
               ...segs.map((s, i) => ({ label: s.label, color: s.color, value: `${fmtSeg(r.values[i])} ${segUnit} · ${pct(r.values[i], r.total)}` })),
               { label: "total", value: `${fmtSeg(r.total)} ${segUnit}` },
@@ -55,18 +56,7 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
             )}
           </span>
           <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>
-            {Math.round(r.total).toLocaleString()}
-            <span className="bar-unit"> {unit}</span>
-            <span className="bar-breakdown">
-              {"("}
-              {r.values.map((v, i) => (
-                <React.Fragment key={segs[i].label}>
-                  {i > 0 ? <span className="bd-sep"> / </span> : null}
-                  <span style={{ color: segs[i].color }}>{fmtSeg(v)}</span>
-                </React.Fragment>
-              ))}
-              <span className="bd-sep"> {segUnit})</span>
-            </span>
+            {fmtSeg(r.total)}
           </span>
         </div>
       ))}
