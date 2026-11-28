@@ -108,18 +108,18 @@ const styles = css.create({
   },
   active: {
     color: "#000",
+    "::after": {
+      borderBottomColor: "#eeb524"
+    },
+    ":focus-visible::after": {
+      borderBottomColor: "#007bc7"
+    },
     [anchor]: {
       anchorName: "--active-tab",
       "::after": {
         borderBottomColor: "#ddd",
         opacity: 0
       }
-    },
-    "::after": {
-      borderBottomColor: "#eeb524"
-    },
-    ":focus-visible::after": {
-      borderBottomColor: "#007bc7"
     },
   },
   tabFull: {
