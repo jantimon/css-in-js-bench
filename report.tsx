@@ -355,9 +355,9 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                We built the same components with {usedTechs.length} CSS approaches, from runtime CSS-in-JS to build-time and
-                utility CSS, and measured what each one costs on the server, over the network and in the browser. Every version
-                renders the same pixels, so the differences come from the styling, not the design
+                We built the same components with <mark className="hl">{usedTechs.length} different CSS approaches</mark>, from runtime
+                CSS-in-JS to build-time and utility CSS. See how your styling choice affects the people who use your site: how long
+                the server takes to render, how much they download, and how fast the page starts and responds in their browser
               </p>
               <HeadPipeline />
               <div className="head-stats">
@@ -685,7 +685,7 @@ async function main() {
               </div>
             ) : null}
             {payRows.length ? (
-              <div data-group="Bytes" data-measure="payload">
+              <div data-group="Network" data-measure="payload">
                 <div className="ch-head">
                   <div className="ch-text">
                     <h3 className="chart-title">
@@ -812,16 +812,19 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .brand-dot{width:13px;height:13px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 4px #3fb9502e}
 .gh-link{display:inline-flex;align-items:center;color:var(--muted);margin-left:2px}
 .gh-link:hover{color:var(--fg)}
-/* GitHub corner (desktop). The triangle is the page's raised panel colour; the mark is the
+/* GitHub corner (desktop), fixed to the viewport so it stays in reach while scrolling. The triangle is the page's raised panel colour; the mark is the
    GitHub logo, upright. */
 .page-head{position:relative}
-.gh-corner{position:absolute;top:0;right:0;display:none;line-height:0}
+.gh-corner{position:fixed;top:0;right:0;z-index:50;display:none;line-height:0}
 .ghc-bg{fill:var(--raised-2);transition:fill .15s}
 .ghc-mark{fill:var(--fg-3);transition:fill .15s}
 .gh-corner:hover .ghc-bg{fill:#30363d}
 .gh-corner:hover .ghc-mark{fill:var(--fg)}
 @media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
 @media (max-width:767px){h1{font-size:24px}}
+/* Text-marker highlight: a slightly tilted band behind the lower two thirds of the text. */
+.hl{color:var(--fg);background:linear-gradient(100deg,transparent 0 2px,rgba(240,180,41,.32) 4px calc(100% - 4px),transparent calc(100% - 2px)) 0 62%/100% 62% no-repeat;padding:0 3px;margin:0 -1px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+@media print{.hl{background:none;font-weight:600}}
 .sub{margin:0;color:var(--fg-3);font:16px/1.6 system-ui,sans-serif;max-width:64ch}
 /* Header pipeline: server, network, browser, each with the charts that measure it. */
 .hp{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;margin-top:22px}
@@ -907,7 +910,11 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
    heading reads as the start of its own chart. */
 .case [data-measure]{margin-top:88px}
 .case [data-group]{padding-top:32px;border-top:1px solid var(--line);margin-top:96px}
-.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;padding-left:28px;line-height:20px;background:no-repeat left center/20px 20px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+/* Group labels repeat the header pipeline icons (HeadPipeline) so the page sections map to the three cards. */
+.case [data-group="Server"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2358a6ff%22 stroke-width=%221.6%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%227%22 rx=%222%22/%3E%3Crect x=%223%22 y=%2213%22 width=%2218%22 height=%227%22 rx=%222%22/%3E%3Ccircle cx=%227%22 cy=%227.5%22 r=%22.9%22 fill=%22%2358a6ff%22/%3E%3Ccircle cx=%227%22 cy=%2216.5%22 r=%22.9%22 fill=%22%2358a6ff%22/%3E%3C/svg%3E")}
+.case [data-group="Network"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233fb950%22 stroke-width=%221.6%22%3E%3Cpath d=%22M4 8h13l-3-3M20 16H7l3 3%22/%3E%3C/svg%3E")}
+.case [data-group="Browser"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23bc8cff%22 stroke-width=%221.6%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%222%22/%3E%3Cpath d=%22M3 9h18%22/%3E%3Ccircle cx=%226%22 cy=%226.5%22 r=%22.7%22 fill=%22%23bc8cff%22/%3E%3Ccircle cx=%228.5%22 cy=%226.5%22 r=%22.7%22 fill=%22%23bc8cff%22/%3E%3C/svg%3E")}
 .case [data-measure="code"]{margin-top:28px}
 .case [data-measure="code"] .chart-title{margin:0 0 12px}
 .case-analysis{margin:0 0 16px}
