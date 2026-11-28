@@ -950,9 +950,11 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .pair-r>*,.pair .pair-r>.pair-legend{grid-column:3;padding:0 0 0 24px}
 .pair-head{grid-row:1;display:flex;align-items:center;height:22px;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg-2)}
 .pair-col:first-child>.pair-head{padding-left:214px}
-.pair-legend{grid-row:2}
+/* The profile legend sits under its bars, so both columns start their rows right under the heads. */
+.pair .pair-legend{grid-row:3}
+.pair .attr-legend.pair-legend{margin:8px 0 0}
 .attr-legend.pair-legend{margin:0 0 6px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
-.pair-col>.bars,.pair-col>.attr{grid-row:3}
+.pair-col>.bars,.pair-col>.attr{grid-row:2}
 .pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(56px,max-content)}
 .pair-r .bar-row>.bar-label{display:none}
 .pair .prof-diff{grid-row:4;grid-column:1/-1;padding:0;margin:14px 0 0}
@@ -1098,6 +1100,7 @@ a.mono:hover{text-decoration:underline}
   .pair-col{display:flex;flex-direction:column;margin-bottom:18px}
   .pair-col>*,.pair-r>*,.pair .pair-r>.pair-legend{padding:0}
   .pair-col:first-child>.pair-head{padding-left:0}
+  .pair-r>.pair-legend{order:1}
   .pair-r .bar-row>.bar-label{display:flex}
   .chart-banner{width:160px}
   .editor{display:block}
