@@ -163,7 +163,7 @@ frame waits that the plain timing charts do not — read the two side by side, n
 Every lane uses its framework's production build. In each table the best value is **bold** and rows
 sort best-first.
 
-- **SSR render throughput** — renders/sec, higher is better. Uses a microbenchmark to measure how
+- **SSR render throughput** — renders/sec, higher is better. Uses tinybench to measure how
   fast Node turns components into an HTML string after warmup. Measures rendering only, excluding
   build time, HTTP handling, response transfer and browser work. Results count component instances
   per second: a workload of 400 product tiles counts as 400 renders.
@@ -299,11 +299,11 @@ export function renderMarkdown(sections: MdSection[], techs: Record<string, Tech
     "",
     "## How this was measured",
     "",
-    "- **microbench** — an in-process Node loop that renders each workload to an HTML string (`renderToString`) and counts instance renders per second.",
+    "- **[tinybench](https://github.com/tinylibs/tinybench)** — renders each workload to an HTML string in Node and counts instance renders per second. A full garbage collection runs before every sample.",
     "- **autocannon** — HTTP_METHOD",
     "- **[web-performance-debugger](https://github.com/jantimon/web-performance-debugger)** — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.",
     "",
-    "Source, raw data and methodology: [github.com/jantimon/css-in-js-bench](https://github.com/jantimon/css-in-js-bench). Run it locally: clone the repo, `pnpm install`, then `pnpm report` renders this report from the committed samples — `pnpm gen` re-measures everything on your own machine.",
+    "Source, raw data and methodology: [github.com/jantimon/css-in-js-bench](https://github.com/jantimon/css-in-js-bench). Run it locally: clone the repo, `pnpm install`, then `pnpm report` renders this report from the committed samples, and `pnpm gen:samples` measures again on your own machine. See [local development](https://github.com/jantimon/css-in-js-bench/blob/main/local-development.md).",
   );
   return (out.join("\n") + "\n").replaceAll("WPD_VERSION", wpdVersion).replaceAll("HTTP_METHOD", httpMeasurementNote(httpProtocol));
 }

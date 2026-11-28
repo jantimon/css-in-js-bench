@@ -19,11 +19,15 @@ import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
 import { AttributionChart, type AttrRow } from "./report/components/AttributionChart.tsx";
 import { InfoTip } from "./report/components/InfoTip.tsx";
+import { niceScale, tickText } from "./report/components/Axis.tsx";
+import { setDefaultLanes } from "./report/default-lanes.ts";
+import benchConfig from "./bench.config.ts";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { BuildTimeChart, type BuildTimeRow } from "./report/components/BuildTimeChart.tsx";
-import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
+import { SEGMENTS, WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
+import { TimingProfilePair } from "./report/components/TimingProfilePair.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { CaseSummary } from "./report/components/CaseSummary.tsx";
 import { StudyFindings } from "./report/components/StudyFindings.tsx";
@@ -162,6 +166,12 @@ async function main() {
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
   const techGroups = groupTechs(usedTechs, (t) => techs[t].bench.framework ?? "react");
+  // The clean-URL view (the controller's isDefaultLane): React lanes minus the diagnostic ones.
+  // The page is rendered in that state so nothing changes when the script runs.
+  const defaultOn = new Set(usedTechs.filter((t) => (techs[t].bench.framework ?? "react") !== "solid" && !techs[t].bench.defaultOff));
+  setDefaultLanes(defaultOn);
+  // An engine label is lit when any non-baseline lane of that engine is on (the controller's lanesOfEngine).
+  const engineDefaultOn = new Set(techGroups.filter((g) => !g.floor).flatMap((g) => g.rows.filter((row) => row.items.some((it) => defaultOn.has(it.tech))).map((row) => row.engine)));
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
@@ -327,6 +337,14 @@ async function main() {
       </head>
       <body>
         <header className="page-head">
+          {/* Desktop: a corner link to the source; below 768px the icon next to the title takes its place. */}
+          <a
+            className="gh-corner"
+            href="https://github.com/jantimon/css-in-js-bench"
+            aria-label="View source on GitHub"
+            data-screen-only
+            dangerouslySetInnerHTML={{ __html: GH_CORNER_SVG }}
+          />
           <div className="head-inner">
             <div className="brand">
               <h1>
@@ -346,17 +364,21 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
-                version renders the same pixels, so the numbers compare by construction, not by claim.
+                We built the same components with <mark className="hl">{usedTechs.length} different CSS approaches</mark>, from runtime{" "}
+                <span className="nowrap">CSS-in-JS</span> to build-time and utility CSS. See how your styling choice affects the experience of{" "}
+                <mark className="hl">your users</mark>: how long the server takes to render, how much they download, and how fast
+                the page starts and responds in their browser
               </p>
+              <HeadPipeline />
               <div className="head-stats">
                 <span>
-                  <b>{usedTechs.length}</b> styling techniques
+                  <b>{usedTechs.length}</b> CSS approaches
                 </span>
                 <span>
-                  <b>{caseIds.length}</b> {caseIds.length === 1 ? "workload" : "workloads"}
+                  <b>{caseIds.length}</b> test {caseIds.length === 1 ? "page" : "pages"}
                 </span>
-                <span>production builds · median of repeated runs</span>
+                <span>production builds</span>
+                <span>median of repeated runs</span>
               </div>
             </div>
           </div>
@@ -419,7 +441,7 @@ async function main() {
             <div className="fp-block">
               <div className="fp-sub">
                 <span className="fp-sub-title">Technologies</span>
-                <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
+                <span className="tp-count"><span data-tech-count>{defaultOn.size}</span> / {usedTechs.length} shown</span>
                 <span className="tp-actions">
                   <button type="button" data-tech-all>
                     All
@@ -432,17 +454,17 @@ async function main() {
               </div>
               {techGroups.map((g) => (
                 <div className="tp-row" key={g.group}>
-                  <button type="button" className="tp-group active" data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
+                  <button type="button" className={"tp-group" + (g.rows.some((row) => row.items.some((it) => defaultOn.has(it.tech))) ? " active" : "")} data-group-filter={g.group} title={`Show all ${g.group} versions`}>{g.group}</button>
                   <div className="tp-engines">
                     {g.rows.map((row) => (
                       <div className="tp-engine-row" key={row.engine}>
-                        <button type="button" className="tp-engine active" data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
+                        <button type="button" className={"tp-engine" + (engineDefaultOn.has(row.engine) ? " active" : "")} data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
                           <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" />
                           {row.label}
                         </button>
                         <div className="tp-pills">
                           {row.items.map((it) => (
-                            <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                            <button type="button" className={"tech-pill" + (defaultOn.has(it.tech) ? " active" : "")} data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
                               <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
                               <TechLabel tech={it.tech} label={it.short} />
                             </button>
@@ -492,152 +514,192 @@ async function main() {
               <summary>
                 <span className="case-title">{caseTitle}</span>
                 {caseSub ? <span className="case-sub">{caseSub}</span> : null}
-                <span className="chip">n = {cm.n.toLocaleString()}</span>
-                <span className="chip">{cm.cardinality} cardinality</span>
               </summary>
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
             <div data-measure="code" data-screen-only>
-              <h3 className="chart-title">Source · generated HTML · generated CSS · rendered preview<HideMeasure k="code" /></h3>
+              <h3 className="chart-title">Source and output<HideMeasure k="code" /></h3>
               <Editor caseId={caseId} lanes={editorLanes} caseIds={caseIds} />
             </div>
-            <div data-measure="microbench">
-              <h3 className="chart-title">
-                SSR render throughput — renders / sec · higher is better
-                <InfoTip>
-                  Uses a microbenchmark to measure how fast Node turns components into an HTML string after warmup.
-                  Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
-                  Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
-                  Higher is better.
-                </InfoTip>
-                <HideMeasure k="microbench" />
-              </h3>
-              <BarChart bars={bars} unit="r/s" higherBetter />
+            <div data-group="Server" data-measure="microbench">
+              <div className="ch-head">
+                <div className="ch-text">
+                  <h3 className="chart-title">
+                    SSR render throughput
+                    <InfoTip>
+                      How many components Node renders to an HTML string per second.
+                      <span className="tip-p">Measured with tinybench: each sample renders all components of this page once, after a warm-up and a full garbage collection. Only rendering is timed; building, HTTP and the browser are left out.</span>
+                      <span className="tip-p">Every component counts: a page of 400 product cards counts as 400 renders.</span>
+                    </InfoTip>
+                    <HideMeasure k="microbench" />
+                  </h3>
+                  <p className="ch-cap">Components rendered to HTML per second on the server (higher is faster)</p>
+                </div>
+                <a className="tool-mark" href="https://github.com/tinylibs/tinybench" aria-label="tinybench by Mohammad Bagher Abiyat">
+                  <span className="tip">tinybench is an npm package that times a JavaScript function over many runs. We use tinybench to time how fast each library renders the page to HTML in Node. By Mohammad Bagher Abiyat.</span>
+                <span className="tm-word">tiny<b>bench</b></span>
+                <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={18} height={18} loading="lazy" />
+              </a>
+              </div>
+              <BarChart bars={bars} unit="renders/s" higherBetter />
             </div>
             {acanBars.length ? (
               <div data-measure="autocannon">
-                <h3 className="chart-title">
-                  SSR throughput under load — requests / sec · higher is better
-                  <InfoTip>
-                    Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
-                    rendering the whole workload into an HTML fragment, and transferring and receiving the response.
-                    Clients keep concurrent connections open. Each request renders the full workload, so a workload
-                    of 400 product tiles counts as one request. Excludes build time, browser rendering and external
-                    network latency. Higher is better.
-                  </InfoTip>
-                  <HideMeasure k="autocannon" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      SSR throughput under load
+                      <InfoTip>
+                        How many whole pages a Node server delivers per second while many clients ask at once.
+                        <span className="tip-p">Measured with autocannon on this machine: each request renders all components of this page to HTML and sends the response back, over several open connections. Building, browser work and real network delay are left out.</span>
+                        <span className="tip-p">One request is one whole page: a page of 400 product cards counts as one request.</span>
+                      </InfoTip>
+                      <HideMeasure k="autocannon" />
+                    </h3>
+                    <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
+                  </div>
+                  <a className="tool-mark" href="https://github.com/mcollina/autocannon" aria-label="autocannon by Matteo Collina">
+                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. We use autocannon to simulate high traffic on a Node server rendering the HTML. By Matteo Collina.</span>
+                  <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
+                  <span className="tm-name">autocannon</span>
+                  <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
+                </a>
+                </div>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
                 <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
               <div data-measure="attribution">
-                <h3 className="chart-title">
-                  Where the SSR render time goes — Node CPU profile · median ms / render
-                  <InfoTip>
-                    One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
-                    and <b>your components</b>. Framework work can differ when a lane removes component calls.
-                    <b>other</b> is garbage collection and native work. Taken from a sampled CPU profile mapped back to source
-                    (<code>web-performance-debugger</code> {wpdVersion}).
-                  </InfoTip>
-                  <HideMeasure k="attribution" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      SSR render time split
+                      <InfoTip>
+                        Where one server render spends its time: the <b>UI framework</b> (React or Solid), the <b>styling library</b> and <b>your components</b>. <b>other</b> is garbage collection and work inside Node.
+                        <span className="tip-p">Taken from a sampled CPU profile, matched back to the source files. Framework time can differ between libraries when a library removes component calls.</span>
+                        <span className="tip-p tip-src">Tool: web-performance-debugger {wpdVersion}</span>
+                      </InfoTip>
+                      <HideMeasure k="attribution" />
+                    </h3>
+                    <p className="ch-cap">Server render time, split into framework, styling library and your components (lower is faster)</p>
+                  </div>
+                </div>
                 <AttributionChart rows={attrRows} />
-              </div>
-            ) : null}
-            {hydWpdRows.length || hydBars.length ? (
-              <div data-measure="hydrate">
-                <h3 className="chart-title">
-                  Client hydration — repeated timing + Chrome-profiled span anatomy
-                  <InfoTip>
-                    The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
-                    state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
-                    and ends at DOM commit: React useLayoutEffect or Solid flush, before paint. The second chart
-                    profiles a span through the next frame and shows JavaScript, style, layout and paint
-                    (<code>web-performance-debugger</code> {wpdVersion}). Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="hydrate" />
-                </h3>
-                {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={hydWpdRows} wpdVersion={wpdVersion} />
-              </div>
-            ) : null}
-            {inpWpdRows.length || inpBars.length ? (
-              <div data-measure="inp">
-                <h3 className="chart-title">
-                  Interaction update — repeated timing + Chrome-profiled span anatomy
-                  <InfoTip>
-                    Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
-                    React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
-                    is not Google's INP — the timing stops at the first animation frame, and the profiled span adds one frame
-                    to catch rendering work. Cross-framework ratios describe the whole workload, including the framework.
-                    Use vanilla lanes as references; compilers and styled runtimes can also remove component work. Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="inp" />
-                </h3>
-                {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={inpWpdRows} wpdVersion={wpdVersion} />
-              </div>
-            ) : null}
-            {mountWpdRows.length || mountBars.length ? (
-              <div data-measure="mount">
-                <h3 className="chart-title">
-                  Cold mount — repeated timing + Chrome-profiled span anatomy
-                  <InfoTip>
-                    The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
-                    before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
-                    during that work. The separate profiled span includes the next frame's rendering work.
-                    Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="mount" />
-                </h3>
-                {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={mountWpdRows} wpdVersion={wpdVersion} />
-              </div>
-            ) : null}
-            {rtRows.length ? (
-              <div data-measure="render-timing">
-                <h3 className="chart-title">
-                  Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
-                  <InfoTip>
-                    The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
-                    where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
-                    instance, so the engine recalculates styles once per instance instead of once for the page.
-                    <b>Chrome</b>'s honest signal is that recalc count, on the badge. <b>Firefox</b> reports sampled
-                    milliseconds instead, where a zero can mean "not sampled" rather than "no work". Compare within one
-                    engine. Lower is better.
-                  </InfoTip>
-                  <HideMeasure k="render-timing" />
-                </h3>
-                <RenderTimingChart rows={rtRows} />
-              </div>
-            ) : null}
-            {payRows.length ? (
-              <div data-measure="payload">
-                <h3 className="chart-title">
-                  Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
-                  <InfoTip>
-                    Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
-                    CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
-                    none, so read the HTML column across frameworks with that in mind.
-                  </InfoTip>
-                  <HideMeasure k="payload" />
-                </h3>
-                <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
             ) : null}
             {sweepLines.length ? (
               <div data-measure="nsweep">
-                <h3 className="chart-title">
-                  Scaling — SSR render time (ms) vs instance count
-                  <InfoTip>
-                    Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
-                    per element stays put as the page gets bigger.
-                  </InfoTip>
-                  <HideMeasure k="nsweep" />
-                </h3>
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Scaling
+                      <InfoTip>
+                        Server render time as the page grows from a handful of components to thousands.
+                        <span className="tip-p">A flatter line means each extra component adds the same small cost, however big the page gets.</span>
+                      </InfoTip>
+                      <HideMeasure k="nsweep" />
+                    </h3>
+                    <p className="ch-cap">Server render time as the number of components grows (flatter is better)</p>
+                  </div>
+                </div>
                 <LineChart lines={sweepLines} />
+              </div>
+            ) : null}
+            {hydWpdRows.length || hydBars.length ? (
+              <div data-group="Browser" data-measure="hydrate">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Client hydration
+                      <InfoTip>
+                        How long the framework needs to take over the HTML the server sent: it attaches event handlers and sets up state without rebuilding the markup. This step is called <b>hydration</b>.
+                        <span className="tip-p">The median duration starts on a fully loaded page and stops when the framework has written to the page (React's useLayoutEffect, Solid's flush), before the browser paints.</span>
+                        <span className="tip-p">The breakdown comes from a separate Chrome profile that runs until the next frame is drawn, so it also includes style, layout and paint.</span>
+                        <span className="tip-p tip-src">Tool: web-performance-debugger {wpdVersion}</span>
+                      </InfoTip>
+                      <HideMeasure k="hydrate" />
+                    </h3>
+                    <p className="ch-cap">Time to boot the client-side JavaScript on the server-rendered page (lower is faster)</p>
+                  </div>
+                </div>
+                <TimingProfilePair bars={hydBars} rows={hydWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
+              </div>
+            ) : null}
+            {inpWpdRows.length || inpBars.length ? (
+              <div data-measure="inp">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Interaction update
+                      <InfoTip>
+                        How long it takes until every component shows a new value after one state change. Each value goes from <code>i</code> to <code>i + 1</code>, so every element really updates: React sets state, Solid sets a signal.
+                        <span className="tip-p">Both run a few times first, and resetting the values is not timed. Timing stops at the first animation frame; the Chrome profile runs one frame longer to include the browser's rendering work. This is not the same as Google's INP metric.</span>
+                        <span className="tip-p">The times include the framework itself, so compare against the vanilla version with plain CSS. Compilers and runtime libraries can also remove some component work.</span>
+                      </InfoTip>
+                      <HideMeasure k="inp" />
+                    </h3>
+                    <p className="ch-cap">Time to re-render every component after one state change (lower is faster)</p>
+                  </div>
+                </div>
+                <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
+              </div>
+            ) : null}
+            {mountWpdRows.length || mountBars.length ? (
+              <div data-measure="mount">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Cold mount
+                      <InfoTip>
+                        How long it takes to render all components into an empty part of an already loaded page.
+                        <span className="tip-p">Timing stops when the framework has written to the page, before paint; page load and network are not included. A library that creates CSS at runtime may insert its styles during this step.</span>
+                        <span className="tip-p">The Chrome profile is a separate run that also includes the next frame's style, layout and paint.</span>
+                      </InfoTip>
+                      <HideMeasure k="mount" />
+                    </h3>
+                    <p className="ch-cap">Time to render all components into an empty page in the browser (lower is faster)</p>
+                  </div>
+                </div>
+                <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
+              </div>
+            ) : null}
+            {rtRows.length ? (
+              <div data-measure="render-timing">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Browser render work
+                      <InfoTip>
+                        The browser's own work after the components appear: recalculating styles, layout and painting, not JavaScript.
+                        <span className="tip-p">Libraries that write CSS at runtime can make this slower: if they add a style rule per component, the browser recalculates styles once per component instead of once for the page. Chrome counts how often it recalculated styles; a badge shows the count when it is not one.</span>
+                        <span className="tip-p">Firefox reports sampled times instead, where a zero can mean the sample missed the work. Compare values within one browser.</span>
+                      </InfoTip>
+                      <HideMeasure k="render-timing" />
+                    </h3>
+                    <p className="ch-cap">Browser style, layout and paint time when the components first appear (lower is faster)</p>
+                  </div>
+                </div>
+                <RenderTimingChart rows={rtRows} />
+              </div>
+            ) : null}
+            {payRows.length ? (
+              <div data-group="Network" data-measure="payload">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Page bytes
+                      <InfoTip>
+                        How many gzipped bytes the browser downloads: the JavaScript the styling library adds on top of a page with only the framework, the CSS, and the HTML from the server.
+                        <span className="tip-p">Solid marks every element with a hydration key and React does not, so Solid pages carry more HTML. Keep that in mind when you compare across frameworks.</span>
+                      </InfoTip>
+                      <HideMeasure k="payload" />
+                    </h3>
+                    <p className="ch-cap">Gzipped kilobytes of JavaScript, CSS and HTML (lower is better)</p>
+                  </div>
+                  <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={180} height={60} loading="lazy" data-screen-only />
+                </div>
+                <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
             ) : null}
             </details>
@@ -645,30 +707,34 @@ async function main() {
           })}
           {buildRows.length ? (
             <section className="buildtime" data-measure="buildtime" id="buildtime">
-              <h3 className="chart-title">
-                Build time — full client build · lower is better
-                <InfoTip>
-                  How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
-                  lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
-                  nothing cleared. Median of 3. This is developer experience and it depends on the machine — it says nothing
-                  about what users get.
-                </InfoTip>
-                <HideMeasure k="buildtime" />
-              </h3>
+              <div className="ch-head">
+                <div className="ch-text">
+                  <h3 className="chart-title">
+                    Build time
+                    <InfoTip>
+                      How long a full production build takes, for the same bundle that page bytes measures.
+                      <span className="tip-p"><b>cold</b> deletes caches and generated code first, so it includes regenerating them; <b>warm</b> runs the build again with nothing deleted. Median of 3 runs.</span>
+                      <span className="tip-p">This affects developers, not users, and depends on the machine.</span>
+                    </InfoTip>
+                    <HideMeasure k="buildtime" />
+                  </h3>
+                  <p className="ch-cap">Time for a full production build (lower is faster)</p>
+                </div>
+              </div>
               <BuildTimeChart rows={buildRows} />
             </section>
           ) : null}
           <section className="outro" id="how-measured">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
-              <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
-              <li><b>autocannon</b> — {httpNote}</li>
-              <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
+              <li><b><a href="https://github.com/tinylibs/tinybench">tinybench</a></b>: renders each test page to an HTML string in Node and counts component renders per second. A full garbage collection runs before every sample.</li>
+              <li><b>autocannon</b>: {httpNote}</li>
+              <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b>: records CPU and render profiles in Chrome, Firefox and Node and matches the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
               Source, raw data and methodology: <a href="https://github.com/jantimon/css-in-js-bench">github.com/jantimon/css-in-js-bench</a>.
               Run it locally: clone the repo, <code>pnpm install</code>, then <code>pnpm report</code> renders this report from the committed
-              samples — <code>pnpm gen</code> re-measures everything on your own machine.
+              samples, and <code>pnpm gen:samples</code> measures again on your own machine. See <a href="https://github.com/jantimon/css-in-js-bench/blob/main/local-development.md">local development</a>.
             </p>
           </section>
         </main>
@@ -682,7 +748,7 @@ async function main() {
     </html>
   );
 
-  const html = "<!doctype html>\n" + renderToStaticMarkup(doc);
+  const html = "<!doctype html>\n" + markDefaultOff(renderToStaticMarkup(doc), usedTechs.filter((t) => !defaultOn.has(t)));
   writeFileSync(join(ROOT, "BENCHMARK.html"), html);
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
@@ -738,14 +804,49 @@ const CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
 .wrap{max-width:1000px;margin:0 auto;padding:0 24px;position:relative}
-.head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
-h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
-.brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
+.head-inner{max-width:1000px;margin:0 auto;padding:34px 24px 30px}
+h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:flex;align-items:center;gap:12px}
+.brand-dot{width:13px;height:13px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 4px #3fb9502e}
 .gh-link{display:inline-flex;align-items:center;color:var(--muted);margin-left:2px}
 .gh-link:hover{color:var(--fg)}
-.sub{margin:0;color:var(--fg-3);font:13px/1.55 system-ui,sans-serif;max-width:60ch}
-.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:var(--muted)}
-.head-stats b{color:var(--fg);font-weight:600}
+/* GitHub corner (desktop): the page's top-right corner curls down; the light reverse side carries
+   the GitHub mark. Fixed to the viewport. On hover the curl opens 7%, the mark stays. */
+.page-head{position:relative}
+.gh-corner{position:fixed;top:0;right:0;z-index:50;width:100px;height:100px;display:none;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.gh-corner svg{display:block;width:100%;height:100%}
+/* Hover opens the curl: the page layers (shadow, revealed area, flap) grow from the corner;
+   the mark is printed on the surface underneath, so it stays put. */
+/* transform-box:view-box puts the origin at user (0,0), so the fold's top-right point is given in user units. */
+.gh-curl{transform-box:view-box;transform-origin:314.5px 28.5px;transition:transform .18s ease-out}
+.gh-corner:hover .gh-curl,.gh-corner:focus-visible .gh-curl{transform:scale(1.07)}
+/* The label is printed on the fold: it moves with the fold's middle (7% of its distance from the corner) but keeps its size. */
+.gh-label{transition:transform .18s ease-out}
+.gh-corner:hover .gh-label,.gh-corner:focus-visible .gh-label{transform:translate(-10.7px,10.2px)}
+.gh-corner:focus-visible{outline:2px solid #58a6ff;outline-offset:-2px}
+.gh-corner text{font:500 39px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#fff;letter-spacing:-.3px}
+@media (prefers-reduced-motion:reduce){.gh-curl,.gh-label{transition:none}}
+/* Only where the margin beside the 1000px column fits the 100px corner; narrower windows keep the
+   icon next to the title. */
+@media screen and (min-width:1180px){.gh-corner{display:block}h1 .gh-link{display:none}}
+@media (max-width:767px){h1{font-size:24px}}
+/* Two-tone emphasis, as on Linear, Vercel and Neon: the intro is muted grey and the key phrases
+   are the bright text colour. Same weight, no background, so nothing shifts. */
+.hl{color:var(--fg);background:none;font-weight:inherit}
+.nowrap{white-space:nowrap}
+@media print{.hl{font-weight:600}}
+.sub{margin:0;color:var(--muted);font:18px/1.6 system-ui,sans-serif;letter-spacing:-.005em;max-width:60ch}
+@media (max-width:767px){.sub{font-size:16px}}
+/* Header pipeline: server, network, browser, each with the charts that measure it. */
+.hp{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;margin-top:22px}
+.hp-stage{border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;background:var(--raised)}
+.hp-name{display:flex;align-items:center;gap:8px;font-weight:650;font-size:15px}
+.hp-name span{color:var(--fg)}
+.hp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hp-chips span{font-size:11.5px;color:var(--fg-3);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px}
+.hp-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:20px}
+@media (max-width:767px){.hp{grid-template-columns:1fr;gap:6px}.hp-arrow{transform:rotate(90deg);height:18px}}
+.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+.head-stats b{color:var(--fg);font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
 .show{display:flex;align-items:center;gap:10px;min-width:0}
 .show-pill{flex:none;white-space:nowrap;background:var(--raised);color:var(--muted);border:1px solid var(--raised-2);border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
@@ -803,20 +904,35 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study .prose-tech{font-weight:600;color:var(--fg)}
 .prose-tech .tech-logo{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
 [data-measure].measure-off{display:none}
-.case{margin:0 0 18px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
+.case{margin:0 0 48px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .case>summary::-webkit-details-marker{display:none}
-.case-title{font-size:19px;font-weight:680}
+.case-title{font-size:28px;font-weight:700;letter-spacing:-.01em}
 .case-sub{color:var(--muted);font-size:14px}
 .chip{font:11.5px/1 ui-monospace,monospace;color:var(--muted);background:var(--raised);border:1px solid var(--raised-2);border-radius:6px;padding:4px 8px}
-.case-desc{color:var(--muted);margin:0 0 8px;max-width:92ch;font-size:13.5px}
-.chart-title{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
-.case-analysis{border-left:3px solid #3fb950;padding:2px 0 2px 14px;margin:0 0 10px}
-.sum-headline{margin:0 0 10px;color:var(--fg);font-size:13.5px;max-width:92ch}
+.case-desc{color:var(--muted);margin:0 0 12px;max-width:64ch;font-size:14px;line-height:1.55}
+.chart-title{font-size:17px;line-height:1.3;color:var(--fg);margin:0;font-weight:650}
+/* Chart heading row: name + caption on the left, the tool mark or banner on the right. */
+.ch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 14px}
+.ch-text{min-width:0}
+.ch-cap{margin:4px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
+/* Space between sections (88px) is several times the largest space inside one, so each
+   heading reads as the start of its own chart. */
+.case [data-measure]{margin-top:88px}
+.case [data-group]{padding-top:32px;border-top:1px solid var(--line);margin-top:96px}
+.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;padding-left:28px;line-height:20px;background:no-repeat left center/20px 20px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+/* Group labels repeat the header pipeline icons (HeadPipeline) so the page sections map to the three cards. */
+.case [data-group="Server"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2358a6ff%22 stroke-width=%221.6%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%227%22 rx=%222%22/%3E%3Crect x=%223%22 y=%2213%22 width=%2218%22 height=%227%22 rx=%222%22/%3E%3Ccircle cx=%227%22 cy=%227.5%22 r=%22.9%22 fill=%22%2358a6ff%22/%3E%3Ccircle cx=%227%22 cy=%2216.5%22 r=%22.9%22 fill=%22%2358a6ff%22/%3E%3C/svg%3E")}
+.case [data-group="Network"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%233fb950%22 stroke-width=%221.6%22%3E%3Cpath d=%22M4 8h13l-3-3M20 16H7l3 3%22/%3E%3C/svg%3E")}
+.case [data-group="Browser"]::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23bc8cff%22 stroke-width=%221.6%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%222%22/%3E%3Cpath d=%22M3 9h18%22/%3E%3Ccircle cx=%226%22 cy=%226.5%22 r=%22.7%22 fill=%22%23bc8cff%22/%3E%3Ccircle cx=%228.5%22 cy=%226.5%22 r=%22.7%22 fill=%22%23bc8cff%22/%3E%3C/svg%3E")}
+.case [data-measure="code"]{margin-top:28px}
+.case [data-measure="code"] .chart-title{margin:0 0 12px}
+.case-analysis{margin:0 0 16px}
+.sum-headline{margin:0 0 10px;color:var(--fg);font-size:15px;line-height:1.5;max-width:64ch}
 .case-analysis .sum-headline{margin:0}
 .sum-stale{margin-left:10px;padding:2px 7px;border:1px solid #9e6a03;border-radius:999px;color:#d29922;font-size:11px;white-space:nowrap}
 .sum-winner{display:inline-flex;align-items:center;gap:6px;color:var(--fg);font-size:13px;font-weight:600;flex:0 0 auto}
-.sum-why{margin:4px 0;color:var(--fg-3);font-size:13px;max-width:92ch}
+.sum-why{margin:4px 0;color:var(--fg-3);font-size:13px;max-width:64ch}
 .study{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--panel);margin-bottom:24px}
 .study-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
 .study-title{font-size:14px;font-weight:650}
@@ -831,7 +947,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study-docs a{color:var(--link)}
 .study-foot{margin:14px 0 0;color:var(--muted-2);font-size:11px}
 @media screen and (max-width:767px){.study-hint{flex-direction:column;gap:2px}.study-hint .sum-winner{flex:none}}
-.sum-cross{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:92ch}
+.sum-cross{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:64ch}
 .study .sum-cross{padding-top:8px;border-top:1px dashed var(--line-2)}
 .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:7px;border:1px solid var(--line-2);border-radius:50%;font:italic 700 9px/1 Georgia,serif;color:var(--muted);cursor:help;position:relative;text-transform:none;letter-spacing:0;vertical-align:middle}
 .info:hover{color:var(--fg-2);border-color:var(--muted-2)}
@@ -839,40 +955,149 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .hide-measure svg{display:block}
 .hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
 .info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.tip .tip-p{display:block;margin-top:7px}
+.tip .tip-src{color:var(--muted)}
 .info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
-.bars,.attr{display:grid;grid-template-columns:230px 1fr max-content;column-gap:12px;row-gap:7px;align-items:center}
+.bars,.attr{display:grid;grid-template-columns:200px 1fr minmax(56px,max-content);column-gap:14px;row-gap:0;align-items:center}
 .bars{margin-bottom:8px}
-.bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
+/* Rows touch (padding, not row-gap) so the pointer never crosses a dead zone between bars. */
+.bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;padding:4.5px 0}
 .bar-row.tech-off{display:none}
-.bar-label{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;color:var(--fg-2);font-size:13px}
+.bar-label{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;color:var(--fg-2);font-size:13px}
 .bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .tech-logo{width:14px;height:14px;object-fit:contain;vertical-align:-2px;border-radius:3px;flex:none}
 .tech-pill .tech-logo{width:13px;height:13px}
 .ed-file .tech-logo,.lc-legend .tech-logo{margin-right:5px}
 .bar-track{background:var(--raised);border-radius:5px;height:16px;overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:5px}
-.bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
+.bar-val{font-variant-numeric:tabular-nums;font-size:13px;text-align:right;white-space:nowrap}
 .bar-best{font-weight:700;color:#3fb950}
+/* The measuring tool's logo with its author's avatar, at the start of a chart title. The logo is
+   dark grey on transparent, so it sits on a white tile in both themes. */
+.tool-mark{display:flex;flex:none;align-items:center;gap:8px;height:30px;padding:0 6px 0 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--raised);font-size:13px;font-weight:600;color:var(--fg-2);text-decoration:none}
+.tool-mark:hover{color:var(--fg)}
+.tool-mark{position:relative}
+.tool-mark .tip{display:none;position:absolute;top:calc(100% + 8px);right:0;width:max-content;max-width:300px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.tool-mark:hover .tip,.tool-mark:focus-visible .tip{display:block}
+.tm-word{font:500 14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em;color:var(--fg-2)}
+.tm-word b{color:#f0b429;font-weight:700}
+.tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}
+.tm-av{width:18px;height:18px;border-radius:50%}
+.pd-donut{display:block;flex:none}
+.pd-center{font:700 13px -apple-system,system-ui,sans-serif;fill:var(--fg)}
+@media print{.prof-diff{display:none}}
+/* Two measures on shared rows: labels and the first measure on the left, the second measure
+   (bars only) on the right. Both charts render the same lanes in the same order. */
+/* Label column, then two equal halves: the left half holds the first measure's track and
+   value, the right half the second's, so both tracks get the same width. */
+.pair{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);column-gap:14px;align-items:start}
+.pair-col{display:contents}
+.pair-col>*{grid-column:1/3;min-width:0;padding-right:24px}
+.pair-r>*,.pair .pair-r>.pair-legend{grid-column:3;padding:0 0 0 24px}
+.pair-head{grid-row:1;display:flex;align-items:center;height:22px;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg-2)}
+.pair-col:first-child>.pair-head{padding-left:214px}
+/* The profile legend sits under its bars, so both columns start their rows right under the heads. */
+.pair .pair-legend{grid-row:3}
+.pair .attr-legend.pair-legend{align-content:flex-start}
+.pair-col>.bars,.pair-col>.attr{grid-row:2}
+.pair .bars,.pair .attr{grid-template-columns:200px 1fr 72px}
+.pair-r .bars,.pair-r .attr{grid-template-columns:1fr 72px}
+.pair-r .bar-row>.bar-label{display:none}
+/* The comparison sentence shares the legend's row: left under the timing bars, legend on the right. */
+.pair .prof-diff{grid-row:3;grid-column:1/3;padding:0 24px 0 0;margin:10px 0 0}
+.bar-empty .bar-track{visibility:hidden}
+.bar-empty .bar-val{color:var(--muted-2)}
+.prof{margin-top:24px}
+.prof-title{margin:0;font-size:15px;font-weight:650;color:var(--fg)}
+.prof>.ch-cap{margin-bottom:12px}
+.prof-diff{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--muted);max-width:72ch}
+/* A small picture above a chart title that shows what the chart is about. */
+.chart-banner{display:block;flex:none;width:180px;height:auto;border-radius:6px;border:1px solid var(--line-2)}
+/* Bar hover card: the hovered (or, on touch screens, tapped) row's track becomes the anchor and
+   the card sits above it. position:fixed escapes the track's overflow:hidden. Browsers without
+   anchor positioning show no card. */
+.bar-tip{display:none}
+@supports (anchor-name:--a){
+  .bar-row[tabindex]{outline:none}
+  .bar-tip{position:fixed;position-anchor:--bar-tip;position-area:top;position-try-fallbacks:flip-block;margin:6px 0;grid-template-columns:auto auto;gap:3px 14px;align-items:baseline;width:max-content;max-width:calc(100vw - 24px);background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.4 -apple-system,system-ui,sans-serif;color:var(--fg-2);box-shadow:0 8px 24px rgba(0,0,0,.55);z-index:30;pointer-events:none}
+  .bt-title{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .bt-visual{grid-column:1/-1;display:flex;justify-content:center;margin:2px 0 6px}
+  .bt-key{display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
+  .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
+  .bt-val{text-align:right;font-variant-numeric:tabular-nums}
+  .bt-note{grid-column:1/-1;margin-top:4px;padding-top:5px;border-top:1px solid var(--line-2);color:var(--muted)}
+  /* Hover intent: the first card in a chart rises in from its bottom edge (the side facing the
+     pointer) after a short rest; once one has shown, the chart is "warm" (.tip-warm, set by the
+     controller) and cards switch rows at once. The controller also moves a 1px anchor
+     (.bar-ptr) to the pointer's x, so the card sits 8px above the row right over the pointer;
+     without JS the card centres on the track. Leaving fades the card out in 100ms. */
+  @media (hover:hover){
+    .bar-row{position:relative}
+    .bar-ptr{position:absolute;inset-block:0;width:1px;pointer-events:none;anchor-name:--bar-tip}
+    /* The card belongs to the bar: only the track opens it. A transparent border fills the row
+       height so the pointer never falls between two tracks. */
+    /* Corners 5px wide and 11.5px tall on the border box, so the visible part (inside the 6.5px top and
+       bottom border) has round 5px corners. */
+    .bar-track{height:29px;border-block:6.5px solid transparent;margin-block:-4.5px;background-clip:padding-box;border-radius:5px/11.5px}
+    .bar-row:has(>.bar-track:hover)>.bar-track{anchor-name:--bar-tip}
+    .bar-row:has(>.bar-ptr)>.bar-track{anchor-name:none}
+    .bar-tip{margin:8px 0;opacity:0;transform-origin:50% 100%;transition:opacity .1s ease-in,display .1s allow-discrete}
+    .bar-row:has(>.bar-track:hover)>.bar-tip{display:grid;opacity:1;scale:1;translate:0;transition:opacity .15s cubic-bezier(.16,1,.3,1) .32s,scale .15s cubic-bezier(.16,1,.3,1) .32s,translate .15s cubic-bezier(.16,1,.3,1) .32s,display 0s allow-discrete}
+    @starting-style{.bar-row:has(>.bar-track:hover)>.bar-tip{opacity:0;scale:.97;translate:0 4px}}
+    /* Warm and still over the chart: switch rows without fades; leaving the chart still fades out. */
+    .tip-warm:has(.bar-track:hover) .bar-tip{transition:none}
+    .bar-track:hover{box-shadow:inset 0 0 0 1px var(--line-2)}
+  }
+  @media (hover:hover) and (prefers-reduced-motion:reduce){
+    @starting-style{.bar-row:has(>.bar-track:hover)>.bar-tip{scale:1;translate:0}}
+  }
+  /* Escape hides the card until the pointer moves again (WCAG 1.4.13, dismissible). */
+  .tip-off .bar-tip{display:none!important}
+  @media (hover:none){
+    .bar-row:focus>.bar-track{anchor-name:--bar-tip}
+    .bar-row:focus>.bar-tip{display:grid}
+  }
+}
 .bar-unit,.bar-spread{color:var(--muted);font-size:11px}
 .bar-breakdown{margin-left:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar-breakdown .bd-sep{color:var(--muted-2)}
 .attr .bar-track{display:flex}
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
-.attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
-.attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.rt .bar-label{display:flex;gap:7px;justify-content:flex-end;align-items:baseline}
+.attr-seg:last-child{border-radius:0 5px 5px 0}
+.attr-seg:only-child{border-radius:5px}
+/* Legends sit under their chart, below the ruler, all in one style (also .lc-legend). */
+.attr-legend,.lc-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 0;font-size:11.5px;color:var(--muted)}
+/* Category legends align right under their chart; a footnote, when the chart has one, shares
+   the row on the left (as the profile pairs do with their comparison sentence). */
+.attr-legend{justify-content:flex-end}
+.chart-foot{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-top:10px}
+.chart-foot>.rt-note{margin:0;flex:1 1 auto}
+.chart-foot>.attr-legend{margin:0;flex:none}
+/* Value scale (Axis.tsx): faint gridlines at round values between the track and the coloured
+   fills, and a ruler under the last row with a short tick and a label per value. The scale ends
+   on a tick; the line at the end is left out so the rounded track ends stand free. */
+.ax{position:relative;padding-bottom:26px}
+.axis{position:absolute;grid-column:2/3;top:0;bottom:22px;left:0;right:0;pointer-events:none;z-index:1;border-bottom:1px solid var(--line-2)}
+.pair-r .axis{grid-column:1/2}
+.axis i{position:absolute;top:0;bottom:0;left:calc(var(--p)*(100% - 1px));width:1px;background:rgba(139,148,158,.17)}
+.axis i:last-child{background:none}
+.axis i::after{content:"";position:absolute;left:0;bottom:-5px;width:1px;height:4px;background:var(--line-2)}
+.axis b{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);font:400 10.5px/1 system-ui,sans-serif;color:var(--muted-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.axis b u{text-decoration:none;position:absolute;left:100%;margin-left:3px}
+.ax .bar-fill,.ax .attr-seg{position:relative;z-index:2}
+.attr-legend i,.lc-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.rt .bar-label{display:flex;gap:7px;justify-content:flex-start;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
 .rt-eng{color:var(--muted-2);font-size:11px;flex:none}
 .rt-badge{margin-left:8px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
-.rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:var(--muted-2)}
-.rt .bar-val{min-width:150px}
-.wpd-breakdown{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.rt-note{grid-column:1/-1;margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:64ch}
+.rt-badge{margin-left:6px}
+.wpd-breakdown{margin-top:8px}
+.pair .wpd-breakdown{margin-top:0}
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:var(--muted);font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
-.lc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:var(--fg-3)}
-.lc-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .lc-legend span.tech-off,.lc-line.tech-off,.lc-dot.tech-off{display:none}
 .editor{display:flex;border:1px solid var(--raised-2);border-radius:8px;overflow:hidden;margin-bottom:8px;background:var(--panel)}
 .ed-side{flex:0 0 200px;border-right:1px solid var(--raised-2);padding:6px 0;overflow:auto}
@@ -910,12 +1135,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 @supports not (anchor-name:--a){
   .ed-tab.active{box-shadow:inset 0 -2px 0 #1f6feb}
 }
-.ed-frame{width:100%;height:520px;border:0;background:var(--panel)}
-.ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
+.ed-frame{width:100%;height:420px;border:0;background:var(--panel)}
+.ed-shot{display:none;width:100%;height:420px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
 /* a struck-through lane's not-compatible.md, shown in the body in place of the frame */
-.ed-note{display:none;height:520px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
+.ed-note{display:none;height:420px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
 .ed-note p,.ed-note ul,.ed-note blockquote{max-width:72ch;margin:0 0 12px}
 .ed-note blockquote{padding:6px 14px;border-left:3px solid var(--raised-2);color:var(--fg)}
 .ed-note a{color:var(--link)}
@@ -925,7 +1150,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .bd-kind{color:var(--fg-3)}
 .outro{border:1px solid var(--line);border-radius:12px;padding:6px 20px 16px;background:var(--panel);margin-top:24px}
 .outro-tools{margin:0;padding-left:18px;color:var(--fg-3);font-size:13px}
-.outro-tools li{margin:6px 0;max-width:100ch}
+.outro-tools li{margin:6px 0;max-width:64ch}
 .outro-tools b{color:var(--fg)}
 .outro-run{color:var(--muted);font-size:13px;margin:12px 0 0;max-width:100ch}
 .outro a{color:var(--link)}
@@ -947,11 +1172,27 @@ a.mono:hover{text-decoration:underline}
   .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
   .bar-label{grid-column:1;grid-row:1;min-width:0;justify-content:flex-start;flex-wrap:wrap;line-height:1.35}
   .bar-label .tl-text{white-space:normal;overflow:visible}
-  .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px}
+  .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px;border-block:0;margin-block:0;border-radius:5px}
+  /* Bars sit under their labels here, so only the ruler stays; its end labels align to the edges. */
+  .axis i{background:none}
+  .axis i:first-child b{left:0;transform:none}
+  .axis i:last-child b{left:auto;right:0;transform:none}
+  .axis i:last-child b u{position:static;margin-left:3px}
   .bar-val{grid-column:2;grid-row:1;min-width:0;text-align:right;line-height:1.35;white-space:nowrap}
   .bar-breakdown{display:block;margin-left:0;font-size:10.5px}
   .rt .bar-label{justify-content:flex-start}
   .rt .bar-val{min-width:0}
+  .ch-head{flex-wrap:wrap}
+  .pair{display:block}
+  .pair-col{display:flex;flex-direction:column;margin-bottom:18px}
+  .pair-col>*,.pair-r>*,.pair .pair-r>.pair-legend{padding:0}
+  .pair-col>.ax{padding-bottom:26px}
+  .pair-col:first-child>.pair-head{padding-left:0}
+  .chart-foot{flex-direction:column-reverse;gap:10px}
+  .attr-legend{justify-content:flex-start}
+  .pair-r>.pair-legend{order:1}
+  .pair-r .bar-row>.bar-label{display:flex}
+  .chart-banner{width:160px}
   .editor{display:block}
   .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
   .ed-file{flex:0 0 auto;width:auto;padding:9px 12px}
@@ -1009,6 +1250,46 @@ const MEASURE_LABEL: Record<string, string> = Object.fromEntries(MEASURE_GROUPS.
 
 // A × on every chart title, so a measurement can be dropped from where it is read without
 // scrolling back to the filter panel. It drives the same control the panel does.
+/** The folded page corner that links to the repository (desktop). Static SVG markup, inserted as is. */
+const GH_CORNER_SVG = '<svg viewBox="4.5 28.5 310 310" aria-hidden="true">\n    <defs>\n      <path id="gh-fold" d="M22.5 28.5C43.5 30.5 64.5 41.5 88 62.5C149 115.5 209.8 169.5 266 222.5C291.3 245 308.6 265 314.5 287"/>\n      <path id="gh-flap" d="M22.5 28.5C43.5 30.5 64.5 41.5 88 62.5C149 115.5 209.8 169.5 266 222.5C291.3 245 308.6 265 314.5 287V300C313.5 295 311.5 289 309.4 282.5C304 261 284 254.6 258.4 250.5C230 246 170 239.2 140.4 234.5C110.4 228.5 87.9 209 82.8 182.5L53.8 62.5C49.4 45 36.4 35 22.5 28.5Z"/>\n      <path id="gh-light" d="M22.5 28.5C43.5 30.5 64.5 41.5 88 62.5C149 115.5 209.8 169.5 266 222.5C291.3 245 308.6 265 314.5 287V28.5Z"/>\n      <path id="gh-under" d="M22.5 28.5C43.5 30.5 64.5 41.5 88 62.5C149 115.5 209.8 169.5 266 222.5C291.3 245 308.6 265 314.5 287L330 340V420H-120V28.5Z"/>\n      <clipPath id="gh-flap-clip"><use href="#gh-flap"/></clipPath>\n      <clipPath id="gh-light-clip"><use href="#gh-light"/></clipPath>\n      <radialGradient id="gh-light-tip" gradientUnits="userSpaceOnUse" cx="314.5" cy="287" r="55">\n        <stop offset="0" stop-color="#1b222b" stop-opacity=".16"/>\n        <stop offset="1" stop-color="#1b222b" stop-opacity="0"/>\n      </radialGradient>\n      <linearGradient id="gh-flap-fill" gradientUnits="userSpaceOnUse" x1="180" y1="143.5" x2="126.5" y2="203">\n        <stop offset="0" stop-color="#2f3741"/>\n        <stop offset=".3" stop-color="#2e3640"/>\n        <stop offset="1" stop-color="#2d353f"/>\n      </linearGradient>\n      <linearGradient id="gh-fold-glow" gradientUnits="userSpaceOnUse" x1="22" y1="28.5" x2="170" y2="135">\n        <stop offset="0" stop-color="#465060" stop-opacity=".7"/>\n        <stop offset=".3" stop-color="#465060" stop-opacity=".3"/>\n        <stop offset="1" stop-color="#465060" stop-opacity=".1"/>\n      </linearGradient>\n      <linearGradient id="gh-fold-line" gradientUnits="userSpaceOnUse" x1="22" y1="28.5" x2="120" y2="92">\n        <stop offset="0" stop-color="#465060" stop-opacity=".6"/>\n        <stop offset=".45" stop-color="#465060" stop-opacity=".5"/>\n        <stop offset="1" stop-color="#465060" stop-opacity="0"/>\n      </linearGradient>\n      <linearGradient id="gh-fold-light" gradientUnits="userSpaceOnUse" x1="22" y1="28.5" x2="110" y2="85">\n        <stop offset="0" stop-color="#f7f9fc"/>\n        <stop offset=".3" stop-color="#eef1f5" stop-opacity=".8"/>\n        <stop offset="1" stop-color="#e6e9ee" stop-opacity=".4"/>\n      </linearGradient>\n      <radialGradient id="gh-flap-bend" gradientUnits="userSpaceOnUse" cx="292" cy="252" r="16">\n        <stop offset="0" stop-color="#3b434e" stop-opacity=".7"/>\n        <stop offset="1" stop-color="#3b434e" stop-opacity="0"/>\n      </radialGradient>\n      <radialGradient id="gh-flap-top" gradientUnits="userSpaceOnUse" cx="22.5" cy="28.5" r="35">\n        <stop offset="0" stop-color="#3b434e"/>\n        <stop offset=".6" stop-color="#3b434e" stop-opacity=".8"/>\n        <stop offset="1" stop-color="#3b434e" stop-opacity="0"/>\n      </radialGradient>\n      <radialGradient id="gh-flap-tip" gradientUnits="userSpaceOnUse" cx="314.5" cy="290" r="45">\n        <stop offset="0" stop-color="#0d1117" stop-opacity=".45"/>\n        <stop offset="1" stop-color="#0d1117" stop-opacity="0"/>\n      </radialGradient>\n      <filter id="gh-blur-22" filterUnits="userSpaceOnUse" x="-120" y="-80" width="560" height="560"><feGaussianBlur stdDeviation="22"/></filter>\n      <filter id="gh-blur-16" filterUnits="userSpaceOnUse" x="-120" y="-80" width="560" height="560"><feGaussianBlur stdDeviation="16"/></filter>\n      <filter id="gh-blur-6" filterUnits="userSpaceOnUse" x="-120" y="-80" width="560" height="560"><feGaussianBlur stdDeviation="6"/></filter>\n      <filter id="gh-blur-3" filterUnits="userSpaceOnUse" x="-120" y="-80" width="560" height="560"><feGaussianBlur stdDeviation="3"/></filter>\n    </defs>\n    <g class="gh-curl"><use href="#gh-flap" transform="translate(12 25)" fill="#000" opacity=".8" filter="url(#gh-blur-22)"/>\n    <use href="#gh-flap" transform="translate(-3 2)" fill="#000" opacity=".35" filter="url(#gh-blur-6)"/>\n    <use href="#gh-light" fill="#f3f6fb"/>\n    <g clip-path="url(#gh-light-clip)">\n      <use href="#gh-under" fill="#2b323c" opacity=".36" filter="url(#gh-blur-16)"/>\n      <use href="#gh-light" fill="url(#gh-light-tip)"/>\n      <use href="#gh-fold" fill="none" stroke="url(#gh-fold-light)" stroke-width="5"/>\n    </g>\n    </g><path transform="translate(190.7 54.4) scale(6.3125)" fill="#12161c" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>\n    <g class="gh-curl"><use href="#gh-flap" fill="url(#gh-flap-fill)"/>\n    <g clip-path="url(#gh-flap-clip)">\n      <use href="#gh-flap" fill="none" stroke="#3a434e" stroke-opacity=".55" stroke-width="2.4"/>\n      <use href="#gh-flap" fill="url(#gh-flap-bend)"/>\n      <use href="#gh-fold" fill="none" stroke="url(#gh-fold-glow)" stroke-width="7" filter="url(#gh-blur-3)"/>\n      <use href="#gh-fold" fill="none" stroke="url(#gh-fold-line)" stroke-width="3.4"/>\n      <use href="#gh-flap" fill="url(#gh-flap-top)"/>\n      <use href="#gh-flap" fill="url(#gh-flap-tip)"/>\n    </g>\n    <use href="#gh-fold" fill="none" stroke="#252d3a" stroke-width="1.1"/>\n    \n  </g><g class="gh-label"><text transform="translate(161.4 174.1) rotate(42)" x=".6" y="14.7" text-anchor="middle">GitHub</text></g></svg>';
+
+/** The header's three places where styling costs something, in the order a page travels. */
+function HeadPipeline() {
+  const stages = [
+    { name: "Server", color: "#58a6ff", icon: <><rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><circle cx="7" cy="7.5" r=".9" fill="currentColor" /><circle cx="7" cy="16.5" r=".9" fill="currentColor" /></>, chips: ["render throughput", "under load", "render split", "scaling"] },
+    { name: "Network", color: "#3fb950", icon: <path d="M4 8h13l-3-3M20 16H7l3 3" />, chips: ["JS bytes", "CSS bytes", "HTML bytes"] },
+    { name: "Browser", color: "#bc8cff", icon: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18" /><circle cx="6" cy="6.5" r=".7" fill="currentColor" /><circle cx="8.5" cy="6.5" r=".7" fill="currentColor" /></>, chips: ["hydration", "updates", "cold mount", "style & layout"] },
+  ];
+  return (
+    <div className="hp">
+      {stages.map((st, i) => (
+        <React.Fragment key={st.name}>
+          {i > 0 ? <span className="hp-arrow" aria-hidden="true">→</span> : null}
+          <div className="hp-stage">
+            <div className="hp-name" style={{ color: st.color }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">{st.icon}</svg>
+              <span>{st.name}</span>
+            </div>
+            <div className="hp-chips">{st.chips.map((c) => <span key={c}>{c}</span>)}</div>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+/** Adds `tech-off` to every element of a lane that is hidden by default, as the controller's
+ * setTech would, so the first paint already shows the default view. */
+function markDefaultOff(html: string, off: string[]): string {
+  if (!off.length) return html;
+  const offSet = new Set(off);
+  return html.replace(/<([a-zA-Z][\w-]*)(\s(?:[^>]*?\s)?data-tech="([^"]+)"[^>]*)>/g, (tag, name: string, attrs: string, tech: string) => {
+    if (!offSet.has(tech)) return tag;
+    if (/\sclass="/.test(attrs)) return "<" + name + attrs.replace(/\sclass="([^"]*)"/, (_m, c: string) => ` class="${c} tech-off"`) + ">";
+    return "<" + name + ' class="tech-off"' + attrs + ">";
+  });
+}
+
 function HideMeasure({ k }: { k: string }) {
   const label = k === "code" ? "source and preview" : MEASURE_LABEL[k];
   return (
@@ -1111,15 +1392,64 @@ function setTech(b, on) {
 // its full width. Each fill carries data-val (its raw number); a row's total is the sum of its
 // fills (one for a plain bar, several for a stacked one). The "best" star, if the chart has one,
 // moves to the first visible row (rows are pre-sorted best-first).
+// Caption under a timing/profile pair: the busiest vs the least busy visible profile row
+// (TimingProfilePair.tsx diffText).
+function profDiff(rows) {
+  const sum = r => Object.values(JSON.parse(r.dataset.slices)).reduce((s, v) => s + v, 0);
+  const byActive = [...rows].sort((x, y) => sum(x) - sum(y));
+  const least = byActive[0], most = byActive[byActive.length - 1];
+  const a = JSON.parse(least.dataset.slices), b = JSON.parse(most.dataset.slices);
+  const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
+    .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
+    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + (SEG_LABEL[k] || k));
+  return most.dataset.label + ' keeps the browser busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + ', the least busy' + (parts.length ? ': ' + parts.join(', ') : '');
+}
+const SEG_LABEL = ${JSON.stringify(Object.fromEntries(SEGMENTS.map(([k, , l]) => [k, l])))};
+${niceScale.toString()}
+${tickText.toString()}
 function rescaleBars() {
+  // Charts inside one [data-shared-scale] share the max of all their visible rows.
+  const visRows = chart => [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+  const rowTotal = r => [...r.querySelectorAll('[data-val]')].reduce((s, e) => s + +e.dataset.val, 0);
   for (const chart of document.querySelectorAll('.bars, .attr')) {
-    const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+    const vis = visRows(chart);
+    const scope = chart.closest('[data-shared-scale]');
+    const peers = scope ? [...scope.querySelectorAll('.bars, .attr')] : [chart];
     let max = 1e-6;
-    const totals = vis.map(r => [...r.querySelectorAll('[data-val]')].reduce((s, e) => s + +e.dataset.val, 0));
-    for (const t of totals) if (t > max) max = t;
+    for (const c of peers) for (const r of visRows(c)) { const t = rowTotal(r); if (t > max) max = t; }
+    // Bars are drawn against the axis top (a round value), and the axis is rebuilt to match.
+    const axis = chart.querySelector(':scope > .axis');
+    if (axis) {
+      const div = +axis.dataset.div || 1, sc = niceScale(max / div);
+      max = sc.top * div;
+      axis.innerHTML = sc.ticks.map((t, i) => '<i style="--p:' + (t / sc.top).toFixed(5) + '"><b>' + tickText(t) + (i === sc.ticks.length - 1 ? '<u>' + axis.dataset.unit + '</u>' : '') + '</b></i>').join('');
+    }
     vis.forEach(r => { for (const e of r.querySelectorAll('[data-val]')) e.style.width = (+e.dataset.val / max * 100) + '%'; });
     const best = chart.querySelector('.bar-best');
     if (best && vis.length) { best.classList.remove('bar-best'); vis[0].querySelector('.bar-val')?.classList.add('bar-best'); }
+  }
+  for (const prof of document.querySelectorAll('.prof')) {
+    const rows = [...prof.querySelectorAll('.bar-row[data-slices]')].filter(r => !r.classList.contains('tech-off'));
+    const diff = prof.querySelector('.prof-diff');
+    if (diff) diff.textContent = rows.length > 1 ? profDiff(rows) : '';
+  }
+  for (const chart of document.querySelectorAll('.bars, .attr')) {
+    const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+    // Hover cards: rank and "N× more than <best>" among the visible rows (BarTip's vsBest), by value,
+    // since a paired chart keeps the row order of its partner.
+    const tips = vis.map(r => [r, r.querySelector('[data-bt-vs]')]).filter(([, n]) => n);
+    if (!tips.length) continue;
+    const hb = tips[0][1].dataset.hb === '1';
+    tips.sort((x, y) => hb ? y[1].dataset.btVs - x[1].dataset.btVs : x[1].dataset.btVs - y[1].dataset.btVs);
+    const [topRow, top] = tips[0];
+    tips.forEach(([r, note], i) => {
+      const rank = r.querySelector('[data-bt-rank]');
+      if (rank) rank.textContent = (i + 1) + ' of ' + tips.length;
+      const v = +note.dataset.btVs, b = +top.dataset.btVs;
+      if (v === b) { note.textContent = 'best in this chart'; return; }
+      const ratio = hb ? b / v : v / b;
+      note.textContent = ratio.toFixed(ratio < 10 ? 2 : 1) + '× ' + (hb ? 'fewer' : 'more') + ' ' + note.dataset.unit + ' than ' + topRow.querySelector('.bt-title').textContent;
+    });
   }
 }
 // Same idea for the line chart: the y-axis is baked to the global max ms, so hiding the steep
@@ -1175,6 +1505,48 @@ function syncQuery() {
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
 
+// ---- bar hover cards ----------------------------------------------------------------
+// Warm a chart once a card has been visible (its CSS fade-in delay has passed), so moving to
+// the next row shows that card at once; cool it again shortly after the pointer leaves.
+for (const chart of document.querySelectorAll('.bars, .attr')) {
+  let warmTimer = 0, coolTimer = 0, lastRow = null;
+  chart.addEventListener('pointerover', e => {
+    const row = e.target.closest('.bar-track') && e.target.closest('.bar-row[tabindex]');
+    if (e.pointerType !== 'mouse' || !row) return;
+    clearTimeout(coolTimer);
+    if (chart.classList.contains('tip-warm') || row === lastRow) return;
+    // Cold: only a rest on one row warms the chart, a sweep across rows does not.
+    lastRow = row; clearTimeout(warmTimer);
+    warmTimer = setTimeout(() => chart.classList.add('tip-warm'), 460);
+  });
+  chart.addEventListener('pointerleave', () => {
+    clearTimeout(warmTimer); lastRow = null;
+    coolTimer = setTimeout(() => chart.classList.remove('tip-warm'), 450);
+  });
+}
+// The card follows the pointer on x: a 1px anchor (.bar-ptr) moves to the pointer inside the
+// hovered row (CSS anchors the card to it). After leaving the rows it stays put for the card's
+// 100ms fade-out, then goes away.
+{
+  const ptr = document.createElement('span');
+  ptr.className = 'bar-ptr';
+  let row = null, x = 0, raf = 0, dropTimer = 0;
+  document.addEventListener('pointermove', e => {
+    document.body.classList.remove('tip-off');
+    if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+    row = e.target.closest && e.target.closest('.bar-track') ? e.target.closest('.bar-row[tabindex]') : null;
+    x = e.clientX;
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (!row) { if (ptr.parentNode && !dropTimer) dropTimer = setTimeout(() => { ptr.remove(); dropTimer = 0; }, 120); return; }
+      clearTimeout(dropTimer); dropTimer = 0;
+      if (ptr.parentNode !== row) row.append(ptr);
+      ptr.style.left = (x - row.getBoundingClientRect().left) + 'px';
+    });
+  }, { passive: true });
+  addEventListener('keydown', e => { if (e.key === 'Escape') document.body.classList.add('tip-off'); });
+}
 // ---- technologies ---------------------------------------------------------------
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;

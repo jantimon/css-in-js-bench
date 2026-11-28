@@ -182,22 +182,53 @@ async function querySpan(rec: string, selector: string): Promise<SpanResult | nu
   return profileSpan(await queryAnatomy(rec, selector));
 }
 
+/** Record a single-shot action once per page load and keep the lower-median profile. The
+ * returned timing holds every load's measured duration, in recording order. */
+async function medianOfLoads(runs: number, selector: string, record: (load: number) => Promise<string>): Promise<{ rec: string; action: SpanAnatomy; timing: SpanTiming | null }> {
+  const loads: { rec: string; action: SpanAnatomy; ms: number }[] = [];
+  for (let i = 0; i < runs; i++) {
+    const rec = await record(i);
+    const action = await queryAnatomy(rec, selector);
+    if (action.wallMs == null || !Number.isFinite(action.wallMs)) throw new Error(`${selector}: load ${i} has no measured duration`);
+    loads.push({ rec, action, ms: action.wallMs });
+  }
+  const pick = [...loads].sort((a, b) => a.ms - b.ms)[Math.floor((loads.length - 1) / 2)];
+  if (loads.length < 2) return { rec: pick.rec, action: pick.action, timing: actionTiming(pick.action) };
+  const samplesMs = loads.map((load) => load.ms);
+  const timing: SpanTiming = {
+    sampleUnit: "occurrence", boundary: "performance-measure", clock: "trace", samplesMs, stats: null,
+  };
+  timing.stats = {
+    samples: samplesMs.length, minMs: Math.min(...samplesMs), medianMs: timingMedian(timing),
+    meanMs: samplesMs.reduce((sum, ms) => sum + ms, 0) / samplesMs.length, maxMs: Math.max(...samplesMs),
+  };
+  return { rec: pick.rec, action: pick.action, timing };
+}
+
 async function breakdownLane(phase: "hydrate" | "inp", tech: string, port: number, cell: Cell): Promise<{ span: SpanResult | null; runSpan: SpanResult | null; timing: SpanTiming | null }> {
   const n = benchConfig.wpd.n;
+  const runs = benchConfig.wpd.profileRuns;
   const mode = phase === "hydrate" ? "&manual=1" : "";
   const base = `?case=${cell.caseId}&n=${n}${mode}`;
   const url = `http://127.0.0.1:${port}/${base}&phase=${phase}`;
-  const rec = join(TMP, `${phase}__${tech}__${cell.caseId}.json`);
-  const iterations = phase === "inp" ? 5 : 1; // hydrate is single-shot; inp repeats one warm input change
-  await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
+  const recBase = join(TMP, `${phase}__${tech}__${cell.caseId}`);
+  const record = (out: string, iterations: number) => runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
     "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", String(iterations),
-    "--warmup", "0", "--out", rec]);
-  const action = await queryAnatomy(rec, `measure:${phase}:frame`);
-  return {
-    span: profileSpan(action),
-    runSpan: phase === "inp" ? null : await querySpan(rec, "run"),
-    timing: actionTiming(action, phase === "inp" ? iterations : undefined),
-  };
+    "--warmup", "0", "--out", out]).then(() => undefined);
+  if (phase === "hydrate") {
+    // Hydration happens once per page load: one recording per load.
+    const { rec, action, timing } = await medianOfLoads(runs, "measure:hydrate:frame", async (i) => {
+      const out = `${recBase}__${i}.json`;
+      await record(out, 1);
+      return out;
+    });
+    return { span: profileSpan(action), runSpan: await querySpan(rec, "run"), timing };
+  }
+  // inp repeats one warm input change in place; WPD keeps the lower-median occurrence.
+  const rec = `${recBase}.json`;
+  await record(rec, runs);
+  const action = await queryAnatomy(rec, "measure:inp:frame");
+  return { span: profileSpan(action), runSpan: null, timing: actionTiming(action, runs) };
 }
 
 interface FirefoxResult {
@@ -272,11 +303,20 @@ async function mountRenderTimingLane(tech: string, port: number, cell: Cell): Pr
 
   const breakdownRec = `${groupBase}.breakdown.json`;
   const manifest = `${groupBase}.group.json`;
-  const action = await queryAnatomy(breakdownRec, "measure:mount:frame");
+  // Mount happens once per page load. The group's breakdown is the first load; further loads
+  // record the breakdown alone, and the profile keeps the lower-median one. Render-work counts
+  // and durations come from the group (deep pass) only.
+  const { rec: mountRec, action, timing } = await medianOfLoads(benchConfig.wpd.profileRuns, "measure:mount:frame", async (i) => {
+    if (i === 0) return breakdownRec;
+    const out = `${groupBase}__mount__${i}.json`;
+    await runWpd(["record", BENCH_FLOW, "--bench", "--url", url, "--breakdown", "--variant", tech,
+      "--protocol-timeout", String(benchConfig.wpd.protocolTimeoutMs), "--iterations", "1", "--warmup", "0", "--out", out]);
+    return out;
+  });
   const mount = {
     span: profileSpan(action),
-    runSpan: await querySpan(breakdownRec, "run"),
-    timing: actionTiming(action),
+    runSpan: await querySpan(mountRec, "run"),
+    timing,
   };
 
   const stitch = JSON.parse((await runWpd(["query", "span", manifest, "run", "--json"])).stdout) as GroupSpanStitch;
