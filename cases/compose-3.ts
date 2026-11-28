@@ -10,5 +10,5 @@ export default {
   n: 1000,
   cardinality: "low",
   description:
-    "A button wrapped by two more components, each adding styles and passing className down. Some compilers flatten the chain at build time; Tailwind libraries merge classes once per level, and runtime libraries render an extra component per level.",
+    "A button wrapped by two more components, each adding styles and passing className down. Some compilers flatten the chain at build time. Tailwind libraries merge classes once per level, and runtime libraries render an extra component per level.",
 } satisfies CaseMeta;

@@ -528,8 +528,7 @@ async function main() {
                     SSR render throughput
                     <InfoTip>
                       How many components Node renders to an HTML string per second.
-                      <span className="tip-p">Measured with tinybench: each sample renders all components of this page once, after a warm-up and a full garbage collection. Only rendering is timed; building, HTTP and the browser are left out.</span>
-                      <span className="tip-p">Every component counts: a page of 400 product cards counts as 400 renders.</span>
+                      <span className="tip-p">Measured with tinybench: each sample renders all components of this page once, after a warm-up and a full garbage collection. Only rendering is timed. Building, HTTP and the browser are left out.</span>
                     </InfoTip>
                     <HideMeasure k="microbench" />
                   </h3>
@@ -559,14 +558,13 @@ async function main() {
                     <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
                   </div>
                   <a className="tool-mark" href="https://github.com/mcollina/autocannon" aria-label="autocannon by Matteo Collina">
-                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. We use autocannon to simulate high traffic on a Node server rendering the HTML. By Matteo Collina.</span>
+                  <span className="tip">autocannon is an npm package for HTTP load testing. We use autocannon to simulate high traffic on a Node server rendering the HTML. By Matteo Collina.</span>
                   <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
                   <span className="tm-name">autocannon</span>
                   <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
                 </a>
                 </div>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
-                <p className="rt-note">{httpNote}</p>
               </div>
             ) : null}
             {attrRows.length ? (
@@ -634,7 +632,7 @@ async function main() {
                       Interaction update
                       <InfoTip>
                         How long it takes until every component shows a new value after one state change. Each value goes from <code>i</code> to <code>i + 1</code>, so every element really updates: React sets state, Solid sets a signal.
-                        <span className="tip-p">Both run a few times first, and resetting the values is not timed. Timing stops at the first animation frame; the Chrome profile runs one frame longer to include the browser's rendering work. This is not the same as Google's INP metric.</span>
+                        <span className="tip-p">Both run a few times first, and resetting the values is not timed. Timing stops at the first animation frame. The Chrome profile runs one frame longer to include the browser's rendering work. This is not the same as Google's INP metric.</span>
                         <span className="tip-p">The times include the framework itself, so compare against the vanilla version with plain CSS. Compilers and runtime libraries can also remove some component work.</span>
                       </InfoTip>
                       <HideMeasure k="inp" />
@@ -653,7 +651,7 @@ async function main() {
                       Cold mount
                       <InfoTip>
                         How long it takes to render all components into an empty part of an already loaded page.
-                        <span className="tip-p">Timing stops when the framework has written to the page, before paint; page load and network are not included. A library that creates CSS at runtime may insert its styles during this step.</span>
+                        <span className="tip-p">Timing stops when the framework has written to the page, before paint. Page load and network are not included. A library that creates CSS at runtime may insert its styles during this step.</span>
                         <span className="tip-p">The Chrome profile is a separate run that also includes the next frame's style, layout and paint.</span>
                       </InfoTip>
                       <HideMeasure k="mount" />
@@ -672,7 +670,7 @@ async function main() {
                       Browser render work
                       <InfoTip>
                         The browser's own work after the components appear: recalculating styles, layout and painting, not JavaScript.
-                        <span className="tip-p">Libraries that write CSS at runtime can make this slower: if they add a style rule per component, the browser recalculates styles once per component instead of once for the page. Chrome counts how often it recalculated styles; a badge shows the count when it is not one.</span>
+                        <span className="tip-p">Libraries that write CSS at runtime can make this slower: if they add a style rule per component, the browser recalculates styles once per component instead of once for the page. Chrome counts how often it recalculated styles. A badge shows the count when it is not one.</span>
                         <span className="tip-p">Firefox reports sampled times instead, where a zero can mean the sample missed the work. Compare values within one browser.</span>
                       </InfoTip>
                       <HideMeasure k="render-timing" />
@@ -713,7 +711,7 @@ async function main() {
                     Build time
                     <InfoTip>
                       How long a full production build takes, for the same bundle that page bytes measures.
-                      <span className="tip-p"><b>cold</b> deletes caches and generated code first, so it includes regenerating them; <b>warm</b> runs the build again with nothing deleted. Median of 3 runs.</span>
+                      <span className="tip-p"><b>cold</b> deletes caches and generated code first, so it includes regenerating them. <b>warm</b> runs the build again with nothing deleted. Median of 3 runs.</span>
                       <span className="tip-p">This affects developers, not users, and depends on the machine.</span>
                     </InfoTip>
                     <HideMeasure k="buildtime" />

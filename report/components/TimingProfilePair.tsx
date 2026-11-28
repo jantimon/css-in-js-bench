@@ -33,7 +33,7 @@ export function TimingProfilePair({ bars, rows, wpdVersion, profileN, caseN }: {
               garbage collection.
               <span className="tip-p">
                 Recorded with Chrome's profiler on a smaller page, {profileN} components instead of {caseN.toLocaleString()}, because
-                profiling slows the page down a lot{repeated ? "; the median of several page loads is shown" : ""}. Use these bars to
+                profiling slows the page down a lot{repeated ? ". The median of several page loads is shown" : ""}. Use these bars to
                 compare the libraries with each other, not with the times on the left.
               </span>
               <span className="tip-p">Time the browser sits idle is not counted. Hover a bar for the exact numbers.</span>

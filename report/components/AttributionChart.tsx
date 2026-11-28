@@ -28,7 +28,8 @@ const BUCKET_DEFS = [
 // browser splits (hydration / interaction) — only the `other` label differs (node vs
 // browser). Sorted fastest-first; each row carries data-tech for the global filter.
 export function AttributionChart({ rows, otherLabel = "other (garbage collection, Node)" }: { rows: AttrRow[]; otherLabel?: string }) {
-  const BUCKETS = [...BUCKET_DEFS, ["other", "#343a40", otherLabel] as const];
+  const rowSum = (r: AttrRow) => r.react + r.lib + r.component + r.other;
+  const BUCKETS = [...BUCKET_DEFS, ["other", "#545d6a", otherLabel] as const];
   const sorted = [...rows].sort((a, b) => a.renderMs - b.renderMs);
   const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.renderMs)));
   const max = sc.top;
@@ -49,10 +50,12 @@ export function AttributionChart({ rows, otherLabel = "other (garbage collection
           />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
-            {BUCKETS.map(([k, c]) => {
-              const ms = r[k] as number;
-              return ms > 0 ? <span key={k} className="attr-seg" data-val={ms} style={{ width: `${(ms / max) * 100}%`, background: c }} /> : null;
-            })}
+            <span className="attr-fill" data-val={rowSum(r)} style={{ width: `${(rowSum(r) / max) * 100}%` }}>
+              {BUCKETS.map(([k, c]) => {
+                const ms = r[k] as number;
+                return ms > 0 ? <span key={k} className="attr-seg" style={{ width: `${(ms / rowSum(r)) * 100}%`, background: c }} /> : null;
+              })}
+            </span>
           </span>
           <span className="bar-val">
             {r.renderMs.toFixed(2)}

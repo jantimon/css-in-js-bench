@@ -70,10 +70,12 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         />
         <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
         <span className="bar-track">
-          {segs.map(([k, c]) => {
-            const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
-            return ms > 0 ? <span key={k} className="attr-seg" data-val={ms} style={{ width: `${(ms / max) * 100}%`, background: c }} /> : null;
-          })}
+          <span className="attr-fill" data-val={total} style={{ width: `${(total / max) * 100}%` }}>
+            {segs.map(([k, c]) => {
+              const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
+              return ms > 0 ? <span key={k} className="attr-seg" style={{ width: `${(ms / total) * 100}%`, background: c }} /> : null;
+            })}
+          </span>
         </span>
         <span className="bar-val">
           {total.toFixed(1)}
@@ -103,7 +105,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
       <div className="chart-foot">
         <p className="rt-note">
           {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
-          Cold mount of {sorted[0]?.n ?? 0} components, one scale for both browsers. Chrome recalculated styles once per mount
+          Cold mount of {sorted[0]?.n ?? 0} components. Chrome recalculated styles once per mount
           unless a badge shows another count. Firefox samples style and layout time and reports no main-thread paint, so a
           zero can mean "not sampled".
         </p>

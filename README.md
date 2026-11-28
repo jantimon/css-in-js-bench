@@ -7,27 +7,6 @@ what each one costs at SSR, in the browser and in bytes.
 
 **Live report: <https://jantimon.github.io/css-in-js-bench/>**
 
-## Highlights
-
-Numbers from the run of 2026-11-25 (Node 24, AMD EPYC 9845) for the six lanes in the
-report's text summary. CI re-measures, so the live report may show newer values.
-
-- **SSR render throughput, shop page with 400 product tiles:** styled-components renders
-  36,756 tiles per second. Bamboo, @yak/react, StyleX and cn render between 114,406 and
-  140,429.
-- **Where the SSR time goes:** styled-components spends 7.34 ms of a 12.97 ms render in its
-  own runtime. The other five lanes spend 0.30 ms or less in their styling library.
-- **Page bytes, same page:** from 7,674 B gzipped (@yak/react, css prop) to 29,622 B (cn).
-  cn and styled-components each add over 13 kB of gzipped JS to a bare React page.
-- **Dynamic values:** with 1,000 unique `translateX` values, styled-components emits a CSS
-  rule per value and ships 13,776 B of gzipped CSS. @yak/react compiles the value to a CSS
-  variable and ships 97 B. Tailwind and Bamboo cannot take a render-time value in a class,
-  so the report measures their inline-style path in a separate case.
-- **Browser gaps are smaller:** hydrating the shop page takes 16.48 to 24.06 ms of
-  profiled active work across the six lanes.
-- **Build time:** a cold client build takes 132 ms with styled-components and 567 ms with
-  StyleX.
-
 ## What is measured
 
 | Measurement | What it means | Tool |
