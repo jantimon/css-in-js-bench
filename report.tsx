@@ -825,7 +825,9 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .gh-corner:focus-visible{outline:2px solid #58a6ff;outline-offset:-2px}
 .gh-corner text{font:500 39px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#fff;letter-spacing:-.3px}
 @media (prefers-reduced-motion:reduce){.gh-curl{transition:none}}
-@media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
+/* Only where the margin beside the 1000px column fits the 100px corner; narrower windows keep the
+   icon next to the title. */
+@media screen and (min-width:1180px){.gh-corner{display:block}h1 .gh-link{display:none}}
 @media (max-width:767px){h1{font-size:24px}}
 /* Two-tone emphasis, as on Linear, Vercel and Neon: the intro is muted grey and the key phrases
    are the bright text colour. Same weight, no background, so nothing shifts. */
