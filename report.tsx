@@ -334,18 +334,19 @@ async function main() {
             <svg viewBox="0 0 112 112" width="112" height="112" aria-hidden="true">
               <defs>
                 <linearGradient id="ghc-flap" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="#2d333b" />
-                  <stop offset="1" stopColor="#161b22" />
+                  <stop offset="0" stopColor="#3a414b" />
+                  <stop offset=".55" stopColor="#262c34" />
+                  <stop offset="1" stopColor="#1a1f26" />
                 </linearGradient>
                 <filter id="ghc-shadow" x="-30%" y="-30%" width="160%" height="160%">
                   <feDropShadow dx="-3" dy="4" stdDeviation="4" floodColor="#000" floodOpacity=".55" />
                 </filter>
               </defs>
               <g className="ghc-fold">
-                <path className="ghc-under" d="M44 0H112V74C84 62 56 36 44 0Z" />
-                <path className="ghc-mark" transform="translate(91 21) scale(1.3) translate(-8 -8)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-                <path className="ghc-flap" filter="url(#ghc-shadow)" fill="url(#ghc-flap)" d="M14 0C16 40 44 82 112 98V74C84 62 56 36 44 0Z" />
-                <text className="ghc-label" x="0" y="0" transform="translate(57 55) rotate(43)" textAnchor="middle" dominantBaseline="middle">GitHub</text>
+                <path className="ghc-under" d="M50 0H112V62C100 54 64 20 50 0Z" />
+                <path className="ghc-mark" transform="translate(93 19) scale(1.55) translate(-8 -8)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                <path className="ghc-flap" filter="url(#ghc-shadow)" fill="url(#ghc-flap)" d="M26 0C38 24 86 72 112 86V62C100 54 64 20 50 0Z" />
+                <text className="ghc-label" x="0" y="0" transform="translate(68 41) rotate(45)" textAnchor="middle" dominantBaseline="middle">GitHub</text>
               </g>
             </svg>
           </a>
@@ -368,7 +369,7 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                We built the same components with <mark className="hl">{usedTechs.length} different CSS approaches</mark>, from runtime
+                We built the same components with <mark className="hl">{usedTechs.length} different CSS approaches</mark>, from runtime{" "}
                 <span className="nowrap">CSS-in-JS</span> to build-time and utility CSS. See how your styling choice affects the experience of{" "}
                 <mark className="hl">your users</mark>: how long the server takes to render, how much they download, and how fast
                 the page starts and responds in their browser
@@ -833,7 +834,7 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .ghc-fold{transform-origin:112px 0;transition:transform .2s cubic-bezier(.2,0,0,1)}
 .ghc-under{fill:#e6edf3}
 .ghc-mark{fill:#0d1117}
-.ghc-label{font:600 10px -apple-system,system-ui,sans-serif;fill:var(--fg-2);letter-spacing:.02em}
+.ghc-label{font:650 11px -apple-system,system-ui,sans-serif;fill:var(--fg-2);letter-spacing:.02em}
 .gh-corner:hover .ghc-fold,.gh-corner:focus-visible .ghc-fold{transform:scale(1.08)}
 @media (prefers-reduced-motion:reduce){.ghc-fold{transition:none}}
 @media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
