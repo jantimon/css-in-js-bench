@@ -582,6 +582,11 @@ async function main() {
                     </h3>
                     <p className="ch-cap">Server render time, split into framework, styling library and your components (lower is faster)</p>
                   </div>
+                  <a className="tool-mark" href="https://nodejs.org" aria-label={`Node.js ${meta.node}`}>
+                    <span className="tip">Node.js is the JavaScript runtime that renders the pages on the server. We record a CPU profile of the server render in Node.js {meta.node} and split the time by where the code comes from.</span>
+                    <img className="tm-node" src="assets/logos/nodejs.svg" alt="" width={22} height={22} loading="lazy" />
+                    <span className="tm-name">Node.js {meta.node}</span>
+                  </a>
                 </div>
                 <AttributionChart rows={attrRows} />
               </div>
@@ -981,6 +986,9 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .tm-word b{color:#f0b429;font-weight:700}
 .tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}
 .tm-av{width:18px;height:18px;border-radius:50%}
+/* The Node.js mark stands on its own, without the white tile the raster logos need. */
+.tm-node{width:22px;height:22px;flex:none;margin-left:-3px}
+.tool-mark:has(.tm-node){padding-right:12px}
 .pd-donut{display:block;flex:none}
 .pd-center{font:700 13px -apple-system,system-ui,sans-serif;fill:var(--fg)}
 @media print{.prof-diff{display:none}}
