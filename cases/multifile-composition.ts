@@ -8,6 +8,6 @@ export default {
   n: 150,
   cardinality: "low",
   description:
-    "The same tabs, but the styled parts live in a separate file, the way a design system ships them. Compilers that optimise one file at a time cannot see across the import; runtime libraries do not care. The difference to the tabs case is the cost of that file boundary.",
+    "The same 150 tab groups as the tabs page, with the styled parts in a separate file the way a design system ships them. Build tools compile one file at a time, so some performance optimizations do not work across files. This test page shows how each CSS approach performs when the code is split.",
   note: "identical to tabs except for the module boundary",
 } satisfies CaseMeta;

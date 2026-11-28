@@ -11,6 +11,6 @@ export default {
   n: 400,
   cardinality: "low",
   description:
-    "The same 400 product cards as the shop page, organised like a real codebase: shared styles in one file, the building blocks in several more and the page in another. A compiler can only swap a styled component for a plain HTML tag when both sit in the same file, so here it never can. The difference to the shop page is the cost of splitting code into files.",
+    "The same 400 product cards as the shop page, split across several files the way real projects keep their code. Build tools compile one file at a time, so some performance optimizations do not work across files. This test page shows how each CSS approach performs when the code is split.",
   note: "identical to product-grid except for the file layout",
 } satisfies CaseMeta;
