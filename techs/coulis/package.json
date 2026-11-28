@@ -1,0 +1,17 @@
+{
+  "name": "coulis",
+  "description": "Coulis",
+  "private": true,
+  "type": "module",
+  "bench": {
+    "color": "#e11d48",
+    "buildPlugin": null,
+    "appStylesheet": null,
+    "cssKind": "runtime"
+  },
+  "dependencies": {
+    "coulis": "0.24.1",
+    "react": "catalog:dev",
+    "react-dom": "catalog:dev"
+  }
+}
