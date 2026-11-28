@@ -1027,7 +1027,9 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
     .bar-ptr{position:absolute;inset-block:0;width:1px;pointer-events:none;anchor-name:--bar-tip}
     /* The card belongs to the bar: only the track opens it. A transparent border fills the row
        height so the pointer never falls between two tracks. */
-    .bar-track{height:29px;border-block:6.5px solid transparent;margin-block:-4.5px;background-clip:padding-box;border-radius:11.5px}
+    /* Corners 5px wide and 11.5px tall on the border box, so the visible part (inside the 6.5px top and
+       bottom border) has round 5px corners. */
+    .bar-track{height:29px;border-block:6.5px solid transparent;margin-block:-4.5px;background-clip:padding-box;border-radius:5px/11.5px}
     .bar-row:has(>.bar-track:hover)>.bar-track{anchor-name:--bar-tip}
     .bar-row:has(>.bar-ptr)>.bar-track{anchor-name:none}
     .bar-tip{margin:8px 0;opacity:0;transform-origin:50% 100%;transition:opacity .1s ease-in,display .1s allow-discrete}
@@ -1053,6 +1055,8 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .attr .bar-track{display:flex}
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
+.attr-seg:last-child{border-radius:0 5px 5px 0}
+.attr-seg:only-child{border-radius:5px}
 .attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
 .attr-legend:not(.pair-legend){margin-bottom:10px}
 /* Value scale (Axis.tsx): faint gridlines at round values between the track and the coloured
