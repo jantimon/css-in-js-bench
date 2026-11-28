@@ -331,9 +331,22 @@ async function main() {
         <header className="page-head">
           {/* Desktop: a corner link to the source; below 768px the icon next to the title takes its place. */}
           <a className="gh-corner" href="https://github.com/jantimon/css-in-js-bench" aria-label="View source on GitHub" data-screen-only>
-            <svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true">
-              <path className="ghc-bg" d="M0 0h88v88z" />
-              <path className="ghc-mark" transform="translate(59 29) scale(1.4) translate(-8 -8)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            <svg viewBox="0 0 112 112" width="112" height="112" aria-hidden="true">
+              <defs>
+                <linearGradient id="ghc-flap" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#2d333b" />
+                  <stop offset="1" stopColor="#161b22" />
+                </linearGradient>
+                <filter id="ghc-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="-3" dy="4" stdDeviation="4" floodColor="#000" floodOpacity=".55" />
+                </filter>
+              </defs>
+              <g className="ghc-fold">
+                <path className="ghc-under" d="M44 0H112V74C84 62 56 36 44 0Z" />
+                <path className="ghc-mark" transform="translate(91 21) scale(1.3) translate(-8 -8)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                <path className="ghc-flap" filter="url(#ghc-shadow)" fill="url(#ghc-flap)" d="M14 0C16 40 44 82 112 98V74C84 62 56 36 44 0Z" />
+                <text className="ghc-label" x="0" y="0" transform="translate(57 55) rotate(43)" textAnchor="middle" dominantBaseline="middle">GitHub</text>
+              </g>
             </svg>
           </a>
           <div className="head-inner">
@@ -812,14 +825,16 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .brand-dot{width:13px;height:13px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 4px #3fb9502e}
 .gh-link{display:inline-flex;align-items:center;color:var(--muted);margin-left:2px}
 .gh-link:hover{color:var(--fg)}
-/* GitHub corner (desktop), fixed to the viewport so it stays in reach while scrolling. The triangle is the page's raised panel colour; the mark is the
-   GitHub logo, upright. */
+/* GitHub corner (desktop), fixed to the viewport: the page corner folds down and its light
+   reverse side carries the GitHub mark. On hover the fold opens a little further. */
 .page-head{position:relative}
 .gh-corner{position:fixed;top:0;right:0;z-index:50;display:none;line-height:0}
-.ghc-bg{fill:var(--raised-2);transition:fill .15s}
-.ghc-mark{fill:var(--fg-3);transition:fill .15s}
-.gh-corner:hover .ghc-bg{fill:#30363d}
-.gh-corner:hover .ghc-mark{fill:var(--fg)}
+.ghc-fold{transform-origin:112px 0;transition:transform .2s cubic-bezier(.2,0,0,1)}
+.ghc-under{fill:#e6edf3}
+.ghc-mark{fill:#0d1117}
+.ghc-label{font:600 10px -apple-system,system-ui,sans-serif;fill:var(--fg-2);letter-spacing:.02em}
+.gh-corner:hover .ghc-fold,.gh-corner:focus-visible .ghc-fold{transform:scale(1.08)}
+@media (prefers-reduced-motion:reduce){.ghc-fold{transition:none}}
 @media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
 @media (max-width:767px){h1{font-size:24px}}
 /* Text-marker highlight: a slightly tilted band behind the lower two thirds of the text. */
