@@ -907,6 +907,8 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .hide-measure svg{display:block}
 .hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
 .info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.tip .tip-p{display:block;margin-top:7px}
+.tip .tip-src{color:var(--muted)}
 .info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
 .bars,.attr{display:grid;grid-template-columns:200px 1fr minmax(56px,max-content);column-gap:14px;row-gap:0;align-items:center}
 .bars{margin-bottom:8px}

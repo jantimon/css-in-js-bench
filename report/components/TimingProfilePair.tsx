@@ -28,10 +28,15 @@ export function TimingProfilePair({ bars, rows, wpdVersion, profileN, caseN }: {
           <div className="pair-head">
             Breakdown, {repeated ? "median" : "one"} Chrome profile
             <InfoTip>
-              Recorded in its own run with Chrome's profiler on, using {profileN} components instead of {caseN.toLocaleString()}
-              {repeated ? ", the median of several runs" : ""}. The profiler slows the page down, so compare these bars with each
-              other, not with the times on the left. Bars count only the time the browser was busy; waiting for the next frame is
-              left out. Hover a bar for the full split. Measured with web-performance-debugger {wpdVersion}.
+              Where the browser spends its time in this step: running JavaScript, recalculating styles, layout, painting and
+              garbage collection.
+              <span className="tip-p">
+                Recorded with Chrome's profiler on a smaller page, {profileN} components instead of {caseN.toLocaleString()}, because
+                profiling slows the page down a lot{repeated ? "; the median of several page loads is shown" : ""}. Use these bars to
+                compare the libraries with each other, not with the times on the left.
+              </span>
+              <span className="tip-p">Time the browser sits idle is not counted. Hover a bar for the exact numbers.</span>
+              <span className="tip-p tip-src">Tool: web-performance-debugger {wpdVersion}</span>
             </InfoTip>
           </div>
           <div className="attr-legend pair-legend">
