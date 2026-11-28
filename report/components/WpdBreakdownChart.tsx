@@ -2,6 +2,7 @@ import React from "react";
 import { groupBreaks } from "../stats.ts";
 import type { WpdBrowserSample, WpdSpanSample } from "../types.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
+import { EmptyRow } from "./BarChart.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface WpdBreakdownRow {
@@ -25,22 +26,26 @@ export const SEGMENTS = [
 export const activeMs = (row: WpdBreakdownRow) => row.span.wallMs - row.span.slices.idle;
 
 /** The profile as stacked bars: active segments only, scaled to active time; idle frame wait is a number after the bar. */
-export function WpdBreakdownChart({ rows }: { rows: WpdBreakdownRow[] }) {
-  const sorted = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
+export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBreakdownRow[]; order?: string[]; legend?: boolean }) {
+  const byActive = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
+  const shown: (WpdBreakdownRow | string)[] = order ? order.map((t) => rows.find((r) => r.tech === t) ?? t) : byActive;
+  const sorted = byActive;
   const max = Math.max(1e-6, ...sorted.map(activeMs));
   const breaks = groupBreaks(sorted.map(activeMs));
   const bars = SEGMENTS.filter(([key]) => key !== "idle");
   return (
     <div className="attr wpd-breakdown">
-      <div className="attr-legend">
+      {legend ? <div className="attr-legend">
         {bars.map(([key, color, label]) => (
           <span key={key}><i style={{ background: color }} />{label}</span>
         ))}
-      </div>
-      {sorted.map((row, index) => {
+      </div> : null}
+      {shown.map((row) => {
+        if (typeof row === "string") return <EmptyRow tech={row} key={row} />;
+        const index = byActive.indexOf(row);
         const median = row.medianMs !== undefined && row.medianMs.toFixed(1) !== row.span.wallMs.toFixed(1) ? row.medianMs : undefined;
         return (
-          <div className={"bar-row" + (breaks[index] ? " gap-before" : "")} data-tech={row.tech} key={row.tech} {...tipRow}>
+          <div className={"bar-row" + (!order && breaks[index] ? " gap-before" : "")} data-tech={row.tech} key={row.tech} {...tipRow}>
             <BarTip
               title={row.label}
               tech={row.tech}

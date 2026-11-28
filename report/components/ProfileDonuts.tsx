@@ -1,4 +1,5 @@
 import React from "react";
+import { BarChart, type Bar } from "./BarChart.tsx";
 import { InfoTip } from "./InfoTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 import { activeMs, SEGMENTS, WpdBreakdownChart, type WpdBreakdownRow } from "./WpdBreakdownChart.tsx";
@@ -10,27 +11,56 @@ const C = 2 * Math.PI * R;
 /** Up to this many visible lanes the profile shows as donut cards, above it as stacked bars. */
 export const FEW_LANES = 3;
 
-// "Where the time goes": one Chrome profile per lane, shown below the repeated-timing chart.
-// It renders both views; `.prof-few` (set here for the full lane set and again by
-// rescaleBars() in report.tsx when the tech filter changes) picks donut cards for a few
-// visible lanes and stacked bars for more. The caption names where the lane with the most
-// active time spends it, compared with the lane with the least.
-export function ProfileSection({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; wpdVersion: string }) {
-  if (!rows.length) return null;
+// A browser measure as one pair on shared rows: the repeated timing on the left (lane colours,
+// sorted fastest first) and one Chrome profile of the same action on the right, split by kind of
+// work. The profile column shows stacked bars, or one donut card per lane when only a few lanes
+// are visible (`.prof-few`, set here for the full lane set and again by rescaleBars() in
+// report.tsx when the tech filter changes). The caption below compares the busiest and the least
+// busy visible lane in the profile.
+export function TimingProfilePair({ bars, rows, wpdVersion }: { bars: Bar[]; rows: WpdBreakdownRow[]; wpdVersion: string }) {
+  if (!bars.length) return rows.length ? <ProfileOnly rows={rows} wpdVersion={wpdVersion} /> : null;
+  const order = [...bars].sort((a, b) => a.value - b.value).map((b) => b.tech);
+  for (const r of rows) if (!order.includes(r.tech)) order.push(r.tech);
   const sorted = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
   return (
-    <div className={"prof" + (sorted.length <= FEW_LANES ? " prof-few" : "")}>
-      <h4 className="prof-title">
-        Where the time goes
-        <InfoTip>
-          A separate measurement from the chart above: one Chrome profile per lane (web-performance-debugger {wpdVersion}).
-          Each lane is one named action, including the next frame. Lanes rank by active time, the span minus idle frame wait.
-          Repeated actions use the occurrence with the lower median profile duration. The profiled median includes profiler
-          overhead.
-        </InfoTip>
-      </h4>
-      <p className="ch-cap">Active milliseconds in one Chrome profile, split by kind of work. Shorter bars are better.</p>
-      <p className="prof-diff" data-screen-only>{sorted.length > 1 ? diffText(sorted[0], sorted[sorted.length - 1]) : ""}</p>
+    <div className={"pair prof" + (order.length <= FEW_LANES ? " prof-few" : "")}>
+      <div className="pair-col">
+        <div className="pair-head">Total</div>
+        <BarChart bars={bars} unit="ms" higherBetter={false} order={order} />
+      </div>
+      {rows.length ? (
+        <div className="pair-col pair-r">
+          <div className="pair-head">
+            Active time, one Chrome profile
+            <InfoTip>
+              A separate measurement from the total: one Chrome profile per lane (web-performance-debugger {wpdVersion}).
+              Active time is the profiled span minus the time spent waiting for the next frame. Hover a bar for the idle
+              time and the full span.
+            </InfoTip>
+          </div>
+          <div className="attr-legend pair-legend">
+            {ACTIVE.map(([key, color, label]) => <span key={key}><i style={{ background: color }} />{key === "other" ? "other" : label}</span>)}
+          </div>
+          <WpdBreakdownChart rows={rows} order={order} legend={false} />
+          <Cards sorted={sorted} />
+        </div>
+      ) : null}
+      {rows.length > 1 ? <p className="prof-diff" data-screen-only>{diffText(sorted[0], sorted[sorted.length - 1])}</p> : null}
+    </div>
+  );
+}
+
+function ProfileOnly({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; wpdVersion: string }) {
+  return (
+    <div className="prof">
+      <p className="ch-cap">Active milliseconds in one Chrome profile (web-performance-debugger {wpdVersion}).</p>
+      <WpdBreakdownChart rows={rows} />
+    </div>
+  );
+}
+
+function Cards({ sorted }: { sorted: WpdBreakdownRow[] }) {
+  return (
       <div className="pd" data-screen-only>
         {sorted.map((row) => (
           <div className="pd-card" data-tech={row.tech} data-label={row.label} data-slices={JSON.stringify(Object.fromEntries(ACTIVE.map(([key, , label]) => [label, row.span.slices[key] ?? 0])))} key={row.tech}>
@@ -56,8 +86,6 @@ export function ProfileSection({ rows, wpdVersion }: { rows: WpdBreakdownRow[]; 
           </div>
         ))}
       </div>
-      <WpdBreakdownChart rows={rows} />
-    </div>
   );
 }
 
@@ -68,8 +96,8 @@ function diffText(least: WpdBreakdownRow, most: WpdBreakdownRow): string {
     .filter(([, d]) => Math.abs(d) >= 0.1)
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     .slice(0, 3)
-    .map(([label, d]) => `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} ${label}`);
-  return `${most.label} spends ${total.toFixed(1)} ms more active time than ${least.label}${parts.length ? `: ${parts.join(", ")}` : ""}.`;
+    .map(([label, d]) => `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} ms ${label}`);
+  return `In this profile ${most.label} is busy ${total.toFixed(1)} ms longer than ${least.label}${parts.length ? `: ${parts.join(", ")}` : ""}.`;
 }
 
 function Donut({ row }: { row: WpdBreakdownRow }) {

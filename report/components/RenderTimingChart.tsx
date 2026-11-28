@@ -1,6 +1,7 @@
 import React from "react";
 import type { RenderTimingMetrics } from "../types.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
+import { EmptyRow } from "./BarChart.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface RenderTimingRow {
@@ -35,22 +36,22 @@ const sumSegs = (m: RenderTimingMetrics, segs: readonly Seg[]) => segs.reduce((s
 // alongside as a badge. Rows carry data-tech for the global lane filter; segments carry data-val
 // so the client controller rescales widths to the widest VISIBLE row (shared with AttributionChart).
 export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
-  // Slowest-runtime last: order by Chrome style-recalc count (the headline), then Firefox style ms.
-  const sorted = [...rows].sort((a, b) => (a.chrome?.styleCount ?? 0) - (b.chrome?.styleCount ?? 0) || (a.firefox?.styleMs ?? 0) - (b.firefox?.styleMs ?? 0));
-  // Bake initial widths against the widest row total across every engine row (the controller
-  // recomputes this among visible rows on filter, but SSR needs a value up front).
+  const sorted = [...rows].sort((a, b) => (a.chrome ? sumSegs(a.chrome, CHROME_SEGS) : Infinity) - (b.chrome ? sumSegs(b.chrome, CHROME_SEGS) : Infinity));
   const totals: number[] = [];
   for (const r of sorted) {
     if (r.chrome) totals.push(sumSegs(r.chrome, CHROME_SEGS));
     if (r.firefox) totals.push(sumSegs(r.firefox, FF_SEGS));
   }
+  // One scale for both engines (the client keeps it shared through data-shared-scale).
   const max = Math.max(1e-6, ...totals);
   const noForcedLayouts = sorted.length > 0 && sorted.every((row) => row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
+  const hasFirefox = sorted.some((r) => r.firefox);
 
-  const engineRow = (r: RenderTimingRow, engine: "Chrome" | "Firefox", m: RenderTimingMetrics, segs: readonly Seg[], first: boolean) => {
+  const engineRow = (r: RenderTimingRow, engine: "Chrome" | "Firefox", m: RenderTimingMetrics | undefined, segs: readonly Seg[]) => {
+    if (!m) return <EmptyRow tech={r.tech} label={engine === "Chrome" ? r.label : undefined} key={r.tech} />;
     const total = sumSegs(m, segs);
     return (
-      <div className={"bar-row" + (first ? " gap-before" : "")} data-tech={r.tech} key={`${r.tech}-${engine}`} {...tipRow}>
+      <div className="bar-row" data-tech={r.tech} key={r.tech} {...tipRow}>
         <BarTip
           title={`${r.label} · ${engine}`}
           tech={r.tech}
@@ -64,10 +65,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
           ]}
           note={`cold mount of ${r.n.toLocaleString()} instances`}
         />
-        <span className="bar-label">
-          <span className="rt-lane">{first ? <TechLabel tech={r.tech} label={r.label} /> : ""}</span>
-          <span className="rt-eng">{engine}</span>
-        </span>
+        <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
         <span className="bar-track">
           {segs.map(([k, c]) => {
             const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
@@ -77,9 +75,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         <span className="bar-val">
           {total.toFixed(1)}
           {engine === "Chrome" && typeof m.styleCount === "number" && m.styleCount !== 1 ? (
-            <span className="rt-badge" title="Chrome style-recalc count — one per runtime-injected style vs one for extracted CSS">
-              {m.styleCount} recalc{m.styleCount === 1 ? "" : "s"}
-            </span>
+            <span className="rt-badge">{m.styleCount} recalcs</span>
           ) : null}
         </span>
       </div>
@@ -87,22 +83,29 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
   };
 
   return (
-    <div className="attr rt">
-      <div className="attr-legend">
+    <div className="rt">
+      <div className="attr-legend pair-legend">
         <span><i style={{ background: "#e8590c" }} />style recalc</span>
         <span><i style={{ background: "#4c6ef5" }} />layout</span>
-        <span><i style={{ background: "#12b886" }} />paint (Chrome)</span>
+        <span><i style={{ background: "#12b886" }} />paint (Chrome only)</span>
       </div>
-      {sorted.map((r) => (
-        <React.Fragment key={r.tech}>
-          {r.chrome ? engineRow(r, "Chrome", r.chrome, CHROME_SEGS, true) : null}
-          {r.firefox ? engineRow(r, "Firefox", r.firefox, FF_SEGS, !r.chrome) : null}
-        </React.Fragment>
-      ))}
+      <div className={hasFirefox ? "pair" : ""} data-shared-scale>
+        <div className="pair-col">
+          {hasFirefox ? <div className="pair-head">Chrome</div> : null}
+          <div className="attr">{sorted.map((r) => engineRow(r, "Chrome", r.chrome, CHROME_SEGS))}</div>
+        </div>
+        {hasFirefox ? (
+          <div className="pair-col pair-r">
+            <div className="pair-head">Firefox</div>
+            <div className="attr">{sorted.map((r) => engineRow(r, "Firefox", r.firefox, FF_SEGS))}</div>
+          </div>
+        ) : null}
+      </div>
       <p className="rt-note">
         {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
-        Cold mount of {sorted[0]?.n ?? 0} instances. Chrome recalculated styles once per mount unless a badge shows
-        another count. Firefox samples style and layout time and reports no main-thread paint, so a zero can mean "not sampled".
+        Cold mount of {sorted[0]?.n ?? 0} instances, one scale for both browsers. Chrome recalculated styles once per mount
+        unless a badge shows another count. Firefox samples style and layout time and reports no main-thread paint, so a
+        zero can mean "not sampled".
       </p>
     </div>
   );

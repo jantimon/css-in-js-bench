@@ -17,8 +17,9 @@ export interface Bar {
 // A horizontal bar per tech, sorted fastest-first by the report (§10.8). Each row
 // carries data-tech so the tech filter can hide it across every chart with no JS
 // re-layout. `unit`/`higherBetter` are presentation only.
-export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: string; higherBetter: boolean }) {
+export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; unit: string; higherBetter: boolean; order?: string[] }) {
   const sorted = [...bars].sort((a, b) => (higherBetter ? b.value - a.value : a.value - b.value));
+  const missing = order ? order.filter((t) => !bars.some((b) => b.tech === t)) : [];
   const max = Math.max(1, ...sorted.map((b) => b.value));
   const best = higherBetter ? Math.max(...sorted.map((b) => b.value)) : Math.min(...sorted.map((b) => b.value));
   const breaks = groupBreaks(sorted.map((b) => b.value)); // gap before a row that jumps a tier
@@ -45,6 +46,18 @@ export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: stri
           </span>
         </div>
       ))}
+      {missing.map((t) => <EmptyRow tech={t} key={t} />)}
+    </div>
+  );
+}
+
+/** A row for a lane that has no value in this chart, so a paired chart keeps its rows level. */
+export function EmptyRow({ tech, label }: { tech: string; label?: string }) {
+  return (
+    <div className="bar-row bar-empty" data-tech={tech}>
+      <span className="bar-label">{label ? <TechLabel tech={tech} label={label} /> : null}</span>
+      <span className="bar-track" />
+      <span className="bar-val">–</span>
     </div>
   );
 }

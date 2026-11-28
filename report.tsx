@@ -24,7 +24,7 @@ import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { BuildTimeChart, type BuildTimeRow } from "./report/components/BuildTimeChart.tsx";
 import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
-import { FEW_LANES, ProfileSection } from "./report/components/ProfileDonuts.tsx";
+import { FEW_LANES, TimingProfilePair } from "./report/components/ProfileDonuts.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { CaseSummary } from "./report/components/CaseSummary.tsx";
 import { StudyFindings } from "./report/components/StudyFindings.tsx";
@@ -589,8 +589,7 @@ async function main() {
                     <p className="ch-cap">Milliseconds until the framework takes over the server HTML. Shorter bars are better.</p>
                   </div>
                 </div>
-                {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
-                <ProfileSection rows={hydWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={hydBars} rows={hydWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {inpWpdRows.length || inpBars.length ? (
@@ -611,8 +610,7 @@ async function main() {
                     <p className="ch-cap">Milliseconds until every instance shows its new value. Shorter bars are better.</p>
                   </div>
                 </div>
-                {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
-                <ProfileSection rows={inpWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {mountWpdRows.length || mountBars.length ? (
@@ -631,8 +629,7 @@ async function main() {
                     <p className="ch-cap">Milliseconds to render the workload into an empty page. Shorter bars are better.</p>
                   </div>
                 </div>
-                {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
-                <ProfileSection rows={mountWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {rtRows.length ? (
@@ -931,22 +928,39 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}
 .tm-av{width:18px;height:18px;border-radius:50%}
 /* DevTools-style summary cards in front of the Chrome-profiled charts: fastest and slowest visible lane. */
-.pd{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 16px}
-.pd-card{flex:1 1 260px;max-width:360px;border:1px solid var(--line);border-radius:10px;padding:10px 14px 12px;background:var(--raised);position:relative}
+.pd{display:flex;flex-wrap:wrap;gap:10px;margin:0}
+.pd-card{flex:1 1 200px;max-width:280px;border:1px solid var(--line);border-radius:8px;padding:8px 10px 10px;position:relative}
 .pd-card.tech-off{display:none}
 .pd-head{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg);margin-bottom:8px}
 .pd-zero{opacity:.45}
-.pd-body{display:flex;align-items:center;gap:16px}
+.pd-body{display:flex;align-items:center;gap:14px}
+.pd-donut{width:76px;height:76px}
 .pd-donut{flex:none}
 .pd-center{font:700 12px -apple-system,system-ui,sans-serif;fill:var(--fg)}
-.pd-legend{display:grid;grid-template-columns:auto auto;gap:2px 10px;font-size:11.5px;align-items:center}
+.pd-legend{display:grid;grid-template-columns:auto auto;gap:1px 10px;font-size:11.5px;align-items:center;white-space:nowrap}
 .pd-ms{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg-2)}
 .pd-key{display:flex;align-items:center;gap:6px;color:var(--muted)}
 .pd-key i{width:9px;height:9px;border-radius:2px}
 .pd-total{font-weight:700;color:var(--fg);padding-top:2px}
 @media screen{.prof:not(.prof-few) .pd,.prof-few .wpd-breakdown{display:none}}
+.prof-few .pair-legend{display:none}
 @media print{.pd,.prof-diff{display:none}}
-.prof{margin-top:36px}
+/* Two measures on shared rows: labels and the first measure on the left, the second measure
+   (bars only) on the right. Both charts render the same lanes in the same order. */
+.pair{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);column-gap:32px;align-items:start}
+.pair-col{display:contents}
+.pair-col>*{grid-column:1;min-width:0}
+.pair-r>*,.pair .pair-r>.pair-legend{grid-column:2}
+.pair-head{grid-row:1;display:flex;align-items:center;height:20px;margin:0 0 8px;font-size:12px;font-weight:600;color:var(--fg-3)}
+.pair .pair-legend,.rt>.pair-legend{grid-row:2;margin:0 0 10px;font-size:11.5px;gap:4px 11px}
+.pair-col>.bars,.pair-col>.attr,.pair-col>.pd{grid-row:3}
+.pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(48px,max-content)}
+.pair-r .bar-row>.bar-label{display:none}
+.pair .prof-diff{grid-row:4;grid-column:1/-1;margin:14px 0 0}
+.rt>.pair-legend{margin-bottom:12px}
+.bar-empty .bar-track{visibility:hidden}
+.bar-empty .bar-val{color:var(--muted-2)}
+.prof{margin-top:24px}
 .prof-title{margin:0;font-size:15px;font-weight:650;color:var(--fg)}
 .prof>.ch-cap{margin-bottom:12px}
 .prof-diff{margin:0 0 12px;font-size:12.5px;color:var(--fg-2)}
@@ -982,13 +996,14 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.rt .bar-label{display:flex;gap:7px;justify-content:space-between;align-items:center}
+.rt .bar-label{display:flex;gap:7px;justify-content:flex-start;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
 .rt-eng{color:var(--muted-2);font-size:11px;flex:none}
 .rt-badge{margin-left:8px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
 .rt-note{grid-column:1/-1;margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:64ch}
 .rt-badge{margin-left:6px}
 .wpd-breakdown{margin-top:8px}
+.pair .wpd-breakdown{margin-top:0}
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:var(--muted);font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
@@ -1074,6 +1089,9 @@ a.mono:hover{text-decoration:underline}
   .rt .bar-label{justify-content:flex-start}
   .rt .bar-val{min-width:0}
   .ch-head{flex-wrap:wrap}
+  .pair{display:block}
+  .pair-col{display:flex;flex-direction:column;margin-bottom:18px}
+  .pair-r .bar-row>.bar-label{display:flex}
   .chart-banner{width:160px}
   .editor{display:block}
   .ed-side{display:flex;width:100%;padding:0;border-right:0;border-bottom:1px solid var(--raised-2);overflow-x:auto}
@@ -1239,15 +1257,19 @@ function profDiff(least, most) {
   const sum = o => Object.values(o).reduce((s, v) => s + v, 0);
   const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
     .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
-    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ' + k);
-  return most.dataset.label + ' spends ' + (sum(b) - sum(a)).toFixed(1) + ' ms more active time than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
+    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + k);
+  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(b) - sum(a)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
 }
 function rescaleBars() {
+  // Charts inside one [data-shared-scale] share the max of all their visible rows.
+  const visRows = chart => [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+  const rowTotal = r => [...r.querySelectorAll('[data-val]')].reduce((s, e) => s + +e.dataset.val, 0);
   for (const chart of document.querySelectorAll('.bars, .attr')) {
-    const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+    const vis = visRows(chart);
+    const scope = chart.closest('[data-shared-scale]');
+    const peers = scope ? [...scope.querySelectorAll('.bars, .attr')] : [chart];
     let max = 1e-6;
-    const totals = vis.map(r => [...r.querySelectorAll('[data-val]')].reduce((s, e) => s + +e.dataset.val, 0));
-    for (const t of totals) if (t > max) max = t;
+    for (const c of peers) for (const r of visRows(c)) { const t = rowTotal(r); if (t > max) max = t; }
     vis.forEach(r => { for (const e of r.querySelectorAll('[data-val]')) e.style.width = (+e.dataset.val / max * 100) + '%'; });
     const best = chart.querySelector('.bar-best');
     if (best && vis.length) { best.classList.remove('bar-best'); vis[0].querySelector('.bar-val')?.classList.add('bar-best'); }
@@ -1256,21 +1278,25 @@ function rescaleBars() {
   for (const prof of document.querySelectorAll('.prof')) {
     const cards = [...prof.querySelectorAll('.pd-card')].filter(c => !c.classList.contains('tech-off'));
     prof.classList.toggle('prof-few', cards.length <= ${FEW_LANES});
-    prof.querySelector('.prof-diff').textContent = cards.length > 1 ? profDiff(cards[0], cards[cards.length - 1]) : '';
+    const diff = prof.querySelector('.prof-diff');
+    if (diff) diff.textContent = cards.length > 1 ? profDiff(cards[0], cards[cards.length - 1]) : '';
   }
   for (const chart of document.querySelectorAll('.bars, .attr')) {
     const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
-    // Hover cards: rank and "N× more than <best>" among the visible rows (BarTip's vsBest).
-    const top = vis[0]?.querySelector('[data-bt-vs]');
-    vis.forEach((r, i) => {
+    // Hover cards: rank and "N× more than <best>" among the visible rows (BarTip's vsBest), by value,
+    // since a paired chart keeps the row order of its partner.
+    const tips = vis.map(r => [r, r.querySelector('[data-bt-vs]')]).filter(([, n]) => n);
+    if (!tips.length) continue;
+    const hb = tips[0][1].dataset.hb === '1';
+    tips.sort((x, y) => hb ? y[1].dataset.btVs - x[1].dataset.btVs : x[1].dataset.btVs - y[1].dataset.btVs);
+    const [topRow, top] = tips[0];
+    tips.forEach(([r, note], i) => {
       const rank = r.querySelector('[data-bt-rank]');
-      if (rank) rank.textContent = (i + 1) + ' of ' + vis.length;
-      const note = r.querySelector('[data-bt-vs]');
-      if (!note || !top) return;
-      const v = +note.dataset.btVs, b = +top.dataset.btVs, hb = note.dataset.hb === '1';
+      if (rank) rank.textContent = (i + 1) + ' of ' + tips.length;
+      const v = +note.dataset.btVs, b = +top.dataset.btVs;
       if (v === b) { note.textContent = 'best in this chart'; return; }
       const ratio = hb ? b / v : v / b;
-      note.textContent = ratio.toFixed(ratio < 10 ? 2 : 1) + '× ' + (hb ? 'fewer' : 'more') + ' ' + note.dataset.unit + ' than ' + vis[0].querySelector('.bt-title').textContent;
+      note.textContent = ratio.toFixed(ratio < 10 ? 2 : 1) + '× ' + (hb ? 'fewer' : 'more') + ' ' + note.dataset.unit + ' than ' + topRow.querySelector('.bt-title').textContent;
     });
   }
 }
