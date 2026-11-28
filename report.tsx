@@ -329,6 +329,13 @@ async function main() {
       </head>
       <body>
         <header className="page-head">
+          {/* Desktop: a corner link to the source; below 768px the icon next to the title takes its place. */}
+          <a className="gh-corner" href="https://github.com/jantimon/css-in-js-bench" aria-label="View source on GitHub" data-screen-only>
+            <svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true">
+              <path className="ghc-bg" d="M0 0h88v88z" />
+              <path className="ghc-mark" transform="translate(59 29) scale(1.4) translate(-8 -8)" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+          </a>
           <div className="head-inner">
             <div className="brand">
               <h1>
@@ -348,17 +355,20 @@ async function main() {
                 </a>
               </h1>
               <p className="sub">
-                One set of components, built {usedTechs.length} different ways and measured on identical workloads. Every
-                version renders the same pixels, so the numbers compare by construction, not by claim.
+                We built the same components with {usedTechs.length} CSS approaches, from runtime CSS-in-JS to build-time and
+                utility CSS, and measured what each one costs on the server, over the network and in the browser. Every version
+                renders the same pixels, so the differences come from the styling, not the design
               </p>
+              <HeadPipeline />
               <div className="head-stats">
                 <span>
-                  <b>{usedTechs.length}</b> styling techniques
+                  <b>{usedTechs.length}</b> CSS approaches
                 </span>
                 <span>
-                  <b>{caseIds.length}</b> {caseIds.length === 1 ? "workload" : "workloads"}
+                  <b>{caseIds.length}</b> test {caseIds.length === 1 ? "page" : "pages"}
                 </span>
-                <span>production builds · median of repeated runs</span>
+                <span>production builds</span>
+                <span>median of repeated runs</span>
               </div>
             </div>
           </div>
@@ -797,13 +807,32 @@ const CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:0 0 80px}
 .wrap{max-width:1000px;margin:0 auto;padding:0 24px;position:relative}
-.head-inner{max-width:1000px;margin:0 auto;padding:18px 24px}
-h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
-.brand-dot{width:11px;height:11px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 3px #3fb95022}
+.head-inner{max-width:1000px;margin:0 auto;padding:34px 24px 30px}
+h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:flex;align-items:center;gap:12px}
+.brand-dot{width:13px;height:13px;border-radius:50%;background:#3fb950;box-shadow:0 0 0 4px #3fb9502e}
 .gh-link{display:inline-flex;align-items:center;color:var(--muted);margin-left:2px}
 .gh-link:hover{color:var(--fg)}
-.sub{margin:0;color:var(--fg-3);font:13px/1.55 system-ui,sans-serif;max-width:60ch}
-.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:9px;font-size:12px;color:var(--muted)}
+/* GitHub corner (desktop). The triangle is the page's raised panel colour; the mark is the
+   GitHub logo, upright. */
+.page-head{position:relative}
+.gh-corner{position:absolute;top:0;right:0;display:none;line-height:0}
+.ghc-bg{fill:var(--raised-2);transition:fill .15s}
+.ghc-mark{fill:var(--fg-3);transition:fill .15s}
+.gh-corner:hover .ghc-bg{fill:#30363d}
+.gh-corner:hover .ghc-mark{fill:var(--fg)}
+@media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
+@media (max-width:767px){h1{font-size:24px}}
+.sub{margin:0;color:var(--fg-3);font:16px/1.6 system-ui,sans-serif;max-width:64ch}
+/* Header pipeline: server, network, browser, each with the charts that measure it. */
+.hp{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;margin-top:22px}
+.hp-stage{border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;background:var(--raised)}
+.hp-name{display:flex;align-items:center;gap:8px;font-weight:650;font-size:15px}
+.hp-name span{color:var(--fg)}
+.hp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hp-chips span{font-size:11.5px;color:var(--fg-3);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px}
+.hp-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:20px}
+@media (max-width:767px){.hp{grid-template-columns:1fr;gap:6px}.hp-arrow{transform:rotate(90deg);height:18px}}
+.head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;font-size:12.5px;color:var(--muted)}
 .head-stats b{color:var(--fg);font-weight:600}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
 .show{display:flex;align-items:center;gap:10px;min-width:0}
@@ -1161,6 +1190,31 @@ const MEASURE_LABEL: Record<string, string> = Object.fromEntries(MEASURE_GROUPS.
 
 // A × on every chart title, so a measurement can be dropped from where it is read without
 // scrolling back to the filter panel. It drives the same control the panel does.
+/** The header's three places where styling costs something, in the order a page travels. */
+function HeadPipeline() {
+  const stages = [
+    { name: "Server", color: "#58a6ff", icon: <><rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><circle cx="7" cy="7.5" r=".9" fill="currentColor" /><circle cx="7" cy="16.5" r=".9" fill="currentColor" /></>, chips: ["render throughput", "under load", "render split", "scaling"] },
+    { name: "Network", color: "#3fb950", icon: <path d="M4 8h13l-3-3M20 16H7l3 3" />, chips: ["JS bytes", "CSS bytes", "HTML bytes"] },
+    { name: "Browser", color: "#bc8cff", icon: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18" /><circle cx="6" cy="6.5" r=".7" fill="currentColor" /><circle cx="8.5" cy="6.5" r=".7" fill="currentColor" /></>, chips: ["hydration", "updates", "cold mount", "style & layout"] },
+  ];
+  return (
+    <div className="hp">
+      {stages.map((st, i) => (
+        <React.Fragment key={st.name}>
+          {i > 0 ? <span className="hp-arrow" aria-hidden="true">→</span> : null}
+          <div className="hp-stage">
+            <div className="hp-name" style={{ color: st.color }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">{st.icon}</svg>
+              <span>{st.name}</span>
+            </div>
+            <div className="hp-chips">{st.chips.map((c) => <span key={c}>{c}</span>)}</div>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 function HideMeasure({ k }: { k: string }) {
   const label = k === "code" ? "source and preview" : MEASURE_LABEL[k];
   return (
