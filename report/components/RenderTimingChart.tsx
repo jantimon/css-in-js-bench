@@ -70,10 +70,12 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         />
         <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
         <span className="bar-track">
-          {segs.map(([k, c]) => {
-            const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
-            return ms > 0 ? <span key={k} className="attr-seg" data-val={ms} style={{ width: `${(ms / max) * 100}%`, background: c }} /> : null;
-          })}
+          <span className="attr-fill" data-val={total} style={{ width: `${(total / max) * 100}%` }}>
+            {segs.map(([k, c]) => {
+              const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
+              return ms > 0 ? <span key={k} className="attr-seg" style={{ width: `${(ms / total) * 100}%`, background: c }} /> : null;
+            })}
+          </span>
         </span>
         <span className="bar-val">
           {total.toFixed(1)}

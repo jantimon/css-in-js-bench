@@ -11,6 +11,6 @@ export default {
   n: 400,
   cardinality: "low",
   description:
-    "The same 400 product cards as the shop page, split across several files the way real projects keep their code. Build tools compile one file at a time, so some performance optimizations do not work across files. This test page shows how each CSS approach performs when the code is split.",
+    "The same 400 product cards as in “Shop page — 400 product cards” above, but split across several files. Build tools compile one file at a time, so some performance optimizations do not work across files. In a real project, developers rarely put all code into one file, so this example uses several files to show how each CSS approach performs.",
   note: "identical to product-grid except for the file layout",
 } satisfies CaseMeta;

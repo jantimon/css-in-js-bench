@@ -48,9 +48,11 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
           />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
-            {r.values.map((v, i) =>
-              v > 0 ? <span key={segs[i].label} className="attr-seg" data-val={v} style={{ width: `${(v / max) * 100}%`, background: segs[i].color }} /> : null,
-            )}
+            <span className="attr-fill" data-val={r.total} style={{ width: `${(r.total / max) * 100}%` }}>
+              {r.values.map((v, i) =>
+                v > 0 ? <span key={segs[i].label} className="attr-seg" style={{ width: `${(v / r.total) * 100}%`, background: segs[i].color }} /> : null,
+              )}
+            </span>
           </span>
           <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>
             {fmtSeg(r.total)}

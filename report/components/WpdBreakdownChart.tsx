@@ -65,6 +65,7 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
   const max = sc.top;
   const breaks = groupBreaks(sorted.map(activeMs));
   const bars = SEGMENTS.filter(([key]) => key !== "idle");
+  const drawnMs = (row: WpdBreakdownRow) => bars.reduce((sum, [key]) => sum + (row.span.slices[key] ?? 0), 0);
   return (
     <>
     <div className="attr wpd-breakdown ax">
@@ -94,10 +95,12 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
             />
             <span className="bar-label"><TechLabel tech={row.tech} label={row.label} /></span>
             <span className="bar-track">
-              {bars.map(([key, color]) => {
-                const value = row.span.slices[key];
-                return value !== null && value > 0 ? <span key={key} className="attr-seg" data-val={value} style={{ width: `${(value / max) * 100}%`, background: color }} /> : null;
-              })}
+              <span className="attr-fill" data-val={drawnMs(row)} style={{ width: `${(drawnMs(row) / max) * 100}%` }}>
+                {bars.map(([key, color]) => {
+                  const value = row.span.slices[key];
+                  return value !== null && value > 0 ? <span key={key} className="attr-seg" style={{ width: `${(value / drawnMs(row)) * 100}%`, background: color }} /> : null;
+                })}
+              </span>
             </span>
             <span className="bar-val">
               {activeMs(row).toFixed(1)}
