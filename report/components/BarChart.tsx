@@ -1,4 +1,5 @@
 import React from "react";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
@@ -20,11 +21,12 @@ export interface Bar {
 export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; unit: string; higherBetter: boolean; order?: string[] }) {
   const sorted = [...bars].sort((a, b) => (higherBetter ? b.value - a.value : a.value - b.value));
   const missing = order ? order.filter((t) => !bars.some((b) => b.tech === t)) : [];
-  const max = Math.max(1, ...sorted.map((b) => b.value));
+  const sc = scaleFor(Math.max(...sorted.map((b) => b.value)));
+  const max = sc.top;
   const best = higherBetter ? Math.max(...sorted.map((b) => b.value)) : Math.min(...sorted.map((b) => b.value));
   const breaks = groupBreaks(sorted.map((b) => b.value)); // gap before a row that jumps a tier
   return (
-    <div className="bars">
+    <div className="bars ax">
       {sorted.map((b, i) => (
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech} {...tipRow}>
           <BarTip
@@ -48,6 +50,7 @@ export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; uni
         </div>
       ))}
       {missing.map((t) => <EmptyRow tech={t} key={t} />)}
+      <Axis {...sc} unit={unit} />
     </div>
   );
 }

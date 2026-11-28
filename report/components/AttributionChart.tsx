@@ -1,4 +1,5 @@
 import React from "react";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
@@ -28,10 +29,11 @@ const BUCKET_DEFS = [
 export function AttributionChart({ rows, otherLabel = "node / gc / unattributed" }: { rows: AttrRow[]; otherLabel?: string }) {
   const BUCKETS = [...BUCKET_DEFS, ["other", "#343a40", otherLabel] as const];
   const sorted = [...rows].sort((a, b) => a.renderMs - b.renderMs);
-  const max = Math.max(1e-6, ...sorted.map((r) => r.renderMs));
+  const sc = scaleFor(Math.max(...sorted.map((r) => r.renderMs)));
+  const max = sc.top;
   const breaks = groupBreaks(sorted.map((r) => r.renderMs));
   return (
-    <div className="attr">
+    <>
       <div className="attr-legend">
         {BUCKETS.map(([k, c, label]) => (
           <span key={k}>
@@ -40,6 +42,7 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
           </span>
         ))}
       </div>
+    <div className="attr ax">
       {sorted.map((r, i) => (
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
           <BarTip
@@ -64,6 +67,8 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
           </span>
         </div>
       ))}
+      <Axis {...sc} unit="ms" />
     </div>
+    </>
   );
 }

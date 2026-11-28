@@ -19,6 +19,7 @@ import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
 import { AttributionChart, type AttrRow } from "./report/components/AttributionChart.tsx";
 import { InfoTip } from "./report/components/InfoTip.tsx";
+import { niceScale, tickText } from "./report/components/Axis.tsx";
 import benchConfig from "./bench.config.ts";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
@@ -1065,6 +1066,19 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .attr-seg{display:block;height:100%}
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
+.attr-legend:not(.pair-legend){margin-bottom:10px}
+/* Value scale (Axis.tsx): faint gridlines at round values between the track and the coloured
+   fills, and a ruler under the last row with a short tick and a label per value. The scale ends
+   on a tick; the line at the end is left out so the rounded track ends stand free. */
+.ax{position:relative;padding-bottom:26px}
+.axis{position:absolute;grid-column:2/3;top:0;bottom:22px;left:0;right:0;pointer-events:none;z-index:1;border-bottom:1px solid var(--line-2)}
+.pair-r .axis{grid-column:1/2}
+.axis i{position:absolute;top:0;bottom:0;left:calc(var(--p)*(100% - 1px));width:1px;background:rgba(139,148,158,.17)}
+.axis i:last-child{background:none}
+.axis i::after{content:"";position:absolute;left:0;bottom:-5px;width:1px;height:4px;background:var(--line-2)}
+.axis b{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);font:400 10.5px/1 system-ui,sans-serif;color:var(--muted-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.axis b u{text-decoration:none;position:absolute;left:100%;margin-left:3px}
+.ax .bar-fill,.ax .attr-seg{position:relative;z-index:2}
 .attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .rt .bar-label{display:flex;gap:7px;justify-content:flex-start;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
@@ -1153,7 +1167,12 @@ a.mono:hover{text-decoration:underline}
   .bar-row{grid-column:auto;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 8px}
   .bar-label{grid-column:1;grid-row:1;min-width:0;justify-content:flex-start;flex-wrap:wrap;line-height:1.35}
   .bar-label .tl-text{white-space:normal;overflow:visible}
-  .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px}
+  .bar-track{grid-column:1/-1;grid-row:2;width:100%;height:10px;border-block:0;margin-block:0;border-radius:5px}
+  /* Bars sit under their labels here, so only the ruler stays; its end labels align to the edges. */
+  .axis i{background:none}
+  .axis i:first-child b{left:0;transform:none}
+  .axis i:last-child b{left:auto;right:0;transform:none}
+  .axis i:last-child b u{position:static;margin-left:3px}
   .bar-val{grid-column:2;grid-row:1;min-width:0;text-align:right;line-height:1.35;white-space:nowrap}
   .bar-breakdown{display:block;margin-left:0;font-size:10.5px}
   .rt .bar-label{justify-content:flex-start}
@@ -1162,6 +1181,7 @@ a.mono:hover{text-decoration:underline}
   .pair{display:block}
   .pair-col{display:flex;flex-direction:column;margin-bottom:18px}
   .pair-col>*,.pair-r>*,.pair .pair-r>.pair-legend{padding:0}
+  .pair-col>.ax{padding-bottom:26px}
   .pair-col:first-child>.pair-head{padding-left:0}
   .pair-r>.pair-legend{order:1}
   .pair-r .bar-row>.bar-label{display:flex}
@@ -1366,6 +1386,8 @@ function profDiff(rows) {
   return most.dataset.label + ' keeps the browser busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + ', the least busy' + (parts.length ? ': ' + parts.join(', ') : '');
 }
 const SEG_LABEL = ${JSON.stringify(Object.fromEntries(SEGMENTS.map(([k, , l]) => [k, l])))};
+${niceScale.toString()}
+${tickText.toString()}
 function rescaleBars() {
   // Charts inside one [data-shared-scale] share the max of all their visible rows.
   const visRows = chart => [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
@@ -1376,6 +1398,13 @@ function rescaleBars() {
     const peers = scope ? [...scope.querySelectorAll('.bars, .attr')] : [chart];
     let max = 1e-6;
     for (const c of peers) for (const r of visRows(c)) { const t = rowTotal(r); if (t > max) max = t; }
+    // Bars are drawn against the axis top (a round value), and the axis is rebuilt to match.
+    const axis = chart.querySelector(':scope > .axis');
+    if (axis) {
+      const div = +axis.dataset.div || 1, sc = niceScale(max / div);
+      max = sc.top * div;
+      axis.innerHTML = sc.ticks.map((t, i) => '<i style="--p:' + (t / sc.top).toFixed(5) + '"><b>' + tickText(t) + (i === sc.ticks.length - 1 ? '<u>' + axis.dataset.unit + '</u>' : '') + '</b></i>').join('');
+    }
     vis.forEach(r => { for (const e of r.querySelectorAll('[data-val]')) e.style.width = (+e.dataset.val / max * 100) + '%'; });
     const best = chart.querySelector('.bar-best');
     if (best && vis.length) { best.classList.remove('bar-best'); vis[0].querySelector('.bar-val')?.classList.add('bar-best'); }

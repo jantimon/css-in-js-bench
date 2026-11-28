@@ -1,4 +1,5 @@
 import React from "react";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import type { WpdBrowserSample, WpdSpanSample } from "../types.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
@@ -59,16 +60,18 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
   const byActive = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
   const shown: (WpdBreakdownRow | string)[] = order ? order.map((t) => rows.find((r) => r.tech === t) ?? t) : byActive;
   const sorted = byActive;
-  const max = Math.max(1e-6, ...sorted.map(activeMs));
+  const sc = scaleFor(Math.max(...sorted.map(activeMs)));
+  const max = sc.top;
   const breaks = groupBreaks(sorted.map(activeMs));
   const bars = SEGMENTS.filter(([key]) => key !== "idle");
   return (
-    <div className="attr wpd-breakdown">
+    <>
       {legend ? <div className="attr-legend">
         {bars.map(([key, color, label]) => (
           <span key={key}><i style={{ background: color }} />{label}</span>
         ))}
       </div> : null}
+    <div className="attr wpd-breakdown ax">
       {shown.map((row) => {
         if (typeof row === "string") return <EmptyRow tech={row} key={row} />;
         const index = byActive.indexOf(row);
@@ -107,6 +110,8 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
           </div>
         );
       })}
+      <Axis {...sc} unit="ms" />
     </div>
+    </>
   );
 }

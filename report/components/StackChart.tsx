@@ -1,4 +1,5 @@
 import React from "react";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
@@ -21,7 +22,9 @@ export interface StackRow {
 // styles + the cluster-gap logic. Each row carries data-tech for the global filter.
 export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[]; segs: StackSeg[]; unit: string; higherBetter: boolean }) {
   const sorted = [...rows].sort((a, b) => (higherBetter ? b.total - a.total : a.total - b.total));
-  const max = Math.max(1, ...sorted.map((r) => r.total));
+  const div = unit === "B" ? 1024 : 1;
+  const sc = scaleFor(Math.max(...sorted.map((r) => r.total)), div);
+  const max = sc.top;
   const best = higherBetter ? max : Math.min(...sorted.map((r) => r.total));
   const breaks = groupBreaks(sorted.map((r) => r.total));
   // per-segment breakdown after the total: bytes read better as compact kB, anything else
@@ -29,7 +32,7 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
   const fmtSeg = (v: number) => (unit === "B" ? (v / 1024).toFixed(1) : Math.round(v).toLocaleString());
   const segUnit = unit === "B" ? "kB" : unit;
   return (
-    <div className="attr">
+    <>
       <div className="attr-legend">
         {segs.map((s) => (
           <span key={s.label}>
@@ -38,6 +41,7 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
           </span>
         ))}
       </div>
+    <div className="attr ax">
       {sorted.map((r, ri) => (
         <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
           <BarTip
@@ -61,6 +65,8 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
           </span>
         </div>
       ))}
+      <Axis {...sc} unit={segUnit} div={div} />
     </div>
+    </>
   );
 }

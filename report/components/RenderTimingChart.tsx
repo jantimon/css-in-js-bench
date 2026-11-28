@@ -1,4 +1,5 @@
 import React from "react";
+import { Axis, scaleFor } from "./Axis.tsx";
 import type { RenderTimingMetrics } from "../types.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { EmptyRow } from "./BarChart.tsx";
@@ -43,7 +44,8 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
     if (r.firefox) totals.push(sumSegs(r.firefox, FF_SEGS));
   }
   // One scale for both engines (the client keeps it shared through data-shared-scale).
-  const max = Math.max(1e-6, ...totals);
+  const sc = scaleFor(Math.max(...totals));
+  const max = sc.top;
   const noForcedLayouts = sorted.length > 0 && sorted.every((row) => row.chrome?.forcedLayoutCount === 0 && row.firefox?.forcedLayoutCount === 0);
   const hasFirefox = sorted.some((r) => r.firefox);
 
@@ -93,12 +95,12 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
       <div className={hasFirefox ? "pair" : ""} data-shared-scale>
         <div className="pair-col">
           {hasFirefox ? <div className="pair-head">Chrome</div> : null}
-          <div className="attr">{sorted.map((r) => engineRow(r, "Chrome", r.chrome, CHROME_SEGS))}</div>
+          <div className="attr ax">{sorted.map((r) => engineRow(r, "Chrome", r.chrome, CHROME_SEGS))}<Axis {...sc} unit="ms" /></div>
         </div>
         {hasFirefox ? (
           <div className="pair-col pair-r">
             <div className="pair-head">Firefox</div>
-            <div className="attr">{sorted.map((r) => engineRow(r, "Firefox", r.firefox, FF_SEGS))}</div>
+            <div className="attr ax">{sorted.map((r) => engineRow(r, "Firefox", r.firefox, FF_SEGS))}<Axis {...sc} unit="ms" /></div>
           </div>
         ) : null}
       </div>
