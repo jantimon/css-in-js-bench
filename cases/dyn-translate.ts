@@ -14,15 +14,10 @@ import type { CaseMeta } from "../report/types";
 // exists only at render. Each of those lanes holds a not-compatible.md here that says
 // so with a source. Their working path, an inline style, is what dyn-fair measures.
 export default {
-  label: "Dynamic value — translateX (written directly)",
+  label: "Dynamic values — written directly",
   group: "2-dynamic",
   n: 1000,
   cardinality: "high",
   description:
-    "1,000 elements each with a unique translateX, a value no build step can know, such as a position from " +
-    "a database record or from a drag-and-drop interaction, written directly: it goes straight into the " +
-    "style declaration, the way each library's API takes it. styled-components emits a CSS rule per value, while @yak/react turns it into a " +
-    "CSS variable, so its per-instance work stays constant. The build-time lanes have no cell here: " +
-    "Tailwind's scanner, Panda's extractor and Bamboo's compiler resolve names ahead of time and emit no " +
-    "rule for a render-time value. Their working path, an inline style, is what dyn-fair measures.",
+    "1,000 elements, each moved by a different translateX that is only known at render time, such as a position from a database or a drag. The value goes straight into each library's style API: styled-components creates a CSS rule per value, @yak/react turns it into a CSS variable. Build-time libraries such as Tailwind, Panda and Bamboo cannot create CSS for a value they never see, so they appear only in “Dynamic values — each library's recommended way”.",
 } satisfies CaseMeta;

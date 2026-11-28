@@ -20,6 +20,9 @@ import os from "node:os";
 import { createHash } from "node:crypto";
 import benchConfig from "./bench.config.ts";
 import { gzipSync } from "node:zlib";
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
+import { Bench } from "tinybench";
 import { runHttpPass } from "./scripts/http-pass.mjs";
 import { writeJsonAtomic } from "./report/wpd-results.ts";
 import { chromium, type Browser } from "@playwright/test";
@@ -135,21 +138,30 @@ async function buildTech(tech: string, measurement: Measurement): Promise<SsrMod
 }
 
 // ---- microbench sampler: SSR render throughput (renders/sec, higher better) -----
-// Times the production SSR render ONLY (renderHtml) — never the snapshot/payload CSS
-// collection (a tailwind JIT or panda slice is build-time work, not per-request).
+// Times the production SSR render ONLY (renderHtml) with tinybench — never the
+// snapshot/payload CSS collection (a tailwind JIT or panda slice is build-time work, not
+// per-request). One tinybench iteration is one renderHtml(caseId, n) call; warmup renders
+// at the same n, so the warmed paths are the measured ones. A full GC runs before every
+// iteration, so one lane's garbage, or a major GC, does not land in a random sample.
+setFlagsFromString("--expose-gc");
+const gc = runInNewContext("gc") as () => void;
+let sink = 0; // keeps each render's result observable
+
 function microbench(renderHtml: RenderHtmlFn, caseId: string, n: number): number[] {
-  const { warmup } = benchConfig;
-  const sampleCount = samplesFor("microbench");
-  for (let w = 0; w < warmup; w++) renderHtml(caseId, 1); // warm V8 / JIT, discarded
-  const samples: number[] = [];
-  for (let s = 0; s < sampleCount; s++) {
-    const t0 = process.hrtime.bigint();
-    renderHtml(caseId, n);
-    const t1 = process.hrtime.bigint();
-    const sec = Number(t1 - t0) / 1e9;
-    samples.push(Math.round(n / sec)); // instance renders per second
-  }
-  return samples;
+  const bench = new Bench({
+    time: 0,
+    iterations: samplesFor("microbench"),
+    warmupTime: 0,
+    warmupIterations: benchConfig.warmup,
+    retainSamples: true,
+    timestampProvider: "hrtimeNow",
+    throws: true,
+  });
+  bench.add(caseId, () => void (sink += renderHtml(caseId, n).length), { beforeEach: gc });
+  const [task] = bench.runSync();
+  const result = task.result;
+  if (!("latency" in result) || !result.latency.samples) throw new Error(`${caseId}: tinybench returned no samples (${result.state})`);
+  return result.latency.samples.map((ms) => Math.round(n / (ms / 1000))); // instance renders per second
 }
 
 // ---- nsweep sampler: SSR render time vs instance count (the scaling/crossover) ---

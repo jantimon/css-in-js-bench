@@ -58,7 +58,7 @@ export function TechLabel({ tech, label }: { tech: string; label: string }) {
   return (
     <>
       {logo ? <img className="tech-logo" src={logo} alt="" loading="lazy" /> : null}
-      <span className="tl-text">{label}</span>
+      <span className="tl-text" title={label}>{label}</span>
     </>
   );
 }

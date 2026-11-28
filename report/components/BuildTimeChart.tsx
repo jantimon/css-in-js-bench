@@ -1,5 +1,8 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface BuildTimeRow {
@@ -21,13 +24,24 @@ export interface BuildTimeRow {
 // for free. cssKind and the warm time ride along as context in the value cell.
 export function BuildTimeChart({ rows }: { rows: BuildTimeRow[] }) {
   const sorted = [...rows].sort((a, b) => a.coldMs - b.coldMs);
-  const max = Math.max(1, ...sorted.map((r) => r.coldMs));
-  const best = Math.min(...sorted.map((r) => r.coldMs));
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.coldMs)));
+  const max = sc.top;
+  const best = Math.min(...defaultShown(sorted).map((r) => r.coldMs));
   const breaks = groupBreaks(sorted.map((r) => r.coldMs));
   return (
-    <div className="bars">
+    <div className="bars ax">
       {sorted.map((r, i) => (
-        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
+        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
+          <BarTip
+            title={r.label}
+            tech={r.tech}
+            lines={[
+              { label: "cold build", value: `${Math.round(r.coldMs).toLocaleString()} ms${r.coldSpread > 0 ? ` ±${Math.round(r.coldSpread * 100)}%` : ""}` },
+              ...(r.warmMs !== undefined ? [{ label: "warm build", value: `${Math.round(r.warmMs).toLocaleString()} ms` }] : []),
+              { label: "CSS", value: r.cssKind },
+            ]}
+            rank={{ value: r.coldMs, unit: "ms", higherBetter: false, index: i, rows: sorted.map((s) => ({ value: s.coldMs, label: s.label })) }}
+          />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
             <span className="bar-fill" data-val={r.coldMs} style={{ width: `${(r.coldMs / max) * 100}%`, background: r.color }} />
@@ -47,6 +61,7 @@ export function BuildTimeChart({ rows }: { rows: BuildTimeRow[] }) {
           </span>
         </div>
       ))}
+      <Axis {...sc} unit="ms" />
     </div>
   );
 }

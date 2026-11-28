@@ -93,9 +93,9 @@ export function httpResults(data: Record<string, unknown>): {
 
 export function httpMeasurementNote(protocol: HttpProtocol | null): string {
   if (protocol === HTTP_PROTOCOL || protocol === "isolated-http-v1")
-    return "Server and load generator run in separate processes on this host. Bars show the median of round request rates. Responses contain rendered HTML fragments. Raw results retain each round's latency and error data; latency percentiles are not pooled across rounds.";
+    return "The server and autocannon run as separate processes on the same machine. Each bar is the median request rate of several rounds, and each response holds the rendered HTML. The raw results keep latency and errors per round; they are not combined across rounds.";
   if (protocol === "shared-process")
-    return "Shared-process measurement: server and load generator share one Node process. Bars show the median of round request rates. Responses contain rendered HTML fragments.";
+    return "The server and autocannon share one Node process. Each bar is the median request rate of several rounds, and each response holds the rendered HTML.";
   return "No HTTP throughput measurements are available.";
 }
 

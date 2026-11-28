@@ -1,6 +1,6 @@
 {
   "name": "vanilla",
-  "description": "vanilla (hand-written ceiling)",
+  "description": "vanilla (hand-written plain CSS)",
   "private": true,
   "type": "module",
   "bench": {

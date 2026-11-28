@@ -1,5 +1,8 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface Bar {
@@ -16,15 +19,27 @@ export interface Bar {
 // A horizontal bar per tech, sorted fastest-first by the report (§10.8). Each row
 // carries data-tech so the tech filter can hide it across every chart with no JS
 // re-layout. `unit`/`higherBetter` are presentation only.
-export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: string; higherBetter: boolean }) {
+export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; unit: string; higherBetter: boolean; order?: string[] }) {
   const sorted = [...bars].sort((a, b) => (higherBetter ? b.value - a.value : a.value - b.value));
-  const max = Math.max(1, ...sorted.map((b) => b.value));
-  const best = higherBetter ? Math.max(...sorted.map((b) => b.value)) : Math.min(...sorted.map((b) => b.value));
+  const missing = order ? order.filter((t) => !bars.some((b) => b.tech === t)) : [];
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((b) => b.value)));
+  const max = sc.top;
+  const best = higherBetter ? Math.max(...defaultShown(sorted).map((b) => b.value)) : Math.min(...defaultShown(sorted).map((b) => b.value));
   const breaks = groupBreaks(sorted.map((b) => b.value)); // gap before a row that jumps a tier
   return (
-    <div className="bars">
+    <div className="bars ax">
       {sorted.map((b, i) => (
-        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech}>
+        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech} {...tipRow}>
+          <BarTip
+            title={b.label}
+            tech={b.tech}
+            lines={[
+              { label: "median", value: `${Math.round(b.value).toLocaleString()} ${unit}` },
+              ...(b.spread > 0 ? [{ label: "spread", value: `±${Math.round(b.spread * 100)}%` }] : []),
+              ...(b.msPer1kElems !== undefined ? [{ label: "per 1k elements", value: `${b.msPer1kElems.toFixed(2)} ms` }] : []),
+            ]}
+            rank={{ value: b.value, unit, higherBetter, index: i, rows: sorted }}
+          />
           <span className="bar-label"><TechLabel tech={b.tech} label={b.label} /></span>
           <span className="bar-track">
             <span className="bar-fill" data-val={b.value} style={{ width: `${(b.value / max) * 100}%`, background: b.color }} />
@@ -32,11 +47,22 @@ export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: stri
           <span className={"bar-val" + (b.value === best ? " bar-best" : "")}>
             {Math.round(b.value).toLocaleString()}
             <span className="bar-unit"> {unit}</span>
-            {b.spread > 0 ? <span className="bar-spread"> ±{Math.round(b.spread * 100)}%</span> : null}
-            {b.msPer1kElems !== undefined ? <span className="bar-breakdown">({b.msPer1kElems.toFixed(2)} ms / 1k elems)</span> : null}
           </span>
         </div>
       ))}
+      {missing.map((t) => <EmptyRow tech={t} key={t} />)}
+      <Axis {...sc} unit={unit} />
+    </div>
+  );
+}
+
+/** A row for a lane that has no value in this chart, so a paired chart keeps its rows level. */
+export function EmptyRow({ tech, label }: { tech: string; label?: string }) {
+  return (
+    <div className="bar-row bar-empty" data-tech={tech}>
+      <span className="bar-label">{label ? <TechLabel tech={tech} label={label} /> : null}</span>
+      <span className="bar-track" />
+      <span className="bar-val">–</span>
     </div>
   );
 }

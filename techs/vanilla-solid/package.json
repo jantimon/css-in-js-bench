@@ -1,6 +1,6 @@
 {
   "name": "vanilla-solid",
-  "description": "vanilla Solid (hand-written ceiling)",
+  "description": "vanilla Solid (hand-written plain CSS)",
   "private": true,
   "type": "module",
   "bench": {

@@ -1,5 +1,8 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
+import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface StackSeg {
@@ -20,15 +23,43 @@ export interface StackRow {
 // styles + the cluster-gap logic. Each row carries data-tech for the global filter.
 export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[]; segs: StackSeg[]; unit: string; higherBetter: boolean }) {
   const sorted = [...rows].sort((a, b) => (higherBetter ? b.total - a.total : a.total - b.total));
-  const max = Math.max(1, ...sorted.map((r) => r.total));
-  const best = higherBetter ? max : Math.min(...sorted.map((r) => r.total));
+  const div = unit === "B" ? 1024 : 1;
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.total)), div);
+  const max = sc.top;
+  const best = higherBetter ? Math.max(...defaultShown(sorted).map((r) => r.total)) : Math.min(...defaultShown(sorted).map((r) => r.total));
   const breaks = groupBreaks(sorted.map((r) => r.total));
   // per-segment breakdown after the total: bytes read better as compact kB, anything else
   // in its own unit. Each number is tinted its segment colour.
   const fmtSeg = (v: number) => (unit === "B" ? (v / 1024).toFixed(1) : Math.round(v).toLocaleString());
   const segUnit = unit === "B" ? "kB" : unit;
   return (
-    <div className="attr">
+    <>
+    <div className="attr ax">
+      {sorted.map((r, ri) => (
+        <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
+          <BarTip
+            title={r.label}
+            tech={r.tech}
+            lines={[
+              ...segs.map((s, i) => ({ label: s.label, color: s.color, value: `${fmtSeg(r.values[i])} ${segUnit} · ${pct(r.values[i], r.total)}` })),
+              { label: "total", value: `${fmtSeg(r.total)} ${segUnit}` },
+            ]}
+            rank={{ value: r.total, unit: segUnit, higherBetter, index: ri, rows: sorted.map((s) => ({ value: s.total, label: s.label })) }}
+          />
+          <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
+          <span className="bar-track">
+            {r.values.map((v, i) =>
+              v > 0 ? <span key={segs[i].label} className="attr-seg" data-val={v} style={{ width: `${(v / max) * 100}%`, background: segs[i].color }} /> : null,
+            )}
+          </span>
+          <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>
+            {fmtSeg(r.total)}
+            <span className="bar-unit"> {segUnit}</span>
+          </span>
+        </div>
+      ))}
+      <Axis {...sc} unit={segUnit} div={div} />
+    </div>
       <div className="attr-legend">
         {segs.map((s) => (
           <span key={s.label}>
@@ -37,30 +68,6 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
           </span>
         ))}
       </div>
-      {sorted.map((r, ri) => (
-        <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
-          <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
-          <span className="bar-track">
-            {r.values.map((v, i) =>
-              v > 0 ? <span key={segs[i].label} className="attr-seg" data-val={v} title={`${segs[i].label}: ${Math.round(v).toLocaleString()} ${unit}`} style={{ width: `${(v / max) * 100}%`, background: segs[i].color }} /> : null,
-            )}
-          </span>
-          <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>
-            {Math.round(r.total).toLocaleString()}
-            <span className="bar-unit"> {unit}</span>
-            <span className="bar-breakdown">
-              {"("}
-              {r.values.map((v, i) => (
-                <React.Fragment key={segs[i].label}>
-                  {i > 0 ? <span className="bd-sep"> / </span> : null}
-                  <span style={{ color: segs[i].color }}>{fmtSeg(v)}</span>
-                </React.Fragment>
-              ))}
-              <span className="bd-sep"> {segUnit})</span>
-            </span>
-          </span>
-        </div>
-      ))}
-    </div>
+    </>
   );
 }
