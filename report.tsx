@@ -19,6 +19,7 @@ import { groupTechs } from "./report/families.ts";
 import { BarChart, type Bar } from "./report/components/BarChart.tsx";
 import { AttributionChart, type AttrRow } from "./report/components/AttributionChart.tsx";
 import { InfoTip } from "./report/components/InfoTip.tsx";
+import benchConfig from "./bench.config.ts";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
@@ -517,7 +518,8 @@ async function main() {
                   </h3>
                   <p className="ch-cap">Components rendered to HTML per second on the server (higher is faster)</p>
                 </div>
-                <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
+                <a className="tool-mark" href="https://github.com/tinylibs/tinybench" aria-label="tinybench by Mohammad Bagher Abiyat">
+                  <span className="tip">tinybench is an npm package that times a JavaScript function over many runs. Here it times each library rendering the page to HTML in Node. By Mohammad Bagher Abiyat.</span>
                 <span className="tm-word">tiny<b>bench</b></span>
                 <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={18} height={18} loading="lazy" />
               </a>
@@ -541,7 +543,8 @@ async function main() {
                     </h3>
                     <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
                   </div>
-                  <a className="tool-mark" href="https://github.com/mcollina/autocannon" title="autocannon by Matteo Collina">
+                  <a className="tool-mark" href="https://github.com/mcollina/autocannon" aria-label="autocannon by Matteo Collina">
+                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. Here it loads a small Node server that renders the page. By Matteo Collina.</span>
                   <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
                   <span className="tm-name">autocannon</span>
                   <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
@@ -607,7 +610,7 @@ async function main() {
                     <p className="ch-cap">Time to boot the client-side JavaScript on the server-rendered page (lower is faster)</p>
                   </div>
                 </div>
-                <TimingProfilePair bars={hydBars} rows={hydWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={hydBars} rows={hydWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
               </div>
             ) : null}
             {inpWpdRows.length || inpBars.length ? (
@@ -628,7 +631,7 @@ async function main() {
                     <p className="ch-cap">Time to re-render every component after one state change (lower is faster)</p>
                   </div>
                 </div>
-                <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
               </div>
             ) : null}
             {mountWpdRows.length || mountBars.length ? (
@@ -647,7 +650,7 @@ async function main() {
                     <p className="ch-cap">Time to render all components into an empty page in the browser (lower is faster)</p>
                   </div>
                 </div>
-                <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} />
+                <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} profileN={benchConfig.wpd.n} caseN={cm.n} />
               </div>
             ) : null}
             {rtRows.length ? (
@@ -860,7 +863,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .study .prose-tech{font-weight:600;color:var(--fg)}
 .prose-tech .tech-logo{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
 [data-measure].measure-off{display:none}
-.case{margin:0 0 18px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
+.case{margin:0 0 48px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .case>summary::-webkit-details-marker{display:none}
 .case-title{font-size:28px;font-weight:700;letter-spacing:-.01em}
@@ -924,6 +927,9 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
    dark grey on transparent, so it sits on a white tile in both themes. */
 .tool-mark{display:flex;flex:none;align-items:center;gap:8px;height:30px;padding:0 6px 0 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--raised);font-size:13px;font-weight:600;color:var(--fg-2);text-decoration:none}
 .tool-mark:hover{color:var(--fg)}
+.tool-mark{position:relative}
+.tool-mark .tip{display:none;position:absolute;top:calc(100% + 8px);right:0;width:max-content;max-width:300px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
+.tool-mark:hover .tip,.tool-mark:focus-visible .tip{display:block}
 .tm-word{font:500 14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em;color:var(--fg-2)}
 .tm-word b{color:#f0b429;font-weight:700}
 .tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}

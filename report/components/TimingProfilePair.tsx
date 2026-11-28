@@ -10,7 +10,7 @@ const ACTIVE = SEGMENTS.filter(([key]) => key !== "idle");
 // work; hovering a profile bar shows it as a DevTools-style donut. The caption below compares
 // the busiest and the least busy visible lane in the profile (profDiff() in report.tsx redoes it
 // when the tech filter changes).
-export function TimingProfilePair({ bars, rows, wpdVersion }: { bars: Bar[]; rows: WpdBreakdownRow[]; wpdVersion: string }) {
+export function TimingProfilePair({ bars, rows, wpdVersion, profileN, caseN }: { bars: Bar[]; rows: WpdBreakdownRow[]; wpdVersion: string; profileN: number; caseN: number }) {
   if (!bars.length) return rows.length ? <ProfileOnly rows={rows} wpdVersion={wpdVersion} /> : null;
   const order = [...bars].sort((a, b) => a.value - b.value).map((b) => b.tech);
   for (const r of rows) if (!order.includes(r.tech)) order.push(r.tech);
@@ -28,10 +28,10 @@ export function TimingProfilePair({ bars, rows, wpdVersion }: { bars: Bar[]; row
           <div className="pair-head">
             Breakdown, {repeated ? "median" : "one"} Chrome profile
             <InfoTip>
-              A separate measurement from the median duration: {repeated ? "the median of several Chrome profiles" : "one Chrome profile"} per
-              lane (web-performance-debugger {wpdVersion}). Bars show active milliseconds: the profiled span minus the time spent
-              waiting for the next frame. Hover a bar for the idle
-              time, the full span and the split as a donut.
+              Recorded in its own run with Chrome's profiler on, using {profileN} components instead of {caseN.toLocaleString()}
+              {repeated ? ", the median of several runs" : ""}. The profiler slows the page down, so compare these bars with each
+              other, not with the times on the left. Bars count only the time the browser was busy; waiting for the next frame is
+              left out. Hover a bar for the full split. Measured with web-performance-debugger {wpdVersion}.
             </InfoTip>
           </div>
           <div className="attr-legend pair-legend">
