@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
@@ -23,9 +24,9 @@ export interface StackRow {
 export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[]; segs: StackSeg[]; unit: string; higherBetter: boolean }) {
   const sorted = [...rows].sort((a, b) => (higherBetter ? b.total - a.total : a.total - b.total));
   const div = unit === "B" ? 1024 : 1;
-  const sc = scaleFor(Math.max(...sorted.map((r) => r.total)), div);
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.total)), div);
   const max = sc.top;
-  const best = higherBetter ? max : Math.min(...sorted.map((r) => r.total));
+  const best = higherBetter ? Math.max(...defaultShown(sorted).map((r) => r.total)) : Math.min(...defaultShown(sorted).map((r) => r.total));
   const breaks = groupBreaks(sorted.map((r) => r.total));
   // per-segment breakdown after the total: bytes read better as compact kB, anything else
   // in its own unit. Each number is tinted its segment colour.

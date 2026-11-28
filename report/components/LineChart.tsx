@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface SweepLine {
@@ -20,7 +21,7 @@ export function LineChart({ lines }: { lines: SweepLine[] }) {
   const padB = 30;
   const padT = 12;
   const padR = 12;
-  const maxMs = Math.max(1e-6, ...lines.flatMap((l) => l.points.map((p) => p.ms)));
+  const maxMs = Math.max(1e-6, ...defaultShown(lines).flatMap((l) => l.points.map((p) => p.ms)));
   const x = (i: number) => padL + (i / (ns.length - 1)) * (W - padL - padR);
   const y = (ms: number) => H - padB - (ms / maxMs) * (H - padT - padB);
   const yTicks = 4;

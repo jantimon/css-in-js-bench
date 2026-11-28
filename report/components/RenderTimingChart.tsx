@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import type { RenderTimingMetrics } from "../types.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
@@ -39,7 +40,7 @@ const sumSegs = (m: RenderTimingMetrics, segs: readonly Seg[]) => segs.reduce((s
 export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
   const sorted = [...rows].sort((a, b) => (a.chrome ? sumSegs(a.chrome, CHROME_SEGS) : Infinity) - (b.chrome ? sumSegs(b.chrome, CHROME_SEGS) : Infinity));
   const totals: number[] = [];
-  for (const r of sorted) {
+  for (const r of defaultShown(sorted)) {
     if (r.chrome) totals.push(sumSegs(r.chrome, CHROME_SEGS));
     if (r.firefox) totals.push(sumSegs(r.firefox, FF_SEGS));
   }

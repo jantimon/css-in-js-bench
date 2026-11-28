@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { BarChart, type Bar } from "./BarChart.tsx";
 import { InfoTip } from "./InfoTip.tsx";
 import { activeMs, SEGMENTS, WpdBreakdownChart, type WpdBreakdownRow } from "./WpdBreakdownChart.tsx";
@@ -14,7 +15,7 @@ export function TimingProfilePair({ bars, rows, wpdVersion, profileN, caseN }: {
   if (!bars.length) return rows.length ? <ProfileOnly rows={rows} wpdVersion={wpdVersion} /> : null;
   const order = [...bars].sort((a, b) => a.value - b.value).map((b) => b.tech);
   for (const r of rows) if (!order.includes(r.tech)) order.push(r.tech);
-  const sorted = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
+  const sorted = defaultShown([...rows]).sort((a, b) => activeMs(a) - activeMs(b));
   // A repeated action profiles several runs and keeps the occurrence nearest the median.
   const repeated = rows.some((r) => (r.timing?.samplesMs.length ?? 0) > 1);
   return (

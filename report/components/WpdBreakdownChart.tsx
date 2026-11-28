@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import type { WpdBrowserSample, WpdSpanSample } from "../types.ts";
@@ -60,7 +61,7 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
   const byActive = [...rows].sort((a, b) => activeMs(a) - activeMs(b));
   const shown: (WpdBreakdownRow | string)[] = order ? order.map((t) => rows.find((r) => r.tech === t) ?? t) : byActive;
   const sorted = byActive;
-  const sc = scaleFor(Math.max(...sorted.map(activeMs)));
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map(activeMs)));
   const max = sc.top;
   const breaks = groupBreaks(sorted.map(activeMs));
   const bars = SEGMENTS.filter(([key]) => key !== "idle");

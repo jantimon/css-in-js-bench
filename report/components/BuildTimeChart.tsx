@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, tipRow } from "./BarTip.tsx";
@@ -23,9 +24,9 @@ export interface BuildTimeRow {
 // for free. cssKind and the warm time ride along as context in the value cell.
 export function BuildTimeChart({ rows }: { rows: BuildTimeRow[] }) {
   const sorted = [...rows].sort((a, b) => a.coldMs - b.coldMs);
-  const sc = scaleFor(Math.max(...sorted.map((r) => r.coldMs)));
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.coldMs)));
   const max = sc.top;
-  const best = Math.min(...sorted.map((r) => r.coldMs));
+  const best = Math.min(...defaultShown(sorted).map((r) => r.coldMs));
   const breaks = groupBreaks(sorted.map((r) => r.coldMs));
   return (
     <div className="bars ax">

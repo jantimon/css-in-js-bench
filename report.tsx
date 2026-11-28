@@ -20,6 +20,7 @@ import { BarChart, type Bar } from "./report/components/BarChart.tsx";
 import { AttributionChart, type AttrRow } from "./report/components/AttributionChart.tsx";
 import { InfoTip } from "./report/components/InfoTip.tsx";
 import { niceScale, tickText } from "./report/components/Axis.tsx";
+import { setDefaultLanes } from "./report/default-lanes.ts";
 import benchConfig from "./bench.config.ts";
 import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
@@ -165,6 +166,12 @@ async function main() {
 
   const usedTechs = [...new Set(Object.keys(snaps).map((k) => k.split("/")[1]))].filter((t) => techs[t]);
   const techGroups = groupTechs(usedTechs, (t) => techs[t].bench.framework ?? "react");
+  // The clean-URL view (the controller's isDefaultLane): React lanes minus the diagnostic ones.
+  // The page is rendered in that state so nothing changes when the script runs.
+  const defaultOn = new Set(usedTechs.filter((t) => (techs[t].bench.framework ?? "react") !== "solid" && !techs[t].bench.defaultOff));
+  setDefaultLanes(defaultOn);
+  // An engine label is lit when any non-baseline lane of that engine is on (the controller's lanesOfEngine).
+  const engineDefaultOn = new Set(techGroups.filter((g) => !g.floor).flatMap((g) => g.rows.filter((row) => row.items.some((it) => defaultOn.has(it.tech))).map((row) => row.engine)));
   const snapshotN = baseMeta?.snapshotN ?? 2; // instances in each snapshot html (bench.config snapshotN)
 
   // buildtime: one lane-level bar — median cold client build, warm + cssKind as context. Only
@@ -434,7 +441,7 @@ async function main() {
             <div className="fp-block">
               <div className="fp-sub">
                 <span className="fp-sub-title">Technologies</span>
-                <span className="tp-count"><span data-tech-count>{usedTechs.length}</span> / {usedTechs.length} shown</span>
+                <span className="tp-count"><span data-tech-count>{defaultOn.size}</span> / {usedTechs.length} shown</span>
                 <span className="tp-actions">
                   <button type="button" data-tech-all>
                     All
@@ -447,17 +454,17 @@ async function main() {
               </div>
               {techGroups.map((g) => (
                 <div className="tp-row" key={g.group}>
-                  <button type="button" className="tp-group active" data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
+                  <button type="button" className={"tp-group" + (g.rows.some((row) => row.items.some((it) => defaultOn.has(it.tech))) ? " active" : "")} data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
                   <div className="tp-engines">
                     {g.rows.map((row) => (
                       <div className="tp-engine-row" key={row.engine}>
-                        <button type="button" className="tp-engine active" data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
+                        <button type="button" className={"tp-engine" + (engineDefaultOn.has(row.engine) ? " active" : "")} data-engine-filter={row.engine} title={`Show every ${row.label} styling technique`}>
                           <img className="tp-engine-logo" src={`assets/logos/${row.engine}.svg`} alt="" loading="lazy" />
                           {row.label}
                         </button>
                         <div className="tp-pills">
                           {row.items.map((it) => (
-                            <button type="button" className="tech-pill active" data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
+                            <button type="button" className={"tech-pill" + (defaultOn.has(it.tech) ? " active" : "")} data-tech-filter={it.tech} data-engine={row.engine} data-group={g.group} data-floor={g.floor ? "1" : undefined} data-default-off={techs[it.tech].bench.defaultOff ? "1" : undefined} title={techs[it.tech].label} key={it.tech}>
                               <span className="tp-swatch" style={{ background: techs[it.tech].bench.color }} />
                               <TechLabel tech={it.tech} label={it.short} />
                             </button>
@@ -741,7 +748,7 @@ async function main() {
     </html>
   );
 
-  const html = "<!doctype html>\n" + renderToStaticMarkup(doc);
+  const html = "<!doctype html>\n" + markDefaultOff(renderToStaticMarkup(doc), usedTechs.filter((t) => !defaultOn.has(t)));
   writeFileSync(join(ROOT, "BENCHMARK.html"), html);
 
   // Agent-readable markdown companion — every chart as a data table, curated to a handful of
@@ -1265,6 +1272,18 @@ function HeadPipeline() {
       ))}
     </div>
   );
+}
+
+/** Adds `tech-off` to every element of a lane that is hidden by default, as the controller's
+ * setTech would, so the first paint already shows the default view. */
+function markDefaultOff(html: string, off: string[]): string {
+  if (!off.length) return html;
+  const offSet = new Set(off);
+  return html.replace(/<([a-zA-Z][\w-]*)(\s(?:[^>]*?\s)?data-tech="([^"]+)"[^>]*)>/g, (tag, name: string, attrs: string, tech: string) => {
+    if (!offSet.has(tech)) return tag;
+    if (/\sclass="/.test(attrs)) return "<" + name + attrs.replace(/\sclass="([^"]*)"/, (_m, c: string) => ` class="${c} tech-off"`) + ">";
+    return "<" + name + ' class="tech-off"' + attrs + ">";
+  });
 }
 
 function HideMeasure({ k }: { k: string }) {

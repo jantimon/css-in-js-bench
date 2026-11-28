@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, tipRow } from "./BarTip.tsx";
@@ -21,9 +22,9 @@ export interface Bar {
 export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; unit: string; higherBetter: boolean; order?: string[] }) {
   const sorted = [...bars].sort((a, b) => (higherBetter ? b.value - a.value : a.value - b.value));
   const missing = order ? order.filter((t) => !bars.some((b) => b.tech === t)) : [];
-  const sc = scaleFor(Math.max(...sorted.map((b) => b.value)));
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((b) => b.value)));
   const max = sc.top;
-  const best = higherBetter ? Math.max(...sorted.map((b) => b.value)) : Math.min(...sorted.map((b) => b.value));
+  const best = higherBetter ? Math.max(...defaultShown(sorted).map((b) => b.value)) : Math.min(...defaultShown(sorted).map((b) => b.value));
   const breaks = groupBreaks(sorted.map((b) => b.value)); // gap before a row that jumps a tier
   return (
     <div className="bars ax">

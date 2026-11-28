@@ -1,4 +1,5 @@
 import React from "react";
+import { defaultShown } from "../default-lanes.ts";
 import { Axis, scaleFor } from "./Axis.tsx";
 import { groupBreaks } from "../stats.ts";
 import { BarTip, pct, tipRow } from "./BarTip.tsx";
@@ -29,7 +30,7 @@ const BUCKET_DEFS = [
 export function AttributionChart({ rows, otherLabel = "node / gc / unattributed" }: { rows: AttrRow[]; otherLabel?: string }) {
   const BUCKETS = [...BUCKET_DEFS, ["other", "#343a40", otherLabel] as const];
   const sorted = [...rows].sort((a, b) => a.renderMs - b.renderMs);
-  const sc = scaleFor(Math.max(...sorted.map((r) => r.renderMs)));
+  const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.renderMs)));
   const max = sc.top;
   const breaks = groupBreaks(sorted.map((r) => r.renderMs));
   return (
