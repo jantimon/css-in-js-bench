@@ -1036,16 +1036,28 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
   .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
   .bt-val{text-align:right;font-variant-numeric:tabular-nums}
   .bt-note{grid-column:1/-1;margin-top:4px;padding-top:5px;border-top:1px solid var(--line-2);color:var(--muted)}
-  /* Hover intent: the first card in a chart fades in after a short rest; once one has shown,
-     the chart is "warm" (.tip-warm, set by the controller) and the card follows the pointer
-     from row to row at once. Without JS every card waits for the rest. */
+  /* Hover intent: the first card in a chart rises in from its bottom edge (the side facing the
+     pointer) after a short rest; once one has shown, the chart is "warm" (.tip-warm, set by the
+     controller) and cards switch rows at once. The controller also moves a 1px anchor
+     (.bar-ptr) to the pointer's x, so the card sits 8px above the row right over the pointer;
+     without JS the card centres on the track. Leaving fades the card out in 100ms. */
   @media (hover:hover){
+    .bar-row{position:relative}
+    .bar-ptr{position:absolute;inset-block:0;width:1px;pointer-events:none;anchor-name:--bar-tip}
     .bar-row:hover>.bar-track{anchor-name:--bar-tip}
-    .bar-row:hover>.bar-tip{display:grid;opacity:1;transition:opacity .14s ease .32s}
-    .tip-warm .bar-row:hover>.bar-tip{transition:none}
-    @starting-style{.bar-row:hover>.bar-tip{opacity:0}}
+    .bar-row:has(>.bar-ptr)>.bar-track{anchor-name:none}
+    .bar-tip{margin:8px 0;opacity:0;transform-origin:50% 100%;transition:opacity .1s ease-in,display .1s allow-discrete}
+    .bar-row:hover>.bar-tip{display:grid;opacity:1;scale:1;translate:0;transition:opacity .15s cubic-bezier(.16,1,.3,1) .32s,scale .15s cubic-bezier(.16,1,.3,1) .32s,translate .15s cubic-bezier(.16,1,.3,1) .32s,display 0s allow-discrete}
+    @starting-style{.bar-row:hover>.bar-tip{opacity:0;scale:.97;translate:0 4px}}
+    /* Warm and still over the chart: switch rows without fades; leaving the chart still fades out. */
+    .tip-warm:has(.bar-row:hover) .bar-tip{transition:none}
     .bar-row:hover>.bar-track{box-shadow:0 0 0 1px var(--line-2)}
   }
+  @media (hover:hover) and (prefers-reduced-motion:reduce){
+    @starting-style{.bar-row:hover>.bar-tip{scale:1;translate:0}}
+  }
+  /* Escape hides the card until the pointer moves again (WCAG 1.4.13, dismissible). */
+  .tip-off .bar-tip{display:none!important}
   @media (hover:none){
     .bar-row:focus>.bar-track{anchor-name:--bar-tip}
     .bar-row:focus>.bar-tip{display:grid}
@@ -1465,6 +1477,29 @@ for (const chart of document.querySelectorAll('.bars, .attr')) {
     clearTimeout(warmTimer); lastRow = null;
     coolTimer = setTimeout(() => chart.classList.remove('tip-warm'), 450);
   });
+}
+// The card follows the pointer on x: a 1px anchor (.bar-ptr) moves to the pointer inside the
+// hovered row (CSS anchors the card to it). After leaving the rows it stays put for the card's
+// 100ms fade-out, then goes away.
+{
+  const ptr = document.createElement('span');
+  ptr.className = 'bar-ptr';
+  let row = null, x = 0, raf = 0, dropTimer = 0;
+  document.addEventListener('pointermove', e => {
+    document.body.classList.remove('tip-off');
+    if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+    row = e.target.closest ? e.target.closest('.bar-row[tabindex]') : null;
+    x = e.clientX;
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (!row) { if (ptr.parentNode && !dropTimer) dropTimer = setTimeout(() => { ptr.remove(); dropTimer = 0; }, 120); return; }
+      clearTimeout(dropTimer); dropTimer = 0;
+      if (ptr.parentNode !== row) row.append(ptr);
+      ptr.style.left = (x - row.getBoundingClientRect().left) + 'px';
+    });
+  }, { passive: true });
+  addEventListener('keydown', e => { if (e.key === 'Escape') document.body.classList.add('tip-off'); });
 }
 // ---- technologies ---------------------------------------------------------------
 function afterTech() {
