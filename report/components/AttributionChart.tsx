@@ -60,6 +60,7 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
           </span>
           <span className="bar-val">
             {r.renderMs.toFixed(2)}
+            <span className="bar-unit"> ms</span>
           </span>
         </div>
       ))}

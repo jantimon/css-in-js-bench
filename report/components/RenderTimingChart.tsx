@@ -74,6 +74,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
         </span>
         <span className="bar-val">
           {total.toFixed(1)}
+          <span className="bar-unit"> ms</span>
           {engine === "Chrome" && typeof m.styleCount === "number" && m.styleCount !== 1 ? (
             <span className="rt-badge">{m.styleCount} recalcs</span>
           ) : null}

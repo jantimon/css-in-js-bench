@@ -43,6 +43,7 @@ export function BarChart({ bars, unit, higherBetter, order }: { bars: Bar[]; uni
           </span>
           <span className={"bar-val" + (b.value === best ? " bar-best" : "")}>
             {Math.round(b.value).toLocaleString()}
+            <span className="bar-unit"> {unit}</span>
           </span>
         </div>
       ))}

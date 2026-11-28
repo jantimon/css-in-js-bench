@@ -519,7 +519,6 @@ async function main() {
               <summary>
                 <span className="case-title">{caseTitle}</span>
                 {caseSub ? <span className="case-sub">{caseSub}</span> : null}
-                {cm.cardinality === "n/a" ? null : <span className="chip">{cm.cardinality === "high" ? "a different style per element" : "few distinct styles"}</span>}
               </summary>
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
@@ -548,7 +547,7 @@ async function main() {
                 <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={18} height={18} loading="lazy" />
               </a>
               </div>
-              <BarChart bars={bars} unit="r/s" higherBetter />
+              <BarChart bars={bars} unit="renders/s" higherBetter />
             </div>
             {acanBars.length ? (
               <div data-measure="autocannon">
@@ -839,12 +838,13 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 @media (prefers-reduced-motion:reduce){.ghc-fold{transition:none}}
 @media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
 @media (max-width:767px){h1{font-size:24px}}
-/* Text-marker highlight: a yellow highlighter band behind the words, uneven at both ends like
-   a marker pen, with dark text on top. */
+/* Two-tone emphasis, as on Linear, Vercel and Neon: the intro is muted grey and the key phrases
+   are the bright text colour. Same weight, no background, so nothing shifts. */
+.hl{color:var(--fg);background:none;font-weight:inherit}
 .nowrap{white-space:nowrap}
-.hl{color:#0d1117;font-weight:600;background:linear-gradient(100deg,rgba(240,180,41,0) .8%,#f0b429 2.6%,#f5c451 52%,#f0b429 97%,rgba(240,180,41,0) 99.4%);border-radius:.9em .3em .8em .35em;padding:.04em .32em .06em;margin:0 -.08em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-@media print{.hl{background:none;font-weight:600}}
-.sub{margin:0;color:var(--fg-3);font:16px/1.6 system-ui,sans-serif;max-width:64ch}
+@media print{.hl{font-weight:600}}
+.sub{margin:0;color:var(--muted);font:18px/1.6 system-ui,sans-serif;letter-spacing:-.005em;max-width:60ch}
+@media (max-width:767px){.sub{font-size:16px}}
 /* Header pipeline: server, network, browser, each with the charts that measure it. */
 .hp{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;margin-top:22px}
 .hp-stage{border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;background:var(--raised)}
@@ -855,7 +855,7 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .hp-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:20px}
 @media (max-width:767px){.hp{grid-template-columns:1fr;gap:6px}.hp-arrow{transform:rotate(90deg);height:18px}}
 .head-stats{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;font-size:12.5px;color:var(--muted)}
-.head-stats b{color:var(--fg);font-weight:600}
+.head-stats b{color:var(--fg);font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace}
 .head-stats span:not(:first-child)::before{content:"·";margin-right:10px;color:#444c56}
 .show{display:flex;align-items:center;gap:10px;min-width:0}
 .show-pill{flex:none;white-space:nowrap;background:var(--raised);color:var(--muted);border:1px solid var(--raised-2);border-radius:7px;padding:5px 11px;font-size:12.5px;cursor:pointer;user-select:none}
@@ -1010,7 +1010,8 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .pair .attr-legend.pair-legend{margin:8px 0 0}
 .attr-legend.pair-legend{margin:0 0 6px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
 .pair-col>.bars,.pair-col>.attr{grid-row:2}
-.pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(56px,max-content)}
+.pair .bars,.pair .attr{grid-template-columns:200px 1fr 72px}
+.pair-r .bars,.pair-r .attr{grid-template-columns:1fr 72px}
 .pair-r .bar-row>.bar-label{display:none}
 /* The comparison sentence shares the legend's row: left under the timing bars, legend on the right. */
 .pair .prof-diff{grid-row:3;grid-column:1/3;padding:0 24px 0 0;margin:10px 0 0}
@@ -1044,17 +1045,20 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
   @media (hover:hover){
     .bar-row{position:relative}
     .bar-ptr{position:absolute;inset-block:0;width:1px;pointer-events:none;anchor-name:--bar-tip}
-    .bar-row:hover>.bar-track{anchor-name:--bar-tip}
+    /* The card belongs to the bar: only the track opens it. A transparent border fills the row
+       height so the pointer never falls between two tracks. */
+    .bar-track{height:29px;border-block:6.5px solid transparent;margin-block:-4.5px;background-clip:padding-box;border-radius:11.5px}
+    .bar-row:has(>.bar-track:hover)>.bar-track{anchor-name:--bar-tip}
     .bar-row:has(>.bar-ptr)>.bar-track{anchor-name:none}
     .bar-tip{margin:8px 0;opacity:0;transform-origin:50% 100%;transition:opacity .1s ease-in,display .1s allow-discrete}
-    .bar-row:hover>.bar-tip{display:grid;opacity:1;scale:1;translate:0;transition:opacity .15s cubic-bezier(.16,1,.3,1) .32s,scale .15s cubic-bezier(.16,1,.3,1) .32s,translate .15s cubic-bezier(.16,1,.3,1) .32s,display 0s allow-discrete}
-    @starting-style{.bar-row:hover>.bar-tip{opacity:0;scale:.97;translate:0 4px}}
+    .bar-row:has(>.bar-track:hover)>.bar-tip{display:grid;opacity:1;scale:1;translate:0;transition:opacity .15s cubic-bezier(.16,1,.3,1) .32s,scale .15s cubic-bezier(.16,1,.3,1) .32s,translate .15s cubic-bezier(.16,1,.3,1) .32s,display 0s allow-discrete}
+    @starting-style{.bar-row:has(>.bar-track:hover)>.bar-tip{opacity:0;scale:.97;translate:0 4px}}
     /* Warm and still over the chart: switch rows without fades; leaving the chart still fades out. */
-    .tip-warm:has(.bar-row:hover) .bar-tip{transition:none}
-    .bar-row:hover>.bar-track{box-shadow:0 0 0 1px var(--line-2)}
+    .tip-warm:has(.bar-track:hover) .bar-tip{transition:none}
+    .bar-track:hover{box-shadow:inset 0 0 0 1px var(--line-2)}
   }
   @media (hover:hover) and (prefers-reduced-motion:reduce){
-    @starting-style{.bar-row:hover>.bar-tip{scale:1;translate:0}}
+    @starting-style{.bar-row:has(>.bar-track:hover)>.bar-tip{scale:1;translate:0}}
   }
   /* Escape hides the card until the pointer moves again (WCAG 1.4.13, dismissible). */
   .tip-off .bar-tip{display:none!important}
@@ -1465,7 +1469,7 @@ function syncQuery() {
 for (const chart of document.querySelectorAll('.bars, .attr')) {
   let warmTimer = 0, coolTimer = 0, lastRow = null;
   chart.addEventListener('pointerover', e => {
-    const row = e.target.closest('.bar-row[tabindex]');
+    const row = e.target.closest('.bar-track') && e.target.closest('.bar-row[tabindex]');
     if (e.pointerType !== 'mouse' || !row) return;
     clearTimeout(coolTimer);
     if (chart.classList.contains('tip-warm') || row === lastRow) return;
@@ -1488,7 +1492,7 @@ for (const chart of document.querySelectorAll('.bars, .attr')) {
   document.addEventListener('pointermove', e => {
     document.body.classList.remove('tip-off');
     if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
-    row = e.target.closest ? e.target.closest('.bar-row[tabindex]') : null;
+    row = e.target.closest && e.target.closest('.bar-track') ? e.target.closest('.bar-row[tabindex]') : null;
     x = e.clientX;
     if (raf) return;
     raf = requestAnimationFrame(() => {

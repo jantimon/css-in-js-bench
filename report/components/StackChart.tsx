@@ -57,6 +57,7 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
           </span>
           <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>
             {fmtSeg(r.total)}
+            <span className="bar-unit"> {segUnit}</span>
           </span>
         </div>
       ))}

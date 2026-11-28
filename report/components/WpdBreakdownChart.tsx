@@ -102,6 +102,7 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
             </span>
             <span className="bar-val">
               {activeMs(row).toFixed(1)}
+              <span className="bar-unit"> ms</span>
             </span>
           </div>
         );
