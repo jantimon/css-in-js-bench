@@ -871,11 +871,13 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .case-desc{color:var(--muted);margin:0 0 12px;max-width:64ch;font-size:14px;line-height:1.55}
 .chart-title{font-size:17px;line-height:1.3;color:var(--fg);margin:0;font-weight:650}
 /* Chart heading row: name + caption on the left, the tool mark or banner on the right. */
-.ch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 18px}
+.ch-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 14px}
 .ch-text{min-width:0}
 .ch-cap{margin:4px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
-.case [data-measure]{margin-top:48px}
-.case [data-group]{padding-top:28px;border-top:1px solid var(--line);margin-top:56px}
+/* Space between sections (88px) is several times the largest space inside one, so each
+   heading reads as the start of its own chart. */
+.case [data-measure]{margin-top:88px}
+.case [data-group]{padding-top:32px;border-top:1px solid var(--line);margin-top:96px}
 .case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
 .case [data-measure="code"]{margin-top:28px}
 .case [data-measure="code"] .chart-title{margin:0 0 12px}
@@ -946,10 +948,10 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .pair-col{display:contents}
 .pair-col>*{grid-column:1/3;min-width:0;padding-right:24px}
 .pair-r>*,.pair .pair-r>.pair-legend{grid-column:3;padding:0 0 0 24px}
-.pair-head{grid-row:1;display:flex;align-items:center;height:26px;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg-2)}
+.pair-head{grid-row:1;display:flex;align-items:center;height:22px;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg-2)}
 .pair-col:first-child>.pair-head{padding-left:214px}
 .pair-legend{grid-row:2}
-.attr-legend.pair-legend{margin:0 0 10px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
+.attr-legend.pair-legend{margin:0 0 6px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
 .pair-col>.bars,.pair-col>.attr{grid-row:3}
 .pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(56px,max-content)}
 .pair-r .bar-row>.bar-label{display:none}
