@@ -11,9 +11,9 @@
     "framework": "solid"
   },
   "dependencies": {
-    "@solidjs/web": "2.0.1",
-    "@yak/solid": "0.5.0",
-    "solid-js": "2.0.1"
+    "@solidjs/web": "2.0.4",
+    "@yak/solid": "0.6.1",
+    "solid-js": "2.0.4"
   },
   "devDependencies": {
     "@solidjs/vite-plugin": "3.0.1"

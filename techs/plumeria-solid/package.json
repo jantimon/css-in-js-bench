@@ -11,10 +11,10 @@
     "framework": "solid"
   },
   "dependencies": {
-    "@plumeria/core": "22.0.13",
-    "@plumeria/unplugin": "22.0.13",
-    "@solidjs/web": "2.0.1",
-    "solid-js": "2.0.1"
+    "@plumeria/core": "22.2.5",
+    "@plumeria/unplugin": "22.2.5",
+    "@solidjs/web": "2.0.4",
+    "solid-js": "2.0.4"
   },
   "devDependencies": {
     "@solidjs/vite-plugin": "3.0.1"

@@ -11,10 +11,10 @@
     "framework": "solid"
   },
   "dependencies": {
-    "@solidjs/web": "2.0.1",
+    "@solidjs/web": "2.0.4",
     "@stylexjs/stylex": "0.19.2",
     "@stylexjs/unplugin": "0.19.2",
-    "solid-js": "2.0.1",
+    "solid-js": "2.0.4",
     "unplugin": "2.3.11"
   },
   "devDependencies": {
