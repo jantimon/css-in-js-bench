@@ -1,5 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface Bar {
@@ -24,7 +25,16 @@ export function BarChart({ bars, unit, higherBetter }: { bars: Bar[]; unit: stri
   return (
     <div className="bars">
       {sorted.map((b, i) => (
-        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech}>
+        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={b.tech} key={b.tech} {...tipRow}>
+          <BarTip
+            title={b.label}
+            lines={[
+              { label: "median", value: `${Math.round(b.value).toLocaleString()} ${unit}` },
+              ...(b.spread > 0 ? [{ label: "spread", value: `±${Math.round(b.spread * 100)}%` }] : []),
+              ...(b.msPer1kElems !== undefined ? [{ label: "per 1k elements", value: `${b.msPer1kElems.toFixed(2)} ms` }] : []),
+            ]}
+            rank={{ value: b.value, unit, higherBetter, index: i, rows: sorted }}
+          />
           <span className="bar-label"><TechLabel tech={b.tech} label={b.label} /></span>
           <span className="bar-track">
             <span className="bar-fill" data-val={b.value} style={{ width: `${(b.value / max) * 100}%`, background: b.color }} />

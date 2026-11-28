@@ -24,6 +24,7 @@ import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { BuildTimeChart, type BuildTimeRow } from "./report/components/BuildTimeChart.tsx";
 import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
+import { FEW_LANES, ProfileSection } from "./report/components/ProfileDonuts.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { CaseSummary } from "./report/components/CaseSummary.tsx";
 import { StudyFindings } from "./report/components/StudyFindings.tsx";
@@ -503,21 +504,26 @@ async function main() {
             </div>
             <div data-measure="microbench">
               <h3 className="chart-title">
-                SSR render throughput — renders / sec · higher is better
+                <span className="ct-main">SSR render throughput</span> <span className="ct-sub">(renders / sec · higher is better)</span>
                 <InfoTip>
-                  Uses a microbenchmark to measure how fast Node turns components into an HTML string after warmup.
+                  Uses tinybench to measure how fast Node turns components into an HTML string. Each sample is one
+                  render of the whole workload, after warmup at the same size and a full garbage collection.
                   Measures rendering only, excluding build time, HTTP handling, response transfer and browser work.
                   Results count component instances per second: a workload of 400 product tiles counts as 400 renders.
                   Higher is better.
                 </InfoTip>
                 <HideMeasure k="microbench" />
               </h3>
+              <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
+                <span className="tm-word">tiny<b>bench</b></span>
+                <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={20} height={20} loading="lazy" />
+              </a>
               <BarChart bars={bars} unit="r/s" higherBetter />
             </div>
             {acanBars.length ? (
               <div data-measure="autocannon">
                 <h3 className="chart-title">
-                  SSR throughput under load — requests / sec · higher is better
+                  <span className="ct-main">SSR throughput under load</span> <span className="ct-sub">(requests / sec · higher is better)</span>
                   <InfoTip>
                     Uses autocannon to measure end-to-end HTTP throughput on this machine: sending a request,
                     rendering the whole workload into an HTML fragment, and transferring and receiving the response.
@@ -527,6 +533,11 @@ async function main() {
                   </InfoTip>
                   <HideMeasure k="autocannon" />
                 </h3>
+                <a className="tool-mark" href="https://github.com/mcollina/autocannon" title="autocannon by Matteo Collina">
+                  <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={24} height={24} loading="lazy" />
+                  <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={20} height={20} loading="lazy" />
+                  autocannon
+                </a>
                 <BarChart bars={acanBars} unit="req/s" higherBetter />
                 <p className="rt-note">{httpNote}</p>
               </div>
@@ -534,7 +545,7 @@ async function main() {
             {attrRows.length ? (
               <div data-measure="attribution">
                 <h3 className="chart-title">
-                  Where the SSR render time goes — Node CPU profile · median ms / render
+                  <span className="ct-main">Where the SSR render time goes</span> <span className="ct-sub">(Node CPU profile · median ms / render)</span>
                   <InfoTip>
                     One server render, split into <b>UI framework</b> work (React or Solid), <b>styling library</b> runtime,
                     and <b>your components</b>. Framework work can differ when a lane removes component calls.
@@ -549,7 +560,7 @@ async function main() {
             {hydWpdRows.length || hydBars.length ? (
               <div data-measure="hydrate">
                 <h3 className="chart-title">
-                  Client hydration — repeated timing + Chrome-profiled span anatomy
+                  <span className="ct-main">Client hydration</span> <span className="ct-sub">(ms · lower is better)</span>
                   <InfoTip>
                     The browser gets finished HTML, then the framework takes it over — attaching event handlers and wiring up
                     state without rebuilding the markup. That is <b>hydration</b>. Repeated timing starts on a ready page
@@ -560,13 +571,13 @@ async function main() {
                   <HideMeasure k="hydrate" />
                 </h3>
                 {hydBars.length ? <BarChart bars={hydBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={hydWpdRows} wpdVersion={wpdVersion} />
+                <ProfileSection rows={hydWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {inpWpdRows.length || inpBars.length ? (
               <div data-measure="inp">
                 <h3 className="chart-title">
-                  Interaction update — repeated timing + Chrome-profiled span anatomy
+                  <span className="ct-main">Interaction update</span> <span className="ct-sub">(ms · lower is better)</span>
                   <InfoTip>
                     Each instance's value changes from <code>i</code> to <code>i + 1</code>, so every element really updates.
                     React sets state, Solid sets a signal; both are warmed first, and the reset sits outside the timer. This
@@ -577,13 +588,13 @@ async function main() {
                   <HideMeasure k="inp" />
                 </h3>
                 {inpBars.length ? <BarChart bars={inpBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={inpWpdRows} wpdVersion={wpdVersion} />
+                <ProfileSection rows={inpWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {mountWpdRows.length || mountBars.length ? (
               <div data-measure="mount">
                 <h3 className="chart-title">
-                  Cold mount — repeated timing + Chrome-profiled span anatomy
+                  <span className="ct-main">Cold mount</span> <span className="ct-sub">(ms · lower is better)</span>
                   <InfoTip>
                     The workload renders into an empty root on a ready page. Repeated timing stops at DOM commit,
                     before paint; it excludes page load and network work. A <b>runtime</b> library may insert CSS
@@ -593,13 +604,13 @@ async function main() {
                   <HideMeasure k="mount" />
                 </h3>
                 {mountBars.length ? <BarChart bars={mountBars} unit="ms" higherBetter={false} /> : null}
-                <WpdBreakdownChart rows={mountWpdRows} wpdVersion={wpdVersion} />
+                <ProfileSection rows={mountWpdRows} wpdVersion={wpdVersion} />
               </div>
             ) : null}
             {rtRows.length ? (
               <div data-measure="render-timing">
                 <h3 className="chart-title">
-                  Browser render-work on a cold mount — style-recalc / layout / paint · Chrome + Firefox
+                  <span className="ct-main">Browser render-work on a cold mount</span> <span className="ct-sub">(style-recalc / layout / paint · Chrome + Firefox)</span>
                   <InfoTip>
                     The browser's own work rather than JavaScript: recalculating styles, laying out and painting. This is
                     where a library that writes CSS at runtime pays a tax the build-time ones avoid — it adds a style rule per
@@ -616,7 +627,7 @@ async function main() {
             {payRows.length ? (
               <div data-measure="payload">
                 <h3 className="chart-title">
-                  Page bytes shipped — JS + CSS + HTML, gzipped · lower is better
+                  <span className="ct-main">Page bytes shipped</span> <span className="ct-sub">(JS + CSS + HTML, gzipped · lower is better)</span>
                   <InfoTip>
                     Gzipped bytes the browser downloads: the JavaScript this lane adds on top of a bare framework page, its
                     CSS, and the server HTML. Lower is better. Solid marks every element with a hydration key and React needs
@@ -624,13 +635,14 @@ async function main() {
                   </InfoTip>
                   <HideMeasure k="payload" />
                 </h3>
+                <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={420} height={140} loading="lazy" data-screen-only />
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
               </div>
             ) : null}
             {sweepLines.length ? (
               <div data-measure="nsweep">
                 <h3 className="chart-title">
-                  Scaling — SSR render time (ms) vs instance count
+                  <span className="ct-main">Scaling</span> <span className="ct-sub">(SSR render time (ms) vs instance count)</span>
                   <InfoTip>
                     Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
                     per element stays put as the page gets bigger.
@@ -646,7 +658,7 @@ async function main() {
           {buildRows.length ? (
             <section className="buildtime" data-measure="buildtime" id="buildtime">
               <h3 className="chart-title">
-                Build time — full client build · lower is better
+                <span className="ct-main">Build time</span> <span className="ct-sub">(full client build · lower is better)</span>
                 <InfoTip>
                   How long the production build takes — the same bundle measured for page bytes. <b>cold</b> clears the
                   lane's caches and generated code first, so it pays for regenerating them; <b>warm</b> runs it again with
@@ -661,14 +673,14 @@ async function main() {
           <section className="outro" id="how-measured">
             <h3 className="chart-title">How this was measured</h3>
             <ul className="outro-tools">
-              <li><b>microbench</b> — an in-process Node loop that renders each workload to an HTML string (<code>renderToString</code>) and counts instance renders per second.</li>
+              <li><b><a href="https://github.com/tinylibs/tinybench">tinybench</a></b> — renders each workload to an HTML string in Node and counts instance renders per second. A full garbage collection runs before every sample.</li>
               <li><b>autocannon</b> — {httpNote}</li>
               <li><b><a href="https://github.com/jantimon/web-performance-debugger">web-performance-debugger</a></b> — records CPU and render profiles in Chrome, Firefox and Node and attributes the time to libraries and functions through source maps.</li>
             </ul>
             <p className="outro-run">
               Source, raw data and methodology: <a href="https://github.com/jantimon/css-in-js-bench">github.com/jantimon/css-in-js-bench</a>.
               Run it locally: clone the repo, <code>pnpm install</code>, then <code>pnpm report</code> renders this report from the committed
-              samples — <code>pnpm gen</code> re-measures everything on your own machine.
+              samples, and <code>pnpm gen:samples</code> measures again on your own machine. See <a href="https://github.com/jantimon/css-in-js-bench/blob/main/local-development.md">local development</a>.
             </p>
           </section>
         </main>
@@ -810,6 +822,8 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .case-sub{color:var(--muted);font-size:14px}
 .chip{font:11.5px/1 ui-monospace,monospace;color:var(--muted);background:var(--raised);border:1px solid var(--raised-2);border-radius:6px;padding:4px 8px}
 .case-desc{color:var(--muted);margin:0 0 8px;max-width:92ch;font-size:13.5px}
+.ct-main{color:var(--fg);font-size:14px;text-transform:none;letter-spacing:0;font-weight:650}
+.ct-sub{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px}
 .chart-title{font-size:11.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;margin:24px 0 12px;font-weight:600}
 .case-analysis{border-left:3px solid #3fb950;padding:2px 0 2px 14px;margin:0 0 10px}
 .sum-headline{margin:0 0 10px;color:var(--fg);font-size:13.5px;max-width:92ch}
@@ -853,6 +867,58 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .bar-fill{display:block;height:100%;border-radius:5px}
 .bar-val{font-variant-numeric:tabular-nums;font-size:13px;min-width:120px}
 .bar-best{font-weight:700;color:#3fb950}
+/* The measuring tool's logo with its author's avatar, at the start of a chart title. The logo is
+   dark grey on transparent, so it sits on a white tile in both themes. */
+.tool-mark{display:flex;width:max-content;align-items:center;margin:-2px 0 12px;font-size:14px;font-weight:600;color:var(--fg-2);text-decoration:none}
+.tool-mark:hover{color:var(--fg)}
+.tm-word{font:500 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.02em;padding:6px 8px;border-radius:7px;background:var(--raised);border:1px solid var(--line-2);color:var(--fg-2)}
+.tm-word b{color:#f0b429;font-weight:700}
+.tm-logo{width:30px;height:30px;padding:4px;box-sizing:border-box;border-radius:6px;background:#fff}
+.tm-av{width:24px;height:24px;margin:0 9px 0 -9px;position:relative;top:7px;border-radius:50%;box-shadow:0 0 0 2px var(--panel)}
+/* DevTools-style summary cards in front of the Chrome-profiled charts: fastest and slowest visible lane. */
+.pd{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 16px}
+.pd-card{flex:1 1 260px;max-width:360px;border:1px solid var(--line);border-radius:10px;padding:10px 14px 12px;background:var(--raised);position:relative}
+.pd-card.tech-off{display:none}
+.pd-head{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg);margin-bottom:8px}
+.pd-zero{opacity:.45}
+.pd-body{display:flex;align-items:center;gap:16px}
+.pd-donut{flex:none}
+.pd-center{font:700 12px -apple-system,system-ui,sans-serif;fill:var(--fg)}
+.pd-legend{display:grid;grid-template-columns:auto auto;gap:2px 10px;font-size:11.5px;align-items:center}
+.pd-ms{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg-2)}
+.pd-key{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.pd-key i{width:9px;height:9px;border-radius:2px}
+.pd-total{font-weight:700;color:var(--fg);padding-top:2px}
+@media screen{.prof:not(.prof-few) .pd,.prof-few .wpd-breakdown{display:none}}
+@media print{.pd,.prof-diff{display:none}}
+.prof{margin-top:22px;padding-top:14px;border-top:1px dashed var(--line-2)}
+.prof-title{margin:0 0 4px;color:var(--muted-2)}
+.prof-diff{margin:0 0 12px;font-size:12.5px;color:var(--fg-2)}
+@media screen{.chart-banner~.attr>.attr-legend{display:none}}
+/* A small picture above a chart title that shows what the chart is about. */
+.chart-banner{display:block;width:min(228px,100%);height:auto;margin:0 0 14px;border-radius:8px;border:1px solid var(--line)}
+/* Bar hover card: the hovered (or, on touch screens, tapped) row's track becomes the anchor and
+   the card sits above it. position:fixed escapes the track's overflow:hidden. Browsers without
+   anchor positioning show no card. */
+.bar-tip{display:none}
+@supports (anchor-name:--a){
+  .bar-row[tabindex]{outline:none}
+  .bar-tip{position:fixed;position-anchor:--bar-tip;position-area:top;position-try-fallbacks:flip-block;margin:6px 0;grid-template-columns:auto auto;gap:3px 14px;align-items:baseline;width:max-content;max-width:calc(100vw - 24px);background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.4 -apple-system,system-ui,sans-serif;color:var(--fg-2);box-shadow:0 8px 24px rgba(0,0,0,.55);z-index:30;pointer-events:none}
+  .bt-title{grid-column:1/-1;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .bt-key{display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
+  .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
+  .bt-val{text-align:right;font-variant-numeric:tabular-nums}
+  .bt-note{grid-column:1/-1;margin-top:4px;padding-top:5px;border-top:1px solid var(--line-2);color:var(--muted)}
+  @media (hover:hover){
+    .bar-row:hover>.bar-track{anchor-name:--bar-tip}
+    .bar-row:hover>.bar-tip{display:grid}
+    .bar-row:hover>.bar-track{box-shadow:0 0 0 1px var(--line-2)}
+  }
+  @media (hover:none){
+    .bar-row:focus>.bar-track{anchor-name:--bar-tip}
+    .bar-row:focus>.bar-tip{display:grid}
+  }
+}
 .bar-unit,.bar-spread{color:var(--muted);font-size:11px}
 .bar-breakdown{margin-left:8px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar-breakdown .bd-sep{color:var(--muted-2)}
@@ -867,7 +933,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .rt-badge{margin-left:8px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;color:var(--fg-3);font-variant-numeric:tabular-nums}
 .rt-note{grid-column:1/-1;margin:4px 0 0;font-size:11px;line-height:1.5;color:var(--muted-2)}
 .rt .bar-val{min-width:150px}
-.wpd-breakdown{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.wpd-breakdown{margin-top:8px}
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:var(--muted);font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
@@ -1111,6 +1177,14 @@ function setTech(b, on) {
 // its full width. Each fill carries data-val (its raw number); a row's total is the sum of its
 // fills (one for a plain bar, several for a stacked one). The "best" star, if the chart has one,
 // moves to the first visible row (rows are pre-sorted best-first).
+function profDiff(least, most) {
+  const a = JSON.parse(least.dataset.slices), b = JSON.parse(most.dataset.slices);
+  const sum = o => Object.values(o).reduce((s, v) => s + v, 0);
+  const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
+    .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
+    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ' + k);
+  return most.dataset.label + ' spends ' + (sum(b) - sum(a)).toFixed(1) + ' ms more active time than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
+}
 function rescaleBars() {
   for (const chart of document.querySelectorAll('.bars, .attr')) {
     const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
@@ -1120,6 +1194,27 @@ function rescaleBars() {
     vis.forEach(r => { for (const e of r.querySelectorAll('[data-val]')) e.style.width = (+e.dataset.val / max * 100) + '%'; });
     const best = chart.querySelector('.bar-best');
     if (best && vis.length) { best.classList.remove('bar-best'); vis[0].querySelector('.bar-val')?.classList.add('bar-best'); }
+  }
+  // Profile: donut cards for a few visible lanes, stacked bars for more, and the difference caption (ProfileDonuts.tsx diffText).
+  for (const prof of document.querySelectorAll('.prof')) {
+    const cards = [...prof.querySelectorAll('.pd-card')].filter(c => !c.classList.contains('tech-off'));
+    prof.classList.toggle('prof-few', cards.length <= ${FEW_LANES});
+    prof.querySelector('.prof-diff').textContent = cards.length > 1 ? profDiff(cards[0], cards[cards.length - 1]) : '';
+  }
+  for (const chart of document.querySelectorAll('.bars, .attr')) {
+    const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
+    // Hover cards: rank and "N× more than <best>" among the visible rows (BarTip's vsBest).
+    const top = vis[0]?.querySelector('[data-bt-vs]');
+    vis.forEach((r, i) => {
+      const rank = r.querySelector('[data-bt-rank]');
+      if (rank) rank.textContent = (i + 1) + ' of ' + vis.length;
+      const note = r.querySelector('[data-bt-vs]');
+      if (!note || !top) return;
+      const v = +note.dataset.btVs, b = +top.dataset.btVs, hb = note.dataset.hb === '1';
+      if (v === b) { note.textContent = 'best in this chart'; return; }
+      const ratio = hb ? b / v : v / b;
+      note.textContent = ratio.toFixed(ratio < 10 ? 2 : 1) + '× ' + (hb ? 'fewer' : 'more') + ' ' + note.dataset.unit + ' than ' + vis[0].querySelector('.bt-title').textContent;
+    });
   }
 }
 // Same idea for the line chart: the y-axis is baked to the global max ms, so hiding the steep

@@ -1,5 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface StackSeg {
@@ -38,11 +39,19 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
         ))}
       </div>
       {sorted.map((r, ri) => (
-        <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
+        <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
+          <BarTip
+            title={r.label}
+            lines={[
+              ...segs.map((s, i) => ({ label: s.label, color: s.color, value: `${fmtSeg(r.values[i])} ${segUnit} · ${pct(r.values[i], r.total)}` })),
+              { label: "total", value: `${fmtSeg(r.total)} ${segUnit}` },
+            ]}
+            rank={{ value: r.total, unit: segUnit, higherBetter, index: ri, rows: sorted.map((s) => ({ value: s.total, label: s.label })) }}
+          />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
             {r.values.map((v, i) =>
-              v > 0 ? <span key={segs[i].label} className="attr-seg" data-val={v} title={`${segs[i].label}: ${Math.round(v).toLocaleString()} ${unit}`} style={{ width: `${(v / max) * 100}%`, background: segs[i].color }} /> : null,
+              v > 0 ? <span key={segs[i].label} className="attr-seg" data-val={v} style={{ width: `${(v / max) * 100}%`, background: segs[i].color }} /> : null,
             )}
           </span>
           <span className={"bar-val" + (r.total === best ? " bar-best" : "")}>

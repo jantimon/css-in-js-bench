@@ -1,5 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface AttrRow {
@@ -40,7 +41,15 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
         ))}
       </div>
       {sorted.map((r, i) => (
-        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
+        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
+          <BarTip
+            title={r.label}
+            lines={[
+              ...BUCKETS.map(([k, c, label]) => ({ label, color: c, value: `${(r[k] as number).toFixed(2)} ms · ${pct(r[k] as number, r.renderMs)}` })),
+              { label: "median render", value: `${r.renderMs.toFixed(2)} ms` },
+            ]}
+            rank={{ value: r.renderMs, unit: "ms", higherBetter: false, index: i, rows: sorted.map((s) => ({ value: s.renderMs, label: s.label })) }}
+          />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
             {BUCKETS.map(([k, c]) => {

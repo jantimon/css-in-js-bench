@@ -1,5 +1,6 @@
 import React from "react";
 import type { RenderTimingMetrics } from "../types.ts";
+import { BarTip, pct, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface RenderTimingRow {
@@ -49,7 +50,19 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
   const engineRow = (r: RenderTimingRow, engine: "Chrome" | "Firefox", m: RenderTimingMetrics, segs: readonly Seg[], first: boolean) => {
     const total = sumSegs(m, segs);
     return (
-      <div className={"bar-row" + (first ? " gap-before" : "")} data-tech={r.tech} key={`${r.tech}-${engine}`}>
+      <div className={"bar-row" + (first ? " gap-before" : "")} data-tech={r.tech} key={`${r.tech}-${engine}`} {...tipRow}>
+        <BarTip
+          title={`${r.label} · ${engine}`}
+          lines={[
+            ...segs.map(([k, c, label]) => {
+              const ms = typeof m[k] === "number" ? (m[k] as number) : 0;
+              return { label, color: c, value: `${ms.toFixed(1)} ms · ${pct(ms, total)}` };
+            }),
+            { label: "total", value: `${total.toFixed(1)} ms` },
+            ...(engine === "Chrome" && typeof m.styleCount === "number" ? [{ label: "style recalcs", value: String(m.styleCount) }] : []),
+          ]}
+          note={`cold mount of ${r.n.toLocaleString()} instances`}
+        />
         <span className="bar-label">
           <span className="rt-lane">{first ? <TechLabel tech={r.tech} label={r.label} /> : ""}</span>
           <span className="rt-eng">{engine}</span>

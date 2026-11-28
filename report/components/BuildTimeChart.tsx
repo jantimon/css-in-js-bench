@@ -1,5 +1,6 @@
 import React from "react";
 import { groupBreaks } from "../stats.ts";
+import { BarTip, tipRow } from "./BarTip.tsx";
 import { TechLabel } from "./TechLabel.tsx";
 
 export interface BuildTimeRow {
@@ -27,7 +28,16 @@ export function BuildTimeChart({ rows }: { rows: BuildTimeRow[] }) {
   return (
     <div className="bars">
       {sorted.map((r, i) => (
-        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech}>
+        <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
+          <BarTip
+            title={r.label}
+            lines={[
+              { label: "cold build", value: `${Math.round(r.coldMs).toLocaleString()} ms${r.coldSpread > 0 ? ` ±${Math.round(r.coldSpread * 100)}%` : ""}` },
+              ...(r.warmMs !== undefined ? [{ label: "warm build", value: `${Math.round(r.warmMs).toLocaleString()} ms` }] : []),
+              { label: "CSS", value: r.cssKind },
+            ]}
+            rank={{ value: r.coldMs, unit: "ms", higherBetter: false, index: i, rows: sorted.map((s) => ({ value: s.coldMs, label: s.label })) }}
+          />
           <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
           <span className="bar-track">
             <span className="bar-fill" data-val={r.coldMs} style={{ width: `${(r.coldMs / max) * 100}%`, background: r.color }} />
