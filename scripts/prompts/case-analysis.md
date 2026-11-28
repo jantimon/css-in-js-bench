@@ -9,7 +9,7 @@ BENCHMARK.html/.md as the "Analysis" block.
 You are analyzing a CSS-in-JS benchmark. Work from these inputs only:
 
 - `BENCHMARK.json` — the reduced report data: per case, per measurement, per lane the median
-  values the charts show (microbench renders/s, autocannon req/s, SSR CPU attribution,
+  values the charts show (SSR render throughput in renders/s, autocannon req/s, SSR CPU attribution,
   hydrate/inp/mount timings + WPD span slices, render-timing counts/ms, payload bytes, nsweep).
 - `result/meta.json` — gitSha, timestamp, host, node.
 - `result/snapshot.json` — per cell, every authored source file (`files: [{name, code}]`),
