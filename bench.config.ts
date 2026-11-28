@@ -42,5 +42,8 @@ export default {
   // tractable AND the counts comparable across cases (style-recalc count scales with instances).
   // inp changes every instance's input; its inp:frame span includes the update and rendering.
   // The outer run span includes reset time and must not serve as interaction timing.
-  wpd: { n: 50, protocolTimeoutMs: 600_000 },
+  // Hydration and mount happen once per page load, so they record `profileRuns` page loads and
+  // keep the profile with the lower-median duration; inp repeats its action `profileRuns` times
+  // in one page and WPD keeps the lower-median occurrence.
+  wpd: { n: 50, profileRuns: 5, protocolTimeoutMs: 600_000 },
 };
