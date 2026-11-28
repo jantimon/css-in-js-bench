@@ -518,7 +518,7 @@ async function main() {
                   <p className="ch-cap">Components rendered to HTML per second on the server (higher is faster)</p>
                 </div>
                 <a className="tool-mark" href="https://github.com/tinylibs/tinybench" aria-label="tinybench by Mohammad Bagher Abiyat">
-                  <span className="tip">tinybench is an npm package that times a JavaScript function over many runs. Here it times each library rendering the page to HTML in Node. By Mohammad Bagher Abiyat.</span>
+                  <span className="tip">tinybench is an npm package that times a JavaScript function over many runs. We use tinybench to time how fast each library renders the page to HTML in Node. By Mohammad Bagher Abiyat.</span>
                 <span className="tm-word">tiny<b>bench</b></span>
                 <img className="tm-av" src="assets/logos/aslemammad.avif" alt="" width={18} height={18} loading="lazy" />
               </a>
@@ -543,7 +543,7 @@ async function main() {
                     <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
                   </div>
                   <a className="tool-mark" href="https://github.com/mcollina/autocannon" aria-label="autocannon by Matteo Collina">
-                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. Here it loads a small Node server that renders the page. By Matteo Collina.</span>
+                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. We use autocannon to load a small Node server that renders the page. By Matteo Collina.</span>
                   <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
                   <span className="tm-name">autocannon</span>
                   <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
