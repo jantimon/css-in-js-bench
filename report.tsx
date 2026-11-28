@@ -1061,9 +1061,9 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .bar-breakdown .bd-sep{color:var(--muted-2)}
 .attr .bar-track{display:flex}
 .attr-seg{display:block;height:100%}
-.attr-seg:first-child{border-radius:5px 0 0 5px}
-.attr-seg:last-child{border-radius:0 5px 5px 0}
-.attr-seg:only-child{border-radius:5px}
+/* The pieces of a stacked bar sit in one wrapper that rounds and clips both ends, so every bar ends
+   round however thin its last piece is. */
+.attr-fill{display:flex;height:100%;border-radius:5px;overflow:hidden}
 /* Legends sit under their chart, below the ruler, all in one style (also .lc-legend). */
 .attr-legend,.lc-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 0;font-size:11.5px;color:var(--muted)}
 /* Category legends align right under their chart; a footnote, when the chart has one, shares
@@ -1083,7 +1083,7 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .axis i::after{content:"";position:absolute;left:0;bottom:-5px;width:1px;height:4px;background:var(--line-2)}
 .axis b{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);font:400 10.5px/1 system-ui,sans-serif;color:var(--muted-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .axis b u{text-decoration:none;position:absolute;left:100%;margin-left:3px}
-.ax .bar-fill,.ax .attr-seg{position:relative;z-index:2}
+.ax .bar-fill,.ax .attr-fill{position:relative;z-index:2}
 .attr-legend i,.lc-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .rt .bar-label{display:flex;gap:7px;justify-content:flex-start;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
