@@ -515,7 +515,7 @@ async function main() {
                     </InfoTip>
                     <HideMeasure k="microbench" />
                   </h3>
-                  <p className="ch-cap">Component renders per second in Node. Longer bars are better.</p>
+                  <p className="ch-cap">Component renders per second in Node (higher is faster)</p>
                 </div>
                 <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
                 <span className="tm-word">tiny<b>bench</b></span>
@@ -539,7 +539,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="autocannon" />
                     </h3>
-                    <p className="ch-cap">HTTP requests per second; each request renders the whole page. Longer bars are better.</p>
+                    <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
                   </div>
                   <a className="tool-mark" href="https://github.com/mcollina/autocannon" title="autocannon by Matteo Collina">
                   <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
@@ -565,7 +565,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="attribution" />
                     </h3>
-                    <p className="ch-cap">Median milliseconds per render, from a Node CPU profile. Shorter bars are better.</p>
+                    <p className="ch-cap">Median milliseconds per render, split by a Node CPU profile (lower is faster)</p>
                   </div>
                 </div>
                 <AttributionChart rows={attrRows} />
@@ -583,7 +583,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="nsweep" />
                     </h3>
-                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows. Flatter lines are better.</p>
+                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows (flatter is better)</p>
                   </div>
                 </div>
                 <LineChart lines={sweepLines} />
@@ -604,7 +604,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="hydrate" />
                     </h3>
-                    <p className="ch-cap">Milliseconds until the framework takes over the server HTML. Shorter bars are better.</p>
+                    <p className="ch-cap">Time to boot the client-side JavaScript on the server-rendered page (lower is faster)</p>
                   </div>
                 </div>
                 <TimingProfilePair bars={hydBars} rows={hydWpdRows} wpdVersion={wpdVersion} />
@@ -625,7 +625,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="inp" />
                     </h3>
-                    <p className="ch-cap">Milliseconds until every instance shows its new value. Shorter bars are better.</p>
+                    <p className="ch-cap">Time until every instance shows its new value (lower is faster)</p>
                   </div>
                 </div>
                 <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} />
@@ -644,7 +644,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="mount" />
                     </h3>
-                    <p className="ch-cap">Milliseconds to render the workload into an empty page. Shorter bars are better.</p>
+                    <p className="ch-cap">Time to render the workload into an empty page (lower is faster)</p>
                   </div>
                 </div>
                 <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} />
@@ -666,7 +666,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="render-timing" />
                     </h3>
-                    <p className="ch-cap">Milliseconds of style recalculation, layout and paint on a cold mount. Shorter bars are better.</p>
+                    <p className="ch-cap">Style recalculation, layout and paint on a cold mount, in milliseconds (lower is faster)</p>
                   </div>
                 </div>
                 <RenderTimingChart rows={rtRows} />
@@ -685,7 +685,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="payload" />
                     </h3>
-                    <p className="ch-cap">Gzipped kilobytes of JavaScript, CSS and HTML. Shorter bars are better.</p>
+                    <p className="ch-cap">Gzipped kilobytes of JavaScript, CSS and HTML (lower is better)</p>
                   </div>
                   <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={180} height={60} loading="lazy" data-screen-only />
                 </div>
@@ -709,7 +709,7 @@ async function main() {
                     </InfoTip>
                     <HideMeasure k="buildtime" />
                   </h3>
-                  <p className="ch-cap">Milliseconds for a full client build. Shorter bars are better.</p>
+                  <p className="ch-cap">Milliseconds for a full client build (lower is faster)</p>
                 </div>
               </div>
               <BuildTimeChart rows={buildRows} />
@@ -1254,7 +1254,7 @@ function profDiff(rows) {
   const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
     .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
     .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + (SEG_LABEL[k] || k));
-  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
+  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '');
 }
 const SEG_LABEL = ${JSON.stringify(Object.fromEntries(SEGMENTS.map(([k, , l]) => [k, l])))};
 function rescaleBars() {
