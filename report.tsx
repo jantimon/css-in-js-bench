@@ -543,7 +543,7 @@ async function main() {
                     <p className="ch-cap">HTTP requests per second, each rendering the whole page (higher is faster)</p>
                   </div>
                   <a className="tool-mark" href="https://github.com/mcollina/autocannon" aria-label="autocannon by Matteo Collina">
-                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. We use autocannon to load a small Node server that renders the page. By Matteo Collina.</span>
+                  <span className="tip">autocannon is an npm package that sends HTTP requests to a server as fast as it answers and counts them per second. We use autocannon to simulate high traffic on a Node server that renders the page on every request. By Matteo Collina.</span>
                   <img className="tm-logo" src="assets/logos/autocannon.avif" alt="" width={18} height={18} loading="lazy" />
                   <span className="tm-name">autocannon</span>
                   <img className="tm-av" src="assets/logos/mcollina.avif" alt="" width={18} height={18} loading="lazy" />
