@@ -369,8 +369,9 @@ async function main() {
               </h1>
               <p className="sub">
                 We built the same components with <mark className="hl">{usedTechs.length} different CSS approaches</mark>, from runtime
-                CSS-in-JS to build-time and utility CSS. See how your styling choice affects the people who use your site: how long
-                the server takes to render, how much they download, and how fast the page starts and responds in their browser
+                <span className="nowrap">CSS-in-JS</span> to build-time and utility CSS. See how your styling choice affects the experience of{" "}
+                <mark className="hl">your users</mark>: how long the server takes to render, how much they download, and how fast
+                the page starts and responds in their browser
               </p>
               <HeadPipeline />
               <div className="head-stats">
@@ -837,8 +838,10 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 @media (prefers-reduced-motion:reduce){.ghc-fold{transition:none}}
 @media screen and (min-width:768px){.gh-corner{display:block}h1 .gh-link{display:none}}
 @media (max-width:767px){h1{font-size:24px}}
-/* Text-marker highlight: a slightly tilted band behind the lower two thirds of the text. */
-.hl{color:var(--fg);background:linear-gradient(100deg,transparent 0 2px,rgba(240,180,41,.32) 4px calc(100% - 4px),transparent calc(100% - 2px)) 0 62%/100% 62% no-repeat;padding:0 3px;margin:0 -1px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+/* Text-marker highlight: a yellow highlighter band behind the words, uneven at both ends like
+   a marker pen, with dark text on top. */
+.nowrap{white-space:nowrap}
+.hl{color:#0d1117;font-weight:600;background:linear-gradient(100deg,rgba(240,180,41,0) .8%,#f0b429 2.6%,#f5c451 52%,#f0b429 97%,rgba(240,180,41,0) 99.4%);border-radius:.9em .3em .8em .35em;padding:.04em .32em .06em;margin:0 -.08em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 @media print{.hl{background:none;font-weight:600}}
 .sub{margin:0;color:var(--fg-3);font:16px/1.6 system-ui,sans-serif;max-width:64ch}
 /* Header pipeline: server, network, browser, each with the charts that measure it. */
