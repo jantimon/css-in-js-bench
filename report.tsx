@@ -454,7 +454,7 @@ async function main() {
               </div>
               {techGroups.map((g) => (
                 <div className="tp-row" key={g.group}>
-                  <button type="button" className={"tp-group" + (g.rows.some((row) => row.items.some((it) => defaultOn.has(it.tech))) ? " active" : "")} data-group-filter={g.group} title={`Show every ${g.group} lane`}>{g.group}</button>
+                  <button type="button" className={"tp-group" + (g.rows.some((row) => row.items.some((it) => defaultOn.has(it.tech))) ? " active" : "")} data-group-filter={g.group} title={`Show all ${g.group} versions`}>{g.group}</button>
                   <div className="tp-engines">
                     {g.rows.map((row) => (
                       <div className="tp-engine-row" key={row.engine}>
@@ -998,15 +998,13 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .pair-col:first-child>.pair-head{padding-left:214px}
 /* The profile legend sits under its bars, so both columns start their rows right under the heads. */
 .pair .pair-legend{grid-row:3}
-.pair .attr-legend.pair-legend{margin:8px 0 0}
-.attr-legend.pair-legend{margin:0 0 6px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
+.pair .attr-legend.pair-legend{align-content:flex-start}
 .pair-col>.bars,.pair-col>.attr{grid-row:2}
 .pair .bars,.pair .attr{grid-template-columns:200px 1fr 72px}
 .pair-r .bars,.pair-r .attr{grid-template-columns:1fr 72px}
 .pair-r .bar-row>.bar-label{display:none}
 /* The comparison sentence shares the legend's row: left under the timing bars, legend on the right. */
 .pair .prof-diff{grid-row:3;grid-column:1/3;padding:0 24px 0 0;margin:10px 0 0}
-.rt>.pair-legend{margin-bottom:12px}
 .bar-empty .bar-track{visibility:hidden}
 .bar-empty .bar-val{color:var(--muted-2)}
 .prof{margin-top:24px}
@@ -1068,8 +1066,14 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .attr-seg:first-child{border-radius:5px 0 0 5px}
 .attr-seg:last-child{border-radius:0 5px 5px 0}
 .attr-seg:only-child{border-radius:5px}
-.attr-legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:3px;font-size:12px;color:var(--muted)}
-.attr-legend:not(.pair-legend){margin-bottom:10px}
+/* Legends sit under their chart, below the ruler, all in one style (also .lc-legend). */
+.attr-legend,.lc-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 0;font-size:11.5px;color:var(--muted)}
+/* Category legends align right under their chart; a footnote, when the chart has one, shares
+   the row on the left (as the profile pairs do with their comparison sentence). */
+.attr-legend{justify-content:flex-end}
+.chart-foot{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-top:10px}
+.chart-foot>.rt-note{margin:0;flex:1 1 auto}
+.chart-foot>.attr-legend{margin:0;flex:none}
 /* Value scale (Axis.tsx): faint gridlines at round values between the track and the coloured
    fills, and a ruler under the last row with a short tick and a label per value. The scale ends
    on a tick; the line at the end is left out so the rounded track ends stand free. */
@@ -1082,7 +1086,7 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .axis b{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);font:400 10.5px/1 system-ui,sans-serif;color:var(--muted-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .axis b u{text-decoration:none;position:absolute;left:100%;margin-left:3px}
 .ax .bar-fill,.ax .attr-seg{position:relative;z-index:2}
-.attr-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.attr-legend i,.lc-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .rt .bar-label{display:flex;gap:7px;justify-content:flex-start;align-items:center}
 .rt-lane{display:flex;align-items:center;gap:6px;min-width:0;color:var(--fg-2)}
 .rt-eng{color:var(--muted-2);font-size:11px;flex:none}
@@ -1094,8 +1098,6 @@ h1{margin:0 0 12px;font-size:30px;font-weight:750;letter-spacing:-.02em;display:
 .lchart svg{width:100%;max-width:760px;height:auto}
 .lc-axis{fill:var(--muted);font-size:10px}
 .lc-line{stroke-width:1.5;fill:none}
-.lc-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:12px;color:var(--fg-3)}
-.lc-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .lc-legend span.tech-off,.lc-line.tech-off,.lc-dot.tech-off{display:none}
 .editor{display:flex;border:1px solid var(--raised-2);border-radius:8px;overflow:hidden;margin-bottom:8px;background:var(--panel)}
 .ed-side{flex:0 0 200px;border-right:1px solid var(--raised-2);padding:6px 0;overflow:auto}
@@ -1186,6 +1188,8 @@ a.mono:hover{text-decoration:underline}
   .pair-col>*,.pair-r>*,.pair .pair-r>.pair-legend{padding:0}
   .pair-col>.ax{padding-bottom:26px}
   .pair-col:first-child>.pair-head{padding-left:0}
+  .chart-foot{flex-direction:column-reverse;gap:10px}
+  .attr-legend{justify-content:flex-start}
   .pair-r>.pair-legend{order:1}
   .pair-r .bar-row>.bar-label{display:flex}
   .chart-banner{width:160px}

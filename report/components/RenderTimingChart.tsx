@@ -66,7 +66,7 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
             { label: "total", value: `${total.toFixed(1)} ms` },
             ...(engine === "Chrome" && typeof m.styleCount === "number" ? [{ label: "style recalcs", value: String(m.styleCount) }] : []),
           ]}
-          note={`cold mount of ${r.n.toLocaleString()} instances`}
+          note={`cold mount of ${r.n.toLocaleString()} components`}
         />
         <span className="bar-label"><TechLabel tech={r.tech} label={r.label} /></span>
         <span className="bar-track">
@@ -88,11 +88,6 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
 
   return (
     <div className="rt">
-      <div className="attr-legend pair-legend">
-        <span><i style={{ background: "#e8590c" }} />style recalc</span>
-        <span><i style={{ background: "#4c6ef5" }} />layout</span>
-        <span><i style={{ background: "#12b886" }} />paint (Chrome only)</span>
-      </div>
       <div className={hasFirefox ? "pair" : ""} data-shared-scale>
         <div className="pair-col">
           {hasFirefox ? <div className="pair-head">Chrome</div> : null}
@@ -105,12 +100,19 @@ export function RenderTimingChart({ rows }: { rows: RenderTimingRow[] }) {
           </div>
         ) : null}
       </div>
-      <p className="rt-note">
-        {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
-        Cold mount of {sorted[0]?.n ?? 0} instances, one scale for both browsers. Chrome recalculated styles once per mount
-        unless a badge shows another count. Firefox samples style and layout time and reports no main-thread paint, so a
-        zero can mean "not sampled".
-      </p>
+      <div className="chart-foot">
+        <p className="rt-note">
+          {noForcedLayouts ? <><b>No forced layouts observed.</b>{" "}</> : null}
+          Cold mount of {sorted[0]?.n ?? 0} components, one scale for both browsers. Chrome recalculated styles once per mount
+          unless a badge shows another count. Firefox samples style and layout time and reports no main-thread paint, so a
+          zero can mean "not sampled".
+        </p>
+        <div className="attr-legend">
+          <span><i style={{ background: "#e8590c" }} />style recalc</span>
+          <span><i style={{ background: "#4c6ef5" }} />layout</span>
+          <span><i style={{ background: "#12b886" }} />paint (Chrome only)</span>
+        </div>
+      </div>
     </div>
   );
 }

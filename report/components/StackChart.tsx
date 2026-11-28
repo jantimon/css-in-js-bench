@@ -34,14 +34,6 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
   const segUnit = unit === "B" ? "kB" : unit;
   return (
     <>
-      <div className="attr-legend">
-        {segs.map((s) => (
-          <span key={s.label}>
-            <i style={{ background: s.color }} />
-            {s.label}
-          </span>
-        ))}
-      </div>
     <div className="attr ax">
       {sorted.map((r, ri) => (
         <div className={"bar-row" + (breaks[ri] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
@@ -68,6 +60,14 @@ export function StackChart({ rows, segs, unit, higherBetter }: { rows: StackRow[
       ))}
       <Axis {...sc} unit={segUnit} div={div} />
     </div>
+      <div className="attr-legend">
+        {segs.map((s) => (
+          <span key={s.label}>
+            <i style={{ background: s.color }} />
+            {s.label}
+          </span>
+        ))}
+      </div>
     </>
   );
 }

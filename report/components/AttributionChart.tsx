@@ -16,7 +16,7 @@ export interface AttrRow {
 }
 
 const BUCKET_DEFS = [
-  ["react", "#4c6ef5", "react-dom / solid (the framework floor)"],
+  ["react", "#4c6ef5", "UI framework (React or Solid)"],
   ["lib", "#e8590c", "styling library runtime"],
   ["component", "#868e96", "your component"],
 ] as const;
@@ -27,7 +27,7 @@ const BUCKET_DEFS = [
 // library's own per-render work. Reused for the SSR render split and the two
 // browser splits (hydration / interaction) — only the `other` label differs (node vs
 // browser). Sorted fastest-first; each row carries data-tech for the global filter.
-export function AttributionChart({ rows, otherLabel = "node / gc / unattributed" }: { rows: AttrRow[]; otherLabel?: string }) {
+export function AttributionChart({ rows, otherLabel = "other (garbage collection, Node)" }: { rows: AttrRow[]; otherLabel?: string }) {
   const BUCKETS = [...BUCKET_DEFS, ["other", "#343a40", otherLabel] as const];
   const sorted = [...rows].sort((a, b) => a.renderMs - b.renderMs);
   const sc = scaleFor(Math.max(...defaultShown(sorted).map((r) => r.renderMs)));
@@ -35,14 +35,6 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
   const breaks = groupBreaks(sorted.map((r) => r.renderMs));
   return (
     <>
-      <div className="attr-legend">
-        {BUCKETS.map(([k, c, label]) => (
-          <span key={k}>
-            <i style={{ background: c }} />
-            {label}
-          </span>
-        ))}
-      </div>
     <div className="attr ax">
       {sorted.map((r, i) => (
         <div className={"bar-row" + (breaks[i] ? " gap-before" : "")} data-tech={r.tech} key={r.tech} {...tipRow}>
@@ -70,6 +62,14 @@ export function AttributionChart({ rows, otherLabel = "node / gc / unattributed"
       ))}
       <Axis {...sc} unit="ms" />
     </div>
+      <div className="attr-legend">
+        {BUCKETS.map(([k, c, label]) => (
+          <span key={k}>
+            <i style={{ background: c }} />
+            {label}
+          </span>
+        ))}
+      </div>
     </>
   );
 }

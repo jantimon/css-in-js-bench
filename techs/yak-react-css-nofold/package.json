@@ -1,6 +1,6 @@
 {
   "name": "yak-react-css-nofold",
-  "description": "@yak/react (css prop) foldStatic: false",
+  "description": "@yak/react (css prop, optimization off)",
   "private": true,
   "type": "module",
   "bench": {

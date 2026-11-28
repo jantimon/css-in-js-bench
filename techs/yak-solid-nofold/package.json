@@ -1,6 +1,6 @@
 {
   "name": "yak-solid-nofold",
-  "description": "@yak/solid (styled API, Solid 2) foldStatic: false",
+  "description": "@yak/solid (styled API, Solid 2, optimization off)",
   "private": true,
   "type": "module",
   "bench": {

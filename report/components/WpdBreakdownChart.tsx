@@ -67,11 +67,6 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
   const bars = SEGMENTS.filter(([key]) => key !== "idle");
   return (
     <>
-      {legend ? <div className="attr-legend">
-        {bars.map(([key, color, label]) => (
-          <span key={key}><i style={{ background: color }} />{label}</span>
-        ))}
-      </div> : null}
     <div className="attr wpd-breakdown ax">
       {shown.map((row) => {
         if (typeof row === "string") return <EmptyRow tech={row} key={row} />;
@@ -89,7 +84,7 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
                   return value === null ? [] : [{ label, color, value: `${value.toFixed(1)} ms · ${pct(value, row.span.wallMs)}` }];
                 }),
                 { label: "active", value: `${activeMs(row).toFixed(1)} ms` },
-                { label: "span", value: `${row.span.wallMs.toFixed(1)} ms` },
+                { label: "total incl. idle", value: `${row.span.wallMs.toFixed(1)} ms` },
                 ...(median !== undefined ? [{ label: "profiled median", value: `${median.toFixed(1)} ms` }] : []),
                 ...(row.timing?.stats
                   ? [{ label: `${row.timing.samplesMs.length} samples`, value: `${row.timing.stats.minMs.toFixed(1)}–${row.timing.stats.maxMs.toFixed(1)} ms` }]
@@ -113,6 +108,11 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
       })}
       <Axis {...sc} unit="ms" />
     </div>
+      {legend ? <div className="attr-legend">
+        {bars.map(([key, color, label]) => (
+          <span key={key}><i style={{ background: color }} />{label}</span>
+        ))}
+      </div> : null}
     </>
   );
 }
