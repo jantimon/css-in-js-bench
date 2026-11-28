@@ -10,7 +10,7 @@
     "cssKind": "runtime"
   },
   "dependencies": {
-    "goober": "2.1.19",
+    "goober": "2.2.0",
     "react": "catalog:dev",
     "react-dom": "catalog:dev"
   }
