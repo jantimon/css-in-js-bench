@@ -1,6 +1,6 @@
-// Standalone microbench build for Goober (§4.2). A pure-runtime CSS-in-JS lib —
+// Standalone microbench build for Coulis (§4.2). A pure-runtime CSS-in-JS lib —
 // no build plugin, just the React JSX transform. CSS is collected at render time
-// (global sheet, extractCss) inside ssr-entry.tsx, not extracted here.
+// (the instance's style sheets) inside ssr-entry.tsx, not extracted here.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
