@@ -19,11 +19,37 @@ export const SEGMENTS = [
   ["layout", "#7950f2", "layout"],
   ["paint", "#12b886", "paint"],
   ["gc", "#f59f00", "GC"],
-  ["other", "#868e96", "browser / other"],
+  ["other", "#868e96", "other"],
   ["idle", "#343a40", "idle / frame wait"],
 ] as const;
 
 export const activeMs = (row: WpdBreakdownRow) => row.span.wallMs - row.span.slices.idle;
+
+const ACTIVE = SEGMENTS.filter(([key]) => key !== "idle");
+const R = 38;
+const STROKE = 16;
+const C = 2 * Math.PI * R;
+
+/** A DevTools "Summary"-style donut of one profile's active work, the active time in the middle. */
+export function Donut({ row }: { row: WpdBreakdownRow }) {
+  const total = activeMs(row);
+  let offset = 0;
+  return (
+    <svg className="pd-donut" viewBox="0 0 100 100" width={84} height={84} aria-hidden="true">
+      <g transform="rotate(-90 50 50)">
+        {ACTIVE.map(([key, color]) => {
+          const ms = row.span.slices[key];
+          if (!ms || total <= 0) return null;
+          const len = (ms / total) * C;
+          const arc = <circle key={key} cx={50} cy={50} r={R} fill="none" stroke={color} strokeWidth={STROKE} strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} />;
+          offset += len;
+          return arc;
+        })}
+      </g>
+      <text x={50} y={55} textAnchor="middle" className="pd-center">{total.toFixed(1)} ms</text>
+    </svg>
+  );
+}
 
 /** The profile as stacked bars: active segments only, scaled to active time; idle frame wait is a number after the bar. */
 export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBreakdownRow[]; order?: string[]; legend?: boolean }) {
@@ -45,10 +71,11 @@ export function WpdBreakdownChart({ rows, order, legend = true }: { rows: WpdBre
         const index = byActive.indexOf(row);
         const median = row.medianMs !== undefined && row.medianMs.toFixed(1) !== row.span.wallMs.toFixed(1) ? row.medianMs : undefined;
         return (
-          <div className={"bar-row" + (!order && breaks[index] ? " gap-before" : "")} data-tech={row.tech} key={row.tech} {...tipRow}>
+          <div className={"bar-row" + (!order && breaks[index] ? " gap-before" : "")} data-tech={row.tech} data-label={row.label} data-slices={JSON.stringify(Object.fromEntries(ACTIVE.map(([key]) => [key, row.span.slices[key] ?? 0])))} key={row.tech} {...tipRow}>
             <BarTip
               title={row.label}
               tech={row.tech}
+              visual={<Donut row={row} />}
               lines={[
                 ...SEGMENTS.flatMap(([key, color, label]) => {
                   const value = row.span.slices[key];

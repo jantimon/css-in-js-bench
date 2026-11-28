@@ -23,8 +23,8 @@ import { LineChart, type SweepLine } from "./report/components/LineChart.tsx";
 import { StackChart, type StackRow } from "./report/components/StackChart.tsx";
 import { RenderTimingChart, type RenderTimingRow } from "./report/components/RenderTimingChart.tsx";
 import { BuildTimeChart, type BuildTimeRow } from "./report/components/BuildTimeChart.tsx";
-import { WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
-import { FEW_LANES, TimingProfilePair } from "./report/components/ProfileDonuts.tsx";
+import { SEGMENTS, WpdBreakdownChart, type WpdBreakdownRow } from "./report/components/WpdBreakdownChart.tsx";
+import { TimingProfilePair } from "./report/components/TimingProfilePair.tsx";
 import { Editor, type EditorLane } from "./report/components/Editor.tsx";
 import { CaseSummary } from "./report/components/CaseSummary.tsx";
 import { StudyFindings } from "./report/components/StudyFindings.tsx";
@@ -571,6 +571,24 @@ async function main() {
                 <AttributionChart rows={attrRows} />
               </div>
             ) : null}
+            {sweepLines.length ? (
+              <div data-measure="nsweep">
+                <div className="ch-head">
+                  <div className="ch-text">
+                    <h3 className="chart-title">
+                      Scaling
+                      <InfoTip>
+                        Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
+                        per element stays put as the page gets bigger.
+                      </InfoTip>
+                      <HideMeasure k="nsweep" />
+                    </h3>
+                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows. Flatter lines are better.</p>
+                  </div>
+                </div>
+                <LineChart lines={sweepLines} />
+              </div>
+            ) : null}
             {hydWpdRows.length || hydBars.length ? (
               <div data-group="Browser" data-measure="hydrate">
                 <div className="ch-head">
@@ -669,27 +687,9 @@ async function main() {
                     </h3>
                     <p className="ch-cap">Gzipped kilobytes of JavaScript, CSS and HTML. Shorter bars are better.</p>
                   </div>
-                  <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={210} height={70} loading="lazy" data-screen-only />
+                  <img className="chart-banner" src="assets/logos/payload-banner.avif" alt="" width={180} height={60} loading="lazy" data-screen-only />
                 </div>
                 <StackChart rows={payRows} segs={PAY_SEGS} unit="B" higherBetter={false} />
-              </div>
-            ) : null}
-            {sweepLines.length ? (
-              <div data-group="Server" data-measure="nsweep">
-                <div className="ch-head">
-                  <div className="ch-text">
-                    <h3 className="chart-title">
-                      Scaling
-                      <InfoTip>
-                        Render time as the workload grows from a handful of instances to thousands. A flatter line means the cost
-                        per element stays put as the page gets bigger.
-                      </InfoTip>
-                      <HideMeasure k="nsweep" />
-                    </h3>
-                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows. Flatter lines are better.</p>
-                  </div>
-                </div>
-                <LineChart lines={sweepLines} />
               </div>
             ) : null}
             </details>
@@ -863,7 +863,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .case{margin:0 0 18px;border:1px solid var(--line);border-radius:12px;padding:4px 22px 18px;background:var(--panel)}
 .case>summary{list-style:none;cursor:pointer;padding:18px 0 6px;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
 .case>summary::-webkit-details-marker{display:none}
-.case-title{font-size:24px;font-weight:700}
+.case-title{font-size:28px;font-weight:700;letter-spacing:-.01em}
 .case-sub{color:var(--muted);font-size:14px}
 .chip{font:11.5px/1 ui-monospace,monospace;color:var(--muted);background:var(--raised);border:1px solid var(--raised-2);border-radius:6px;padding:4px 8px}
 .case-desc{color:var(--muted);margin:0 0 12px;max-width:64ch;font-size:14px;line-height:1.55}
@@ -874,7 +874,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .ch-cap{margin:4px 0 0;font-size:13px;color:var(--muted);max-width:80ch}
 .case [data-measure]{margin-top:48px}
 .case [data-group]{padding-top:28px;border-top:1px solid var(--line);margin-top:56px}
-.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2)}
+.case [data-group]::before{content:attr(data-group);display:block;margin:0 0 14px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
 .case [data-measure="code"]{margin-top:28px}
 .case [data-measure="code"] .chart-title{margin:0 0 12px}
 .case-analysis{margin:0 0 16px}
@@ -906,7 +906,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
 .info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
 .info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
-.bars,.attr{display:grid;grid-template-columns:220px 1fr minmax(56px,max-content);column-gap:14px;row-gap:9px;align-items:center}
+.bars,.attr{display:grid;grid-template-columns:200px 1fr minmax(56px,max-content);column-gap:14px;row-gap:9px;align-items:center}
 .bars{margin-bottom:8px}
 .bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
 .bar-row.tech-off{display:none}
@@ -927,45 +927,34 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .tm-word b{color:#f0b429;font-weight:700}
 .tm-logo{width:18px;height:18px;padding:2px;box-sizing:border-box;border-radius:4px;background:#fff}
 .tm-av{width:18px;height:18px;border-radius:50%}
-/* DevTools-style summary cards in front of the Chrome-profiled charts: fastest and slowest visible lane. */
-.pd{display:flex;flex-wrap:wrap;gap:10px;margin:0}
-.pd-card{flex:1 1 200px;max-width:280px;border:1px solid var(--line);border-radius:8px;padding:8px 10px 10px;position:relative}
-.pd-card.tech-off{display:none}
-.pd-head{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg);margin-bottom:8px}
-.pd-zero{opacity:.45}
-.pd-body{display:flex;align-items:center;gap:14px}
-.pd-donut{width:76px;height:76px}
-.pd-donut{flex:none}
-.pd-center{font:700 12px -apple-system,system-ui,sans-serif;fill:var(--fg)}
-.pd-legend{display:grid;grid-template-columns:auto auto;gap:1px 10px;font-size:11.5px;align-items:center;white-space:nowrap}
-.pd-ms{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg-2)}
-.pd-key{display:flex;align-items:center;gap:6px;color:var(--muted)}
-.pd-key i{width:9px;height:9px;border-radius:2px}
-.pd-total{font-weight:700;color:var(--fg);padding-top:2px}
-@media screen{.prof:not(.prof-few) .pd,.prof-few .wpd-breakdown{display:none}}
-.prof-few .pair-legend{display:none}
-@media print{.pd,.prof-diff{display:none}}
+.pd-donut{display:block;flex:none}
+.pd-center{font:700 13px -apple-system,system-ui,sans-serif;fill:var(--fg)}
+@media print{.prof-diff{display:none}}
 /* Two measures on shared rows: labels and the first measure on the left, the second measure
    (bars only) on the right. Both charts render the same lanes in the same order. */
-.pair{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);column-gap:32px;align-items:start}
+/* Label column, then two equal halves: the left half holds the first measure's track and
+   value, the right half the second's, so both tracks get the same width. */
+.pair{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);column-gap:14px;align-items:start}
 .pair-col{display:contents}
-.pair-col>*{grid-column:1;min-width:0}
-.pair-r>*,.pair .pair-r>.pair-legend{grid-column:2}
-.pair-head{grid-row:1;display:flex;align-items:center;height:20px;margin:0 0 8px;font-size:12px;font-weight:600;color:var(--fg-3)}
-.pair .pair-legend,.rt>.pair-legend{grid-row:2;margin:0 0 10px;font-size:11.5px;gap:4px 11px}
-.pair-col>.bars,.pair-col>.attr,.pair-col>.pd{grid-row:3}
-.pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(48px,max-content)}
+.pair-col>*{grid-column:1/3;min-width:0;padding-right:24px}
+.pair-r>*,.pair .pair-r>.pair-legend{grid-column:3;padding:0 0 0 24px}
+.pair-head{grid-row:1;display:flex;align-items:center;height:26px;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg-2)}
+.pair-col:first-child>.pair-head{padding-left:214px}
+.pair-legend{grid-row:2}
+.attr-legend.pair-legend{margin:0 0 10px;font-size:11.5px;gap:4px 10px;align-content:flex-start}
+.pair-col>.bars,.pair-col>.attr{grid-row:3}
+.pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(56px,max-content)}
 .pair-r .bar-row>.bar-label{display:none}
-.pair .prof-diff{grid-row:4;grid-column:1/-1;margin:14px 0 0}
+.pair .prof-diff{grid-row:4;grid-column:1/-1;padding:0;margin:14px 0 0}
 .rt>.pair-legend{margin-bottom:12px}
 .bar-empty .bar-track{visibility:hidden}
 .bar-empty .bar-val{color:var(--muted-2)}
 .prof{margin-top:24px}
 .prof-title{margin:0;font-size:15px;font-weight:650;color:var(--fg)}
 .prof>.ch-cap{margin-bottom:12px}
-.prof-diff{margin:0 0 12px;font-size:12.5px;color:var(--fg-2)}
+.prof-diff{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--muted);max-width:72ch}
 /* A small picture above a chart title that shows what the chart is about. */
-.chart-banner{display:block;flex:none;width:210px;height:auto;border-radius:6px;border:1px solid var(--line-2)}
+.chart-banner{display:block;flex:none;width:180px;height:auto;border-radius:6px;border:1px solid var(--line-2)}
 /* Bar hover card: the hovered (or, on touch screens, tapped) row's track becomes the anchor and
    the card sits above it. position:fixed escapes the track's overflow:hidden. Browsers without
    anchor positioning show no card. */
@@ -974,6 +963,7 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
   .bar-row[tabindex]{outline:none}
   .bar-tip{position:fixed;position-anchor:--bar-tip;position-area:top;position-try-fallbacks:flip-block;margin:6px 0;grid-template-columns:auto auto;gap:3px 14px;align-items:baseline;width:max-content;max-width:calc(100vw - 24px);background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.4 -apple-system,system-ui,sans-serif;color:var(--fg-2);box-shadow:0 8px 24px rgba(0,0,0,.55);z-index:30;pointer-events:none}
   .bt-title{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .bt-visual{grid-column:1/-1;display:flex;justify-content:center;margin:2px 0 6px}
   .bt-key{display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
   .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
   .bt-val{text-align:right;font-variant-numeric:tabular-nums}
@@ -1046,12 +1036,12 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 @supports not (anchor-name:--a){
   .ed-tab.active{box-shadow:inset 0 -2px 0 #1f6feb}
 }
-.ed-frame{width:100%;height:520px;border:0;background:var(--panel)}
-.ed-shot{display:none;width:100%;height:520px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
+.ed-frame{width:100%;height:420px;border:0;background:var(--panel)}
+.ed-shot{display:none;width:100%;height:420px;object-fit:contain;object-position:center;background:#fff;box-sizing:border-box;padding:16px}
 .editor.ed-show-shot .ed-frame{display:none}
 .editor.ed-show-shot .ed-shot{display:block}
 /* a struck-through lane's not-compatible.md, shown in the body in place of the frame */
-.ed-note{display:none;height:520px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
+.ed-note{display:none;height:420px;overflow:auto;box-sizing:border-box;padding:18px 22px;font-size:13.5px;line-height:1.55;color:var(--fg-2)}
 .ed-note p,.ed-note ul,.ed-note blockquote{max-width:72ch;margin:0 0 12px}
 .ed-note blockquote{padding:6px 14px;border-left:3px solid var(--raised-2);color:var(--fg)}
 .ed-note a{color:var(--link)}
@@ -1091,6 +1081,8 @@ a.mono:hover{text-decoration:underline}
   .ch-head{flex-wrap:wrap}
   .pair{display:block}
   .pair-col{display:flex;flex-direction:column;margin-bottom:18px}
+  .pair-col>*,.pair-r>*,.pair .pair-r>.pair-legend{padding:0}
+  .pair-col:first-child>.pair-head{padding-left:0}
   .pair-r .bar-row>.bar-label{display:flex}
   .chart-banner{width:160px}
   .editor{display:block}
@@ -1252,14 +1244,19 @@ function setTech(b, on) {
 // its full width. Each fill carries data-val (its raw number); a row's total is the sum of its
 // fills (one for a plain bar, several for a stacked one). The "best" star, if the chart has one,
 // moves to the first visible row (rows are pre-sorted best-first).
-function profDiff(least, most) {
+// Caption under a timing/profile pair: the busiest vs the least busy visible profile row
+// (TimingProfilePair.tsx diffText).
+function profDiff(rows) {
+  const sum = r => Object.values(JSON.parse(r.dataset.slices)).reduce((s, v) => s + v, 0);
+  const byActive = [...rows].sort((x, y) => sum(x) - sum(y));
+  const least = byActive[0], most = byActive[byActive.length - 1];
   const a = JSON.parse(least.dataset.slices), b = JSON.parse(most.dataset.slices);
-  const sum = o => Object.values(o).reduce((s, v) => s + v, 0);
   const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
     .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
-    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + k);
-  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(b) - sum(a)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
+    .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + (SEG_LABEL[k] || k));
+  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '') + '.';
 }
+const SEG_LABEL = ${JSON.stringify(Object.fromEntries(SEGMENTS.map(([k, , l]) => [k, l])))};
 function rescaleBars() {
   // Charts inside one [data-shared-scale] share the max of all their visible rows.
   const visRows = chart => [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
@@ -1274,12 +1271,10 @@ function rescaleBars() {
     const best = chart.querySelector('.bar-best');
     if (best && vis.length) { best.classList.remove('bar-best'); vis[0].querySelector('.bar-val')?.classList.add('bar-best'); }
   }
-  // Profile: donut cards for a few visible lanes, stacked bars for more, and the difference caption (ProfileDonuts.tsx diffText).
   for (const prof of document.querySelectorAll('.prof')) {
-    const cards = [...prof.querySelectorAll('.pd-card')].filter(c => !c.classList.contains('tech-off'));
-    prof.classList.toggle('prof-few', cards.length <= ${FEW_LANES});
+    const rows = [...prof.querySelectorAll('.bar-row[data-slices]')].filter(r => !r.classList.contains('tech-off'));
     const diff = prof.querySelector('.prof-diff');
-    if (diff) diff.textContent = cards.length > 1 ? profDiff(cards[0], cards[cards.length - 1]) : '';
+    if (diff) diff.textContent = rows.length > 1 ? profDiff(rows) : '';
   }
   for (const chart of document.querySelectorAll('.bars, .attr')) {
     const vis = [...chart.querySelectorAll('.bar-row')].filter(r => !r.classList.contains('tech-off'));
