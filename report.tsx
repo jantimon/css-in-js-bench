@@ -515,7 +515,7 @@ async function main() {
                     </InfoTip>
                     <HideMeasure k="microbench" />
                   </h3>
-                  <p className="ch-cap">Component renders per second in Node (higher is faster)</p>
+                  <p className="ch-cap">Components rendered to HTML per second on the server (higher is faster)</p>
                 </div>
                 <a className="tool-mark" href="https://github.com/tinylibs/tinybench" title="tinybench by Mohammad Bagher Abiyat">
                 <span className="tm-word">tiny<b>bench</b></span>
@@ -565,7 +565,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="attribution" />
                     </h3>
-                    <p className="ch-cap">Median milliseconds per render, split by a Node CPU profile (lower is faster)</p>
+                    <p className="ch-cap">Server render time, split into framework, styling library and your components (lower is faster)</p>
                   </div>
                 </div>
                 <AttributionChart rows={attrRows} />
@@ -583,7 +583,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="nsweep" />
                     </h3>
-                    <p className="ch-cap">SSR render time in milliseconds as the instance count grows (flatter is better)</p>
+                    <p className="ch-cap">Server render time as the number of components grows (flatter is better)</p>
                   </div>
                 </div>
                 <LineChart lines={sweepLines} />
@@ -625,7 +625,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="inp" />
                     </h3>
-                    <p className="ch-cap">Time until every instance shows its new value (lower is faster)</p>
+                    <p className="ch-cap">Time to re-render every component after one state change (lower is faster)</p>
                   </div>
                 </div>
                 <TimingProfilePair bars={inpBars} rows={inpWpdRows} wpdVersion={wpdVersion} />
@@ -644,7 +644,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="mount" />
                     </h3>
-                    <p className="ch-cap">Time to render the workload into an empty page (lower is faster)</p>
+                    <p className="ch-cap">Time to render all components into an empty page in the browser (lower is faster)</p>
                   </div>
                 </div>
                 <TimingProfilePair bars={mountBars} rows={mountWpdRows} wpdVersion={wpdVersion} />
@@ -666,7 +666,7 @@ async function main() {
                       </InfoTip>
                       <HideMeasure k="render-timing" />
                     </h3>
-                    <p className="ch-cap">Style recalculation, layout and paint on a cold mount, in milliseconds (lower is faster)</p>
+                    <p className="ch-cap">Browser style, layout and paint time when the components first appear (lower is faster)</p>
                   </div>
                 </div>
                 <RenderTimingChart rows={rtRows} />
@@ -709,7 +709,7 @@ async function main() {
                     </InfoTip>
                     <HideMeasure k="buildtime" />
                   </h3>
-                  <p className="ch-cap">Milliseconds for a full client build (lower is faster)</p>
+                  <p className="ch-cap">Time for a full production build (lower is faster)</p>
                 </div>
               </div>
               <BuildTimeChart rows={buildRows} />
@@ -906,9 +906,10 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .hide-measure:hover,.hide-measure:focus-visible{color:var(--fg-2);border-color:var(--muted-2)}
 .info .tip,.hide-measure .tip{display:none;position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:max-content;max-width:330px;background:var(--raised);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font:400 12px/1.55 -apple-system,system-ui,sans-serif;color:var(--fg-2);text-transform:none;letter-spacing:0;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.55);white-space:normal;text-align:left}
 .info:hover .tip,.info:focus .tip,.hide-measure:hover .tip,.hide-measure:focus-visible .tip{display:block}
-.bars,.attr{display:grid;grid-template-columns:200px 1fr minmax(56px,max-content);column-gap:14px;row-gap:9px;align-items:center}
+.bars,.attr{display:grid;grid-template-columns:200px 1fr minmax(56px,max-content);column-gap:14px;row-gap:0;align-items:center}
 .bars{margin-bottom:8px}
-.bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center}
+/* Rows touch (padding, not row-gap) so the pointer never crosses a dead zone between bars. */
+.bar-row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;align-items:center;padding:4.5px 0}
 .bar-row.tech-off{display:none}
 .bar-label{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;color:var(--fg-2);font-size:13px}
 .bar-label .tl-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -968,9 +969,14 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
   .bt-key i{width:9px;height:9px;border-radius:2px;flex:none}
   .bt-val{text-align:right;font-variant-numeric:tabular-nums}
   .bt-note{grid-column:1/-1;margin-top:4px;padding-top:5px;border-top:1px solid var(--line-2);color:var(--muted)}
+  /* Hover intent: the first card in a chart fades in after a short rest; once one has shown,
+     the chart is "warm" (.tip-warm, set by the controller) and the card follows the pointer
+     from row to row at once. Without JS every card waits for the rest. */
   @media (hover:hover){
     .bar-row:hover>.bar-track{anchor-name:--bar-tip}
-    .bar-row:hover>.bar-tip{display:grid}
+    .bar-row:hover>.bar-tip{display:grid;opacity:1;transition:opacity .14s ease .32s}
+    .tip-warm .bar-row:hover>.bar-tip{transition:none}
+    @starting-style{.bar-row:hover>.bar-tip{opacity:0}}
     .bar-row:hover>.bar-track{box-shadow:0 0 0 1px var(--line-2)}
   }
   @media (hover:none){
@@ -1348,6 +1354,25 @@ function syncQuery() {
   try { history.replaceState(null, '', location.pathname + qs + location.hash); } catch {}
 }
 
+// ---- bar hover cards ----------------------------------------------------------------
+// Warm a chart once a card has been visible (its CSS fade-in delay has passed), so moving to
+// the next row shows that card at once; cool it again shortly after the pointer leaves.
+for (const chart of document.querySelectorAll('.bars, .attr')) {
+  let warmTimer = 0, coolTimer = 0, lastRow = null;
+  chart.addEventListener('pointerover', e => {
+    const row = e.target.closest('.bar-row[tabindex]');
+    if (e.pointerType !== 'mouse' || !row) return;
+    clearTimeout(coolTimer);
+    if (chart.classList.contains('tip-warm') || row === lastRow) return;
+    // Cold: only a rest on one row warms the chart, a sweep across rows does not.
+    lastRow = row; clearTimeout(warmTimer);
+    warmTimer = setTimeout(() => chart.classList.add('tip-warm'), 460);
+  });
+  chart.addEventListener('pointerleave', () => {
+    clearTimeout(warmTimer); lastRow = null;
+    coolTimer = setTimeout(() => chart.classList.remove('tip-warm'), 450);
+  });
+}
 // ---- technologies ---------------------------------------------------------------
 function afterTech() {
   if (countEl) countEl.textContent = techPills.filter(b => b.classList.contains('active')).length;
