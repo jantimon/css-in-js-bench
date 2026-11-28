@@ -957,7 +957,8 @@ h1{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:9px}
 .pair-col>.bars,.pair-col>.attr{grid-row:2}
 .pair-r .bars,.pair-r .attr{grid-template-columns:1fr minmax(56px,max-content)}
 .pair-r .bar-row>.bar-label{display:none}
-.pair .prof-diff{grid-row:4;grid-column:1/-1;padding:0;margin:14px 0 0}
+/* The comparison sentence shares the legend's row: left under the timing bars, legend on the right. */
+.pair .prof-diff{grid-row:3;grid-column:1/3;padding:0 24px 0 0;margin:10px 0 0}
 .rt>.pair-legend{margin-bottom:12px}
 .bar-empty .bar-track{visibility:hidden}
 .bar-empty .bar-val{color:var(--muted-2)}
@@ -1272,7 +1273,7 @@ function profDiff(rows) {
   const parts = Object.keys(b).map(k => [k, b[k] - a[k]]).filter(([, d]) => Math.abs(d) >= 0.1)
     .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 3)
     .map(([k, d]) => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' ms ' + (SEG_LABEL[k] || k));
-  return 'In this profile ' + most.dataset.label + ' is busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + (parts.length ? ': ' + parts.join(', ') : '');
+  return most.dataset.label + ' keeps the browser busy ' + (sum(most) - sum(least)).toFixed(1) + ' ms longer than ' + least.dataset.label + ', the least busy' + (parts.length ? ': ' + parts.join(', ') : '');
 }
 const SEG_LABEL = ${JSON.stringify(Object.fromEntries(SEGMENTS.map(([k, , l]) => [k, l])))};
 function rescaleBars() {

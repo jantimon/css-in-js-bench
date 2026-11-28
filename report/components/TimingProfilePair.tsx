@@ -67,5 +67,5 @@ function diffText(least: WpdBreakdownRow, most: WpdBreakdownRow): string {
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     .slice(0, 3)
     .map(([label, d]) => `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} ms ${label}`);
-  return `In this profile ${most.label} is busy ${total.toFixed(1)} ms longer than ${least.label}${parts.length ? `: ${parts.join(", ")}` : ""}`;
+  return `${most.label} keeps the browser busy ${total.toFixed(1)} ms longer than ${least.label}, the least busy${parts.length ? `: ${parts.join(", ")}` : ""}`;
 }
