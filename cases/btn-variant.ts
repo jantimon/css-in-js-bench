@@ -5,12 +5,10 @@ import type { CaseMeta } from "../report/types";
 // mergers hit their cache almost every time. The harness renders one button per
 // instance, deriving the variant combo from the index.
 export default {
-  label: "Variant / state button",
+  label: "Button with variants — 1,000 buttons",
   group: "1-variants",
   n: 1000,
   cardinality: "low",
   description:
-    "A button rendered 1,000× cycling ~12 distinct class strings (variant × active × fullWidth). " +
-    "With so few repeated strings almost every cn() is a cache hit (nearly free), while wrapper-component " +
-    "libraries still run their machinery per instance — the case where a cached merger is hard to beat.",
+    "One button with a variant, an active state and a full-width option, rendered 1,000 times. Only about 12 different class combinations appear, so libraries that cache class strings reuse almost every result, while component-based libraries still do their work for each button.",
 } satisfies CaseMeta;

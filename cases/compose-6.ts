@@ -6,13 +6,10 @@ import type { CaseMeta } from "../report/types";
 // how per-element cost grows with composition depth, the boundary that defeats
 // @yak/react's JSX folding.
 export default {
-  label: "Composition — 6 levels",
+  label: "Composition depth — 6 levels",
   group: "3-compose",
   n: 1000,
   cardinality: "low",
   description:
-    "The compose-3 button family at depth 6: the same base button wrapped five times, each level adding " +
-    "one small border-left/padding-left declaration. Brackets compose-3 from above (compose-1 brackets it " +
-    "from below) to chart how per-element cost grows with composition depth — the boundary that defeats " +
-    "@yak/react's JSX folding.",
+    "The same button wrapped five times, each level adding a small border and padding. Read it with the 1- and 3-level cases to see how cost grows with depth.",
 } satisfies CaseMeta;

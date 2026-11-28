@@ -3,14 +3,11 @@ import type { CaseMeta } from "../report/types";
 // A real design-system Tabs component — the most complex CSS in the suite. The
 // harness renders ONE tab group per instance, N times.
 export default {
-  label: "A real Tabs component — 150 groups",
+  label: "Tabs — 150 tab groups",
   group: "4-screens",
   n: 150,
   cardinality: "low",
   description:
-    "A real design-system Tabs: responsive typography, the full active/hover/focus-visible/disabled " +
-    "state matrix, an animated active underline via CSS anchor positioning (with a per-tab ::after " +
-    "fallback gated on @supports), a ::before WCAG tap target, hidden-scrollbar overflow and a composed " +
-    "FullWidthTabs wrapper. Tailwind needs a ~40-token list per tab; @yak/react compiles it all at build time.",
+    "A design-system tabs component: responsive text, every hover, focus, active and disabled state, an animated underline using CSS anchor positioning, large tap targets, a scrollable tab bar and a full-width variant. With Tailwind each tab carries about 40 classes; @yak/react compiles all of it at build time.",
   note: "the most complex CSS in the suite",
 } satisfies CaseMeta;

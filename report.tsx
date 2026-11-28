@@ -494,8 +494,7 @@ async function main() {
               <summary>
                 <span className="case-title">{caseTitle}</span>
                 {caseSub ? <span className="case-sub">{caseSub}</span> : null}
-                <span className="chip">n = {cm.n.toLocaleString()}</span>
-                <span className="chip">{cm.cardinality} cardinality</span>
+                {cm.cardinality === "n/a" ? null : <span className="chip">{cm.cardinality === "high" ? "a different style per element" : "few distinct styles"}</span>}
               </summary>
               <p className="case-desc">{cm.description}</p>
               {analysis ? <CaseSummary analysis={analysis} runSha={meta.gitSha} caseIds={caseIds} /> : null}
