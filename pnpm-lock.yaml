@@ -103,6 +103,18 @@ importers:
         specifier: 3.0.0-next.57
         version: 3.0.0-next.57(@babel/core@7.29.13)(@solidjs/web@2.0.0-rc.21(solid-js@2.0.0-rc.21))(solid-js@2.0.0-rc.21)(vite@8.3.8(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15))
 
+  techs/coulis:
+    dependencies:
+      coulis:
+        specifier: 0.24.1
+        version: 0.24.1
+      react:
+        specifier: catalog:dev
+        version: 19.3.1
+      react-dom:
+        specifier: catalog:dev
+        version: 19.3.1(react@19.3.1)
+
   techs/emotion:
     dependencies:
       '@emotion/cache':
@@ -2179,6 +2191,14 @@ packages:
   cosmiconfig@7.1.0:
     resolution: {integrity: sha512-AdmX6xUzdNASswsFtmwSt7Vj8po9IuqXm0UXz7QKPuEUmPB4XyjGfaAr2PSuELMwkRMVH1EpIkX5bTZGRB3eCA==}
     engines: {node: '>=10'}
+
+  coulis@0.24.1:
+    resolution: {integrity: sha512-a+5Onybn1pSC1iYhcg556THI1aZjqZvp4yaz7wLNFfV3QGBCTXKPSXpZ+6at0yuAvRSxs09bRUwcF65BQ/ea7g==}
+    peerDependencies:
+      react-native: ^0.80.0 || <1.0.0
+    peerDependenciesMeta:
+      react-native:
+        optional: true
 
   cross-argv@2.0.0:
     resolution: {integrity: sha512-YIaY9TR5Nxeb8SMdtrU8asWVM4jqJDNDYlKV21LxtYcfNJhp1kEsgSa6qXwXgzN0WQWGODps0+TlGp2xQSHwOg==}
@@ -4939,6 +4959,8 @@ snapshots:
       parse-json: 5.2.0
       path-type: 4.0.0
       yaml: 1.10.3
+
+  coulis@0.24.1: {}
 
   cross-argv@2.0.0: {}
 

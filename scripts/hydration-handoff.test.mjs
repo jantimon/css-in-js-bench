@@ -45,7 +45,7 @@ test("runtime styles survive SSR, hydration and the first input change", { timeo
   const browser = await chromium.launch();
   t.after(() => browser.close());
   const temporary = mkdtempSync(join(tmpdir(), "css-bench-handoff-"));
-  for (const tech of ["emotion", "styled-components", "goober"]) await t.test(tech, async (t) => {
+  for (const tech of ["emotion", "styled-components", "goober", "coulis"]) await t.test(tech, async (t) => {
     const directory = join(temporary, tech);
     const ssrMod = await buildLane(tech, directory);
     const server = await serveBrowserFixture({ directory: join(directory, "client"), ssrMod });
@@ -64,7 +64,7 @@ test("runtime styles survive SSR, hydration and the first input change", { timeo
     for (const caseId of ["btn-variant", "dyn-translate"]) await t.test(caseId, async () => {
       await validateBrowserFixture(browser, { port: server.port, ssrMod, caseId });
       const result = ssrMod.renderCase(caseId, 3);
-      assert.match(result.head, tech === "emotion" ? /data-emotion="e / : tech === "styled-components" ? /data-styled=/ : /id="_goober"/);
+      assert.match(result.head, tech === "emotion" ? /data-emotion="e / : tech === "styled-components" ? /data-styled=/ : tech === "coulis" ? /data-coulis-cache="c/ : /id="_goober"/);
       assert.ok(result.css.length > 0);
       assert.equal(ssrMod.renderCase(caseId, 3).head, result.head, "each request returns its required style tags");
       const url = `http://127.0.0.1:${server.port}/?case=${caseId}&n=3&manual=1`;

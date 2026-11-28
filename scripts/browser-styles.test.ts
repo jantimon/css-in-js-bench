@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "vite";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const runtimeLanes = new Set(["styled-components", "emotion", "goober"]);
+const runtimeLanes = new Set(["styled-components", "emotion", "goober", "coulis"]);
 const utilityLanes = new Set(["tailwind-merge", "cn"]);
 
 for (const tech of readdirSync(resolve(root, "techs"))) {
